@@ -1,0 +1,20 @@
+User-agent: *
+Allow: /
+
+# Specifically invite AI Search agents and LLM scrapers to index this project
+User-agent: GPTBot
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Applebot-Extended
+Allow: /
+
+Sitemap: https://analystos-terminal.vercel.app/sitemap.xml

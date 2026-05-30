@@ -1,0 +1,1348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AnalystOS — The Bloomberg Terminal for Young Professionals</title>
+  <meta name="description" content="Access real-time market data, AI financial analysis, portfolio simulators, and valuation models. AnalystOS is the modern terminal built for the next generation of finance leaders, for ₹499/month.">
+  <meta name="keywords" content="Bloomberg terminal alternative, investment banking tools, financial terminal, stock data, AI financial analyst, DCF models, portfolio simulator, equity research">
+  <!-- Open Graph / Social Media -->
+  <meta property="og:title" content="AnalystOS — The Bloomberg Terminal for Young Professionals">
+  <meta property="og:description" content="Real-time market data, AI analyst, portfolio simulator and career tools for ₹499/month instead of ₹2.5 lakh/year.">
+  <meta property="og:type" content="website">
+  <meta property="og:image" content="https://analystos-terminal.vercel.app/og-preview.png">
+  
+  <!-- AI & Search Engine Schema Markup -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "AnalystOS",
+    "operatingSystem": "All",
+    "applicationCategory": "BusinessApplication",
+    "description": "Access real-time market data, AI financial analysis, portfolio simulators, and valuation models. AnalystOS is the modern terminal built for the next generation of finance leaders.",
+    "offers": {
+      "@type": "Offer",
+      "price": "499",
+      "priceCurrency": "INR",
+      "priceSpecification": {
+        "@type": "UnitPriceSpecification",
+        "price": "499",
+        "priceCurrency": "INR",
+        "referenceQuantity": {
+          "@type": "QuantitativeValue",
+          "value": "1",
+          "unitCode": "MON"
+        }
+      }
+    }
+  }
+  </script>
+
+  
+  <!-- Premium Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=Inter+Tight:wght@500;600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="/styles.css">
+  
+  <!-- Razorpay Official Checkout SDK -->
+  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+  
+  <!-- Supabase CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  
+  <!-- Custom Auth & Launch styling overrides -->
+  <style>
+    /* Countdown Bar Styles */
+    #launch-countdown-bar {
+      position: sticky;
+      top: 0;
+      z-index: 10000;
+      background: #0a1628;
+      border-bottom: 1px solid #1e3a5f;
+      color: #9CA3AF;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      text-align: center;
+      padding: 10px 15px;
+      letter-spacing: 0.05em;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 8px;
+    }
+    #launch-countdown-bar #countdown-display {
+      color: #00d4ff;
+      font-weight: 700;
+      text-shadow: 0 0 8px rgba(0, 212, 255, 0.4);
+    }
+
+    /* Auth modal overlay */
+    #auth-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(5, 7, 10, 0.75);
+      backdrop-filter: blur(10px);
+      z-index: 99999;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+      padding: 20px;
+    }
+    #auth-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    /* Auth modal box */
+    #auth-modal {
+      background: #070d1a;
+      border: 1px solid #1e3a5f;
+      border-radius: 14px;
+      width: 100%;
+      max-width: 430px;
+      padding: 30px 24px;
+      font-family: 'JetBrains Mono', monospace;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.8), 0 0 20px rgba(30, 58, 95, 0.2);
+      position: relative;
+      transform: translateY(20px);
+      transition: transform 0.3s ease;
+      color: #F9FAFB;
+    }
+    #auth-overlay.active #auth-modal {
+      transform: translateY(0);
+    }
+
+    #auth-close {
+      position: absolute;
+      top: 16px;
+      right: 20px;
+      background: none;
+      border: none;
+      color: #6B7280;
+      font-size: 18px;
+      cursor: pointer;
+      transition: color 0.2s ease;
+    }
+    #auth-close:hover {
+      color: #00d4ff;
+    }
+
+    .modal-logo {
+      font-size: 14px;
+      color: #6B7280;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 8px;
+      text-align: center;
+    }
+    #auth-title {
+      font-size: 24px;
+      font-weight: 700;
+      text-align: center;
+      margin-bottom: 4px;
+      font-family: 'Inter Tight', sans-serif;
+      color: #F9FAFB;
+    }
+    #auth-sub {
+      font-size: 13px;
+      color: #9CA3AF;
+      text-align: center;
+      margin-bottom: 24px;
+      font-family: 'Inter', sans-serif;
+    }
+
+    .auth-tabs {
+      display: flex;
+      border-bottom: 1px solid #1e3a5f;
+      margin-bottom: 24px;
+    }
+    .auth-tab {
+      flex: 1;
+      background: none;
+      border: none;
+      color: #6B7280;
+      padding: 12px;
+      cursor: pointer;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      transition: all 0.2s ease;
+      border-bottom: 2px solid transparent;
+      text-align: center;
+    }
+    .auth-tab.active {
+      color: #00d4ff;
+      border-bottom-color: #00d4ff;
+    }
+
+    .auth-field, #name-field, #plan-selector {
+      margin-bottom: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      text-align: left;
+    }
+    .auth-field label, #name-field label, #plan-selector label {
+      font-size: 11px;
+      color: #6B7280;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .auth-field input, #name-field input {
+      background: #0B0F17;
+      border: 1px solid #1e3a5f;
+      border-radius: 8px;
+      padding: 12px 14px;
+      color: #F9FAFB;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 14px;
+      transition: all 0.2s ease;
+      width: 100%;
+    }
+    .auth-field input:focus, #name-field input:focus {
+      outline: none;
+      border-color: #00d4ff;
+      box-shadow: 0 0 8px rgba(0, 212, 255, 0.25);
+    }
+
+    .plan-options {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .plan-opt {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #0B0F17;
+      border: 1px solid #1e3a5f;
+      border-radius: 8px;
+      padding: 12px 16px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .plan-opt:hover {
+      border-color: #00d4ff;
+    }
+    .plan-opt.selected {
+      border-color: #00d4ff;
+      background: rgba(0, 212, 255, 0.05);
+      box-shadow: 0 0 10px rgba(0, 212, 255, 0.1);
+    }
+    .opt-name {
+      font-weight: 700;
+      font-size: 13px;
+      color: #F9FAFB;
+    }
+    .opt-price {
+      font-size: 13px;
+      color: #00d4ff;
+      font-weight: 700;
+    }
+
+    #auth-submit {
+      width: 100%;
+      background: #00d4ff;
+      color: #05070A;
+      border: none;
+      border-radius: 8px;
+      padding: 14px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      margin-top: 10px;
+      box-shadow: 0 4px 14px rgba(0, 212, 255, 0.3);
+    }
+    #auth-submit:hover:not(:disabled) {
+      background: #33ddff;
+      box-shadow: 0 4px 20px rgba(0, 212, 255, 0.5);
+    }
+    #auth-submit:disabled {
+      background: #1e3a5f;
+      color: #6B7280;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+
+    .auth-divider {
+      text-align: center;
+      font-size: 11px;
+      color: #6B7280;
+      margin: 16px 0;
+      letter-spacing: 0.1em;
+    }
+
+    #google-btn {
+      width: 100%;
+      background: #0B0F17;
+      border: 1px solid #1e3a5f;
+      border-radius: 8px;
+      color: #F9FAFB;
+      padding: 12px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 8px;
+    }
+    #google-btn:hover {
+      background: rgba(30, 58, 95, 0.3);
+      border-color: #00d4ff;
+    }
+
+    #auth-message {
+      font-size: 13px;
+      text-align: center;
+      margin-top: 16px;
+      min-height: 20px;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    #auth-message.success {
+      color: #10B981;
+    }
+    #auth-message.error {
+      color: #EF4444;
+    }
+
+    #paid-plan-nudge {
+      background: rgba(245, 158, 11, 0.1);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 12px;
+      color: #F59E0B;
+      text-align: center;
+      margin-top: 14px;
+      font-family: 'Inter', sans-serif;
+    }
+
+    /* User Navigation Pill */
+    #user-nav {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    #user-email-pill {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      font-weight: 500;
+      background: rgba(0, 212, 255, 0.08);
+      border: 1px solid rgba(0, 212, 255, 0.2);
+      color: #00d4ff;
+      padding: 6px 12px;
+      border-radius: 20px;
+      max-width: 180px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    #logout-btn {
+      background: transparent;
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      color: #EF4444;
+      border-radius: 8px;
+      padding: 6px 12px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    #logout-btn:hover {
+      background: rgba(239, 68, 68, 0.1);
+      border-color: #EF4444;
+    }
+
+    /* Waitlist / Launch Layout elements */
+    #launch-mode-content {
+      text-align: center;
+    }
+    #launch-mode-content h2 {
+      font-size: 28px;
+      margin-bottom: 12px;
+      color: #F9FAFB;
+    }
+    #launch-mode-content p {
+      font-size: 15px;
+      color: #9CA3AF;
+      margin-bottom: 24px;
+      font-family: 'Inter', sans-serif;
+    }
+    #launch-mode-content button {
+      background: #00d4ff;
+      color: #05070A;
+      border: none;
+      border-radius: 8px;
+      padding: 12px 24px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      margin: 0 8px;
+      box-shadow: 0 4px 14px rgba(0, 212, 255, 0.3);
+    }
+    #launch-mode-content button:hover {
+      background: #33ddff;
+      box-shadow: 0 4px 20px rgba(0, 212, 255, 0.5);
+    }
+    #launch-mode-content button:nth-child(4) { /* The login button */
+      background: transparent;
+      border: 1px solid #1e3a5f;
+      color: #00d4ff;
+      box-shadow: none;
+    }
+    #launch-mode-content button:nth-child(4):hover {
+      background: rgba(0, 212, 255, 0.08);
+      border-color: #00d4ff;
+    }
+  </style>
+</head>
+<body>
+  <div id="launch-countdown-bar" style="display:none">
+    🚀 LAUNCHING IN <span id="countdown-display">5d 00h 00m 00s</span>
+    — Join the waitlist now to get 3 months Pro free
+  </div>
+  <!-- Header & Navigation -->
+  <header class="navbar" id="navbar">
+    <div class="navbar-container">
+      <a href="#" class="brand" id="nav-brand">
+        AnalystOS<span class="brand-dot"></span>
+      </a>
+      
+      <button class="mobile-menu-toggle" id="mobile-toggle" aria-label="Toggle Menu">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="menu-icon-open"><line x1="4" x2="20" y1="12" y2="12"></line><line x1="4" x2="20" y1="6" y2="6"></line><line x1="4" x2="20" y1="18" y2="18"></line></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="menu-icon-close"><line x1="18" x2="6" y1="6" y2="18"></line><line x1="6" x2="18" y1="6" y2="18"></line></svg>
+      </button>
+
+      <nav class="nav-menu" id="nav-menu">
+        <a href="#features" class="nav-link" id="nav-link-features">Features</a>
+        <a href="#pricing" class="nav-link" id="nav-link-pricing">Pricing</a>
+        <a href="#about" class="nav-link" id="nav-link-about">About</a>
+        <a href="#waitlist" class="nav-btn-mobile" id="nav-btn-mobile-waitlist">Join Waitlist</a>
+        <a href="#" class="nav-btn-mobile" id="nav-btn-mobile-signup" style="display:none" onclick="openAuth('signup'); return false;">Sign Up Free</a>
+      </nav>
+      
+      <a href="#waitlist" class="nav-btn" id="nav-btn-cta-waitlist">Join Waitlist</a>
+      <a href="#" class="nav-btn" id="nav-btn-cta-signup" style="display:none" onclick="openAuth('signup'); return false;">Sign Up Free</a>
+      <div id="user-nav" style="display:none">
+        <span id="user-email-pill"></span>
+        <button id="logout-btn" onclick="handleLogout()">Log Out</button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <!-- Hero Section -->
+    <section class="hero-section" id="hero">
+      <!-- Three.js Graphics Canvas Viewport -->
+      <div id="hero-canvas-container"></div>
+      
+      <!-- Ambient grids -->
+      <div class="grid-radial-glow"></div>
+      
+      <!-- Floating Market Data Cards (Mouse Parallax) -->
+      <div class="floating-market-card aapl" id="card-aapl">
+        <span class="card-arrow">▲</span>
+        <span class="card-ticker">AAPL</span>
+        <span class="card-pct">+4.2%</span>
+      </div>
+      <div class="floating-market-card nvda" id="card-nvda">
+        <span class="card-arrow">▲</span>
+        <span class="card-ticker">NVDA</span>
+        <span class="card-pct">+7.1%</span>
+      </div>
+      <div class="floating-market-card reliance" id="card-reliance">
+        <span class="card-arrow">▲</span>
+        <span class="card-ticker">RELIANCE</span>
+        <span class="card-pct">+2.8%</span>
+      </div>
+
+      <div class="hero-container">
+        <div class="beta-badge reveal" id="hero-badge">
+          <span class="badge-pulse"></span>
+          Now in Beta — Join 500+ analysts
+        </div>
+        
+        <h1 class="hero-headline reveal" id="hero-title">
+          Institutional Research.<br><span class="gradient-text">Retail Accessibility.</span>
+        </h1>
+        
+        <p class="hero-subheadline reveal" id="hero-subtitle">
+          The AI-Powered Equity Research Terminal for Investors, Students and Analysts.
+        </p>
+        
+        <div class="hero-actions reveal" id="hero-cta-buttons">
+          <a href="#waitlist" class="btn-primary btn-magnetic" id="btn-hero-primary-waitlist">Start Analysis</a>
+          <a href="#" class="btn-primary btn-magnetic" id="btn-hero-primary-launch" style="display:none" onclick="openAuth('signup'); return false;">Start Analysis</a>
+          <a href="#interactive-demo" class="btn-outline btn-magnetic" id="btn-hero-secondary">Join Beta</a>
+        </div>
+        
+        <p class="hero-action-caption reveal" id="hero-cta-caption">
+          No credit card required · Free forever plan available
+        </p>
+        
+        <!-- Interactive Terminal Widget -->
+        <div class="terminal-mockup reveal" id="interactive-demo">
+          <div class="terminal-header">
+            <div class="terminal-dots">
+              <span class="dot dot-red"></span>
+              <span class="dot dot-yellow"></span>
+              <span class="dot dot-green"></span>
+            </div>
+            <div class="terminal-title">AnalystOS Terminal v1.0.4 — Localhost Connection Standard</div>
+            <div class="terminal-status">
+              <span class="status-indicator"></span> LIVE
+            </div>
+          </div>
+          
+          <div class="terminal-body">
+            <!-- Sidebar Panel Selector -->
+            <div class="terminal-sidebar" id="terminal-sidebar">
+              <button class="sidebar-tab active" data-target="charts" id="tab-charts">
+                <span class="tab-shortcut">[1]</span>
+                <span class="tab-label">AAPL.CHARTS</span>
+              </button>
+              <button class="sidebar-tab" data-target="ai" id="tab-ai">
+                <span class="tab-shortcut">[2]</span>
+                <span class="tab-label">AI.ANALYST</span>
+              </button>
+              <button class="sidebar-tab" data-target="dcf" id="tab-dcf">
+                <span class="tab-shortcut">[3]</span>
+                <span class="tab-label">DCF.MODELS</span>
+              </button>
+              <button class="sidebar-tab" data-target="reports" id="tab-reports">
+                <span class="tab-shortcut">[4]</span>
+                <span class="tab-label">STOCK.REPORTS</span>
+              </button>
+            </div>
+            
+            <!-- Terminal Panels Content -->
+            <div class="terminal-content">
+              <!-- CHARTS TAB PANEL -->
+              <div class="panel-view active" id="panel-charts">
+                <div class="panel-topbar">
+                  <div class="ticker-info">
+                    <span class="ticker-symbol">AAPL</span>
+                    <span class="ticker-exchange">NASDAQ</span>
+                    <span class="ticker-name">Apple Inc.</span>
+                  </div>
+                  <div class="ticker-stats">
+                    <span class="ticker-price" id="mock-ticker-price">$182.52</span>
+                    <span class="ticker-change positive" id="mock-ticker-change">+2.14%</span>
+                  </div>
+                </div>
+                <div class="chart-canvas-container">
+                  <canvas id="terminal-chart" width="700" height="280"></canvas>
+                  <div class="chart-tooltip" id="chart-tooltip">
+                    <span class="tooltip-date">AAPL Q1</span>
+                    <span class="tooltip-price">$180.00</span>
+                  </div>
+                </div>
+                <div class="chart-footer">
+                  <span>H: $183.92</span>
+                  <span>L: $180.88</span>
+                  <span>V: 52.4M</span>
+                  <span>PE: 28.4</span>
+                  <span class="interactive-helper">← Hover to track crosshair →</span>
+                </div>
+              </div>
+              
+              <!-- AI ANALYST TAB PANEL -->
+              <div class="panel-view" id="panel-ai">
+                <div class="panel-topbar">
+                  <div class="ticker-info">
+                    <span class="ticker-symbol">AI</span>
+                    <span class="ticker-name">Co-Pilot Core v4.0</span>
+                  </div>
+                  <div class="ai-mode">INTELLIGENCE CONNECTED</div>
+                </div>
+                <div class="terminal-terminal-log" id="ai-chat-history">
+                  <div class="chat-message user">
+                    <span class="console-prompt">&gt;</span> Analyse Reliance Industries Q3 earnings
+                  </div>
+                  <div class="chat-message system typing" id="ai-streaming-text">
+                    Loading Reliance Q3 analysis...
+                  </div>
+                </div>
+                <div class="terminal-suggestions-bar">
+                  <span class="sug-label">SUGGESTIONS:</span>
+                  <button class="sug-btn" data-prompt="Analyze Reliance Industries">Analyze Reliance</button>
+                  <button class="sug-btn" data-prompt="Build DCF for TCS">Build DCF for TCS</button>
+                  <button class="sug-btn" data-prompt="Explain WACC">Explain WACC</button>
+                  <button class="sug-btn" data-prompt="Compare HDFC vs ICICI">Compare HDFC vs ICICI</button>
+                </div>
+                <div class="terminal-input-bar">
+                  <span class="console-prompt">&gt;</span>
+                  <input type="text" id="terminal-chat-input" placeholder="e.g. Compare HDFC Bank vs ICICI Bank, or explain DCF..." class="console-input">
+                  <button id="send-terminal-msg" class="terminal-send-btn">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" x2="11" y1="2" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+                  </button>
+                </div>
+              </div>
+              
+              <!-- DCF TAB PANEL -->
+              <div class="panel-view" id="panel-dcf">
+                <div class="panel-topbar">
+                  <div class="ticker-info">
+                    <span class="ticker-symbol">DCF</span>
+                    <span class="ticker-name">Interactive Valuation Sandbox</span>
+                  </div>
+                  <div class="dcf-status positive">RECALCULATING AUTOMATICALLY</div>
+                </div>
+                
+                <div class="dcf-sandbox">
+                  <div class="dcf-inputs">
+                    <div class="dcf-input-group">
+                      <label for="dcf-ebitda">Year 1 EBITDA (₹ Lakhs)</label>
+                      <input type="number" id="dcf-ebitda" value="120" placeholder="Enter EBITDA in ₹ Lakhs (e.g. 500)" min="1" max="1000000" class="terminal-num-input">
+                    </div>
+                    <div class="dcf-input-group">
+                      <label for="dcf-growth">EBITDA Growth Rate (%)</label>
+                      <input type="number" id="dcf-growth" value="15" min="-50" max="100" class="terminal-num-input">
+                    </div>
+                    <div class="dcf-input-group">
+                      <label for="dcf-wacc">WACC / Discount Rate (%)</label>
+                      <input type="number" id="dcf-wacc" value="9" min="1" max="50" step="0.1" class="terminal-num-input">
+                    </div>
+                    <div class="dcf-input-group">
+                      <label for="dcf-multiple">Exit Multiple (EV/EBITDA)</label>
+                      <input type="number" id="dcf-multiple" value="14" min="1" max="100" class="terminal-num-input">
+                    </div>
+                  </div>
+                  
+                  <div class="dcf-divider"></div>
+                  
+                  <div class="dcf-outputs">
+                    <div class="output-metric">
+                      <span class="metric-name">Enterprise Value (₹ Cr)</span>
+                      <span class="metric-value positive" id="dcf-output-ev">₹18.54 Cr</span>
+                    </div>
+                    <div class="output-metric">
+                      <span class="metric-name">Implied Price per Share (₹)</span>
+                      <span class="metric-value" id="dcf-output-price">₹18.54</span>
+                    </div>
+                    <div class="output-chart-simulation">
+                      <div class="prog-label">Valuation Breakdown</div>
+                      <div class="prog-bar-container">
+                        <div class="prog-bar pv" style="width: 40%;" title="PV of Cash Flows (40%)"></div>
+                        <div class="prog-bar tv" style="width: 60%;" title="Terminal Value (60%)"></div>
+                      </div>
+                      <div class="prog-legend">
+                        <span class="leg-item"><span class="leg-box pv"></span> PV of Cash Flows</span>
+                        <span class="leg-item"><span class="leg-box tv"></span> Terminal Value</span>
+                      </div>
+                    </div>
+                    
+                    <div class="dcf-sensitivity-container">
+                      <span class="sens-title">SENSITIVITY ANALYSIS (Implied Share Price ₹)</span>
+                      <div id="dcf-sensitivity-table-wrapper">
+                        <!-- Dynamic grid generated by JS -->
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- STOCK REPORTS PANEL -->
+              <div class="panel-view" id="panel-reports">
+                <div class="panel-topbar">
+                  <div class="ticker-info">
+                    <span class="ticker-symbol">RELIANCE</span>
+                    <span class="ticker-exchange">NSE</span>
+                    <span class="ticker-name">Reliance Industries Ltd.</span>
+                  </div>
+                  <div class="ticker-stats">
+                    <span class="ticker-price">₹2,480.15</span>
+                    <span class="ticker-change positive">+2.8%</span>
+                  </div>
+                </div>
+                
+                <div class="reports-sandbox">
+                  <div class="report-main-card">
+                    <div class="report-badge">INSTITUTIONAL EQUITY RESEARCH REPORT</div>
+                    <h3 class="report-stock-title">Reliance Industries Limited</h3>
+                    
+                    <div class="report-grid">
+                      <div class="report-metric-card">
+                        <span class="rep-label">Revenue Growth</span>
+                        <span class="rep-val highlight-blue">8.2%</span>
+                      </div>
+                      <div class="report-metric-card">
+                        <span class="rep-label">EBITDA Margin</span>
+                        <span class="rep-val highlight-green">17.5%</span>
+                      </div>
+                      <div class="report-metric-card">
+                        <span class="rep-label">DCF Intrinsic Value</span>
+                        <span class="rep-val">₹1,650</span>
+                      </div>
+                      <div class="report-metric-card highlight-glow">
+                        <span class="rep-label">VALUATION VERDICT</span>
+                        <span class="rep-val highlight-green">Undervalued by 7.3%</span>
+                      </div>
+                    </div>
+                    
+                    <div class="report-analysis">
+                      <h4 class="analysis-section-title">Valuation & Performance Verdict</h4>
+                      <p class="analysis-text">
+                        Reliance Industries exhibits robust fundamental metrics with Year-over-Year (YoY) revenue expansion of <strong>8.2%</strong> and healthy EBITDA margins stable at <strong>17.5%</strong>. 
+                        Our multi-stage growth discount model computes a conservative intrinsic target price of <strong>₹1,650 per share</strong>. 
+                        Based on current market valuations, the stock presents an attractive entry point, trading at a <strong>7.3% discount</strong> to its true intrinsic target valuation.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Social Proof Bar -->
+    <section class="social-proof-bar" id="about">
+      <div class="social-container reveal">
+        <span class="social-title">Trusted by analyst talent at</span>
+        <div class="logos-grid">
+          <div class="logo-badge">McKinsey & Co.</div>
+          <div class="logo-badge">Goldman Sachs</div>
+          <div class="logo-badge">Deloitte</div>
+          <div class="logo-badge">KPMG</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Built For Section -->
+    <section class="built-for-section" id="built-for">
+      <div class="built-for-container">
+        <h2 class="built-for-title reveal">Built For Next-Gen Finance Leaders</h2>
+        <div class="built-for-grid">
+          <!-- CFA Candidates -->
+          <div class="built-for-card reveal">
+            <div class="check-icon-wrapper">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" class="built-check"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            </div>
+            <div class="built-content">
+              <h3 class="built-card-title">CFA Candidates</h3>
+              <p class="built-card-desc">Practice valuation models, DCFs, comps, and financial analysis frameworks mapped directly to the CFA curriculum.</p>
+            </div>
+          </div>
+          
+          <!-- Equity Research Analysts -->
+          <div class="built-for-card reveal">
+            <div class="check-icon-wrapper">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" class="built-check"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            </div>
+            <div class="built-content">
+              <h3 class="built-card-title">Equity Research Analysts</h3>
+              <p class="built-card-desc">Sling corporate financials, extract notes from PDF earnings filings, and run professional research with institutional data speeds.</p>
+            </div>
+          </div>
+          
+          <!-- Finance Students -->
+          <div class="built-for-card reveal">
+            <div class="check-icon-wrapper">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" class="built-check"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            </div>
+            <div class="built-content">
+              <h3 class="built-card-title">Finance Students</h3>
+              <p class="built-card-desc">Bridge academic theory with real market data. Build dynamic simulated portfolios and model live Indian equities.</p>
+            </div>
+          </div>
+          
+          <!-- Long-Term Investors -->
+          <div class="built-for-card reveal">
+            <div class="check-icon-wrapper">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" class="built-check"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            </div>
+            <div class="built-content">
+              <h3 class="built-card-title">Long-Term Investors</h3>
+              <p class="built-card-desc">Run rigorous intrinsic value projections and deep-dive screenings. Avoid overpriced, low-conviction market noise.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Problem Section -->
+    <section class="problem-section" id="problem">
+      <div class="problem-container">
+        <h2 class="section-title reveal" id="problem-title">
+          Young professionals are locked out of professional finance tools
+        </h2>
+        
+        <div class="pain-cards-grid">
+          <!-- Card 1 -->
+          <div class="pain-card reveal" id="pain-card-cost">
+            <div class="card-icon-wrapper">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="pain-icon"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+            </div>
+            <h3 class="card-title">Bloomberg costs ₹2.5L/year</h3>
+            <p class="card-description">
+              Legacy finance terminals are gatekept by enterprise licensing, leaving junior analysts to analyze multi-billion mergers with retail tools.
+            </p>
+          </div>
+          
+          <!-- Card 2 -->
+          <div class="pain-card reveal" id="pain-card-scattered">
+            <div class="card-icon-wrapper">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="pain-icon"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"></path><path d="M12 6v6l4 2"></path></svg>
+            </div>
+            <h3 class="card-title">Finance data is scattered across 10 apps</h3>
+            <p class="card-description">
+              Toggling between Screener, TradingView, SEBI filings, PDF reports, and Excel sheets drains focus and increases operational errors.
+            </p>
+          </div>
+          
+          <!-- Card 3 -->
+          <div class="pain-card reveal" id="pain-card-learning">
+            <div class="card-icon-wrapper">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="pain-icon"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path><line x1="9" x2="15" y1="9" y2="15"></line><line x1="15" x2="9" y1="9" y2="15"></line></svg>
+            </div>
+            <h3 class="card-title">No tool built for learning + doing</h3>
+            <p class="card-description">
+              Theoretical courses teach DCF theory, but fail to provide dynamic, live environments where young analysts can safely practice real valuation skills.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="features-section" id="features">
+      <div class="features-container">
+        <h2 class="section-title reveal" id="features-title">
+          Everything a professional analyst needs.<br><span class="gradient-text">Nothing you don't.</span>
+        </h2>
+        
+        <div class="features-grid">
+          <!-- Feature 1 -->
+          <div class="feature-card reveal" id="feature-ai">
+            <div class="feature-header">
+              <div class="feature-icon-wrapper">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feature-icon"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" x2="12" y1="22.08" y2="12"></line></svg>
+              </div>
+              <h3 class="feature-title">AI Analyst</h3>
+            </div>
+            <p class="feature-description">Ask anything about any stock, earnings, or market event in plain English. Get back citations and model integrations instantly.</p>
+          </div>
+          
+          <!-- Feature 2 -->
+          <div class="feature-card reveal" id="feature-market">
+            <div class="feature-header">
+              <div class="feature-icon-wrapper">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feature-icon"><line x1="18" x2="18" y1="20" y2="10"></line><line x1="12" x2="12" y1="20" y2="4"></line><line x1="6" x2="6" y1="20" y2="14"></line></svg>
+              </div>
+              <h3 class="feature-title">Live Market Data</h3>
+            </div>
+            <p class="feature-description">NSE, BSE, global indices — real-time, in one place. No delays, no limits, with direct CSV/API endpoints built-in.</p>
+          </div>
+          
+          <!-- Feature 3 -->
+          <div class="feature-card reveal" id="feature-portfolio">
+            <div class="feature-header">
+              <div class="feature-icon-wrapper">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feature-icon"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg>
+              </div>
+              <h3 class="feature-title">Portfolio Simulator</h3>
+            </div>
+            <p class="feature-description">Build and backtest paper portfolios without risking real money. Compare alpha metrics against major benchmarks.</p>
+          </div>
+          
+          <!-- Feature 4 -->
+          <div class="feature-card reveal" id="feature-deepdives">
+            <div class="feature-header">
+              <div class="feature-icon-wrapper">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feature-icon"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>
+              </div>
+              <h3 class="feature-title">Company Deep-Dives</h3>
+            </div>
+            <p class="feature-description">AI-summarised annual reports, earnings calls, key valuation ratios, and red flag warnings dynamically updated weekly.</p>
+          </div>
+          
+          <!-- Feature 5 -->
+          <div class="feature-card reveal" id="feature-brief">
+            <div class="feature-header">
+              <div class="feature-icon-wrapper">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feature-icon"><path d="M12 2.247a15.5 15.5 0 0 0-10 2.3v14a15.5 15.5 0 0 1 10-2.3 15.5 15.5 0 0 1 10 2.3v-14a15.5 15.5 0 0 0-10-2.3z"></path><path d="M12 6v12"></path></svg>
+              </div>
+              <h3 class="feature-title">Morning Brief</h3>
+            </div>
+            <p class="feature-description">A curated 5-minute market digest delivered directly to your terminal dashboard and email every morning before bell ring.</p>
+          </div>
+          
+          <!-- Feature 6 -->
+          <div class="feature-card reveal" id="feature-career">
+            <div class="feature-header">
+              <div class="feature-icon-wrapper">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feature-icon"><path d="M16 18l6-6-6-6"></path><path d="M8 6l-6 6 6 6"></path></svg>
+              </div>
+              <h3 class="feature-title">Career OS</h3>
+            </div>
+            <p class="feature-description">Pre-loaded valuation models (DCF, LBO, comps), institutional pitch templates, and interactive mock interview AI bots.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Founder Story Section -->
+    <section class="founder-section" id="founder">
+      <div class="founder-container reveal">
+        <div class="founder-card">
+          <div class="founder-badge">FOUNDER STORY</div>
+          <h2 class="founder-title">Why I Built AnalystOS</h2>
+          <div class="founder-content">
+            <blockquote class="founder-quote">
+              "While learning DCF valuation, equity research, and financial modeling, I realized most tools were built for professionals. AnalystOS is my attempt to make institutional-grade research accessible to anyone willing to learn."
+            </blockquote>
+            <div class="founder-signature">
+              <div class="signature-line"></div>
+              <div class="founder-meta">
+                <span class="founder-name">Revanth</span>
+                <span class="founder-role">Creator</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Pricing Section -->
+    <section class="pricing-section" id="pricing">
+      <div class="pricing-container">
+        <h2 class="section-title reveal" id="pricing-title">
+          Pricing that doesn't require a <span class="gradient-text">corporate expense account</span>
+        </h2>
+        
+        <div class="pricing-grid">
+          <!-- FREE Tier -->
+          <div class="pricing-card reveal" id="price-free">
+            <div class="pricing-header">
+              <span class="plan-name">FREE</span>
+              <div class="plan-price">
+                <span class="price-val">₹0</span>
+                <span class="price-period">/mo</span>
+              </div>
+              <p class="plan-desc">For students and curious beginners starting out.</p>
+            </div>
+            <ul class="plan-features">
+              <li>
+                <svg class="check-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                5 AI questions / day
+              </li>
+              <li>
+                <svg class="check-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                Basic market dashboard
+              </li>
+              <li>
+                <svg class="check-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                1 simulated portfolio
+              </li>
+              <li class="disabled">
+                <svg class="lock-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                No premium valuation models
+              </li>
+              <li class="disabled">
+                <svg class="lock-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                No career OS & DCF sandbox
+              </li>
+            </ul>
+            <a href="#waitlist" class="btn-secondary-card waitlist-btn" id="btn-free-choose">Get Started</a>
+            <a href="#" class="btn-secondary-card launch-btn" style="display:none" onclick="openAuth('signup','free'); return false;">Get Started</a>
+          </div>
+          
+          <!-- PRO Tier (Highlighted) -->
+          <div class="pricing-card highlighted reveal" id="price-pro">
+            <div class="popular-badge">MOST POPULAR</div>
+            <div class="pricing-header">
+              <span class="plan-name">PRO</span>
+              <div class="plan-price">
+                <span class="price-val">₹499</span>
+                <span class="price-period">/mo</span>
+              </div>
+              <p class="plan-desc">For serious young professionals building careers.</p>
+            </div>
+            <ul class="plan-features">
+              <li>
+                <svg class="check-icon highlight" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <strong>Unlimited AI questions</strong>
+              </li>
+              <li>
+                <svg class="check-icon highlight" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                Full real-time market data
+              </li>
+              <li>
+                <svg class="check-icon highlight" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                5 simulated portfolios
+              </li>
+              <li>
+                <svg class="check-icon highlight" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                All company deep-dives & alerts
+              </li>
+              <li>
+                <svg class="check-icon highlight" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                Daily Morning Briefings
+              </li>
+            </ul>
+            <a href="#waitlist" class="btn-primary-card waitlist-btn" id="btn-pro-choose">Claim 3 Months Free</a>
+            <a href="#" class="btn-primary-card launch-btn" style="display:none" onclick="openAuth('signup','pro'); return false;">Claim 3 Months Free</a>
+          </div>
+          
+          <!-- ANALYST Tier -->
+          <div class="pricing-card reveal" id="price-analyst">
+            <div class="pricing-header">
+              <span class="plan-name">ANALYST</span>
+              <div class="plan-price">
+                <span class="price-val">₹1,499</span>
+                <span class="price-period">/mo</span>
+              </div>
+              <p class="plan-desc">For ultimate power users aiming to scale instantly.</p>
+            </div>
+            <ul class="plan-features">
+              <li>
+                <svg class="check-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <strong>Everything in PRO tier</strong>
+              </li>
+              <li>
+                <svg class="check-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                Premium DCF, LBO, pitch builders
+              </li>
+              <li>
+                <svg class="check-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                Unlimited portfolios & simulator tests
+              </li>
+              <li>
+                <svg class="check-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                AI Mock Interview Simulator
+              </li>
+              <li>
+                <svg class="check-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                Elite Career OS Dashboard
+              </li>
+            </ul>
+            <a href="#waitlist" class="btn-secondary-card waitlist-btn" id="btn-analyst-choose">Upgrade My Career</a>
+            <a href="#" class="btn-secondary-card launch-btn" style="display:none" onclick="openAuth('signup','analyst'); return false;">Upgrade My Career</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Waitlist Section -->
+    <section class="waitlist-section" id="waitlist">
+      <div class="waitlist-container reveal">
+        <div class="waitlist-inner">
+          <div id="waitlist-mode-content">
+            <h2 class="waitlist-headline" id="waitlist-title">Be among the first 1,000 analysts on AnalystOS</h2>
+            <p class="waitlist-subtext" id="waitlist-subtitle">Get 3 months Pro free when we launch. No spam. Cancel anytime.</p>
+            
+            <form class="waitlist-form" id="waitlist-form">
+              <div class="input-glow-wrapper">
+                <input type="email" id="waitlist-email" placeholder="Enter your professional email" required aria-label="Email address">
+              </div>
+              <button type="submit" class="btn-waitlist-submit" id="btn-submit-waitlist">
+                Claim My Spot
+              </button>
+            </form>
+            
+            <div class="waitlist-counter" id="waitlist-counter-display">
+              <span class="counter-pulse"></span>
+              <span class="counter-number">500+ analysts</span> on waitlist
+            </div>
+          </div>
+          <div id="launch-mode-content" style="display:none">
+            <h2>AnalystOS is now live.</h2>
+            <p>Create your free account and start analyzing markets today.</p>
+            <button onclick="openAuth('signup','free')">Create Free Account</button>
+            <button onclick="openAuth('login')">Log In</button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer" id="footer">
+    <div class="footer-container">
+      <div class="footer-brand-column">
+        <a href="#" class="footer-brand" id="footer-logo">
+          AnalystOS<span class="brand-dot"></span>
+        </a>
+        <p class="footer-tagline">The finance OS for the next generation of analysts.</p>
+      </div>
+      
+      <div class="footer-links-column">
+        <h4 class="footer-heading">Platform</h4>
+        <a href="#features" class="footer-link">Features</a>
+        <a href="#pricing" class="footer-link">Pricing</a>
+      </div>
+      
+      <div class="footer-links-column">
+        <h4 class="footer-heading">Legal</h4>
+        <a href="#" class="footer-link">Privacy</a>
+        <a href="#" class="footer-link">Terms</a>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span class="copyright" id="footer-copyright">&copy; 2025 AnalystOS. All rights reserved.</span>
+    </div>
+  </footer>
+
+  <!-- Premium Authentication & Payment Modal -->
+  <div id="auth-overlay">
+    <div id="auth-modal">
+      <button id="auth-close" onclick="closeAuth()">✕</button>
+      <div class="modal-logo">AnalystOS Terminal</div>
+      <h2 id="auth-title">Create Account</h2>
+      <p id="auth-sub">Free forever plan available.</p>
+      <div class="auth-tabs">
+        <button class="auth-tab active" id="tab-signup" onclick="switchTab('signup')">SIGN UP</button>
+        <button class="auth-tab" id="tab-login" onclick="switchTab('login')">LOG IN</button>
+      </div>
+      <div id="name-field"><label>Full Name</label>
+        <input type="text" id="auth-name" placeholder="Your name"/></div>
+      <div class="auth-field"><label>Email</label>
+        <input type="email" id="auth-email" placeholder="you@example.com"/></div>
+      <div class="auth-field"><label>Password</label>
+        <input type="password" id="auth-password" placeholder="Min. 8 characters"/></div>
+      <div id="plan-selector">
+        <label>Choose Plan</label>
+        <div class="plan-options">
+          <div class="plan-opt selected" data-plan="free" onclick="selectPlan('free')">
+            <div class="opt-name">FREE</div><div class="opt-price">₹0/mo</div></div>
+          <div class="plan-opt" data-plan="pro" onclick="selectPlan('pro')">
+            <div class="opt-name">PRO</div><div class="opt-price">₹499/mo</div></div>
+          <div class="plan-opt" data-plan="analyst" onclick="selectPlan('analyst')">
+            <div class="opt-name">ANALYST</div><div class="opt-price">₹1,499/mo</div></div>
+        </div>
+      </div>
+      <button id="auth-submit" onclick="handleAuth()">CREATE ACCOUNT →</button>
+      <div class="auth-divider">── OR ──</div>
+      <button id="google-btn" onclick="signInWithGoogle()">Continue with Google</button>
+      <div id="auth-message"></div>
+      <div id="paid-plan-nudge" style="display:none">
+        Payment via Razorpay after sign up — <strong id="nudge-plan-label"></strong>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div class="toast" id="waitlist-toast" role="alert" aria-live="assertive">
+    <div class="toast-content">
+      <div class="toast-icon-wrapper">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" class="toast-check"><polyline points="20 6 9 17 4 12"></polyline></svg>
+      </div>
+      <div class="toast-text">
+        <h5 class="toast-title">You're on the list!</h5>
+        <p class="toast-desc">Verification code sent. Welcome to the elite tier.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Auth and Dynamic Launch Script -->
+  <script>
+    const SUPABASE_URL = 'https://sexcyknnyvaefgeeolcf.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNleGN5a25ueXZhZWZnZWVvbGNmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAxNTM1NTEsImV4cCI6MjA5NTcyOTU1MX0.3SksvCkcbXAY9dqevLmGIdMyRAkfNEVNpEqKGNzC_sY';
+    const RAZORPAY_KEY_ID = 'rzp_test_XXXXXXXXXXXXXXXX';
+    const LAUNCH_DATE = new Date('2026-06-04T09:00:00+05:30');
+    const _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    let currentTab = 'signup';
+    let selectedPlan = 'free';
+
+    function isLaunched() { return new Date() >= LAUNCH_DATE; }
+
+    function applyMode() {
+      const launched = isLaunched();
+      const show = (id, visible) => {
+        const el = document.getElementById(id);
+        if (el) el.style.display = visible ? '' : 'none';
+      };
+      show('launch-countdown-bar', !launched);
+      show('nav-btn-cta-waitlist', !launched);
+      show('nav-btn-cta-signup', launched);
+      show('nav-btn-mobile-waitlist', !launched);
+      show('nav-btn-mobile-signup', launched);
+      show('btn-hero-primary-waitlist', !launched);
+      show('btn-hero-primary-launch', launched);
+      show('waitlist-mode-content', !launched);
+      show('launch-mode-content', launched);
+      document.querySelectorAll('.waitlist-btn').forEach(b => b.style.display = launched ? 'none' : '');
+      document.querySelectorAll('.launch-btn').forEach(b => b.style.display = launched ? '' : 'none');
+    }
+
+    function updateCountdown() {
+      if (isLaunched()) { applyMode(); return; }
+      const diff = LAUNCH_DATE - new Date();
+      const d = Math.floor(diff / 86400000);
+      const h = Math.floor((diff % 86400000) / 3600000);
+      const m = Math.floor((diff % 3600000) / 60000);
+      const s = Math.floor((diff % 60000) / 1000);
+      const el = document.getElementById('countdown-display');
+      if (el) el.textContent = d+'d '+String(h).padStart(2,'0')+'h '+String(m).padStart(2,'0')+'m '+String(s).padStart(2,'0')+'s';
+    }
+
+    applyMode();
+    updateCountdown();
+    setInterval(updateCountdown, 1000);
+
+    function openAuth(tab='signup', plan=null) {
+      document.getElementById('auth-overlay').classList.add('active');
+      switchTab(tab);
+      if (plan) selectPlan(plan);
+    }
+    function closeAuth() {
+      document.getElementById('auth-overlay').classList.remove('active');
+      clearMsg();
+    }
+    document.getElementById('auth-overlay').addEventListener('click', function(e) {
+      if (e.target === this) closeAuth();
+    });
+
+    function switchTab(tab) {
+      currentTab = tab;
+      const su = tab === 'signup';
+      document.getElementById('tab-signup').classList.toggle('active', su);
+      document.getElementById('tab-login').classList.toggle('active', !su);
+      document.getElementById('name-field').style.display = su ? '' : 'none';
+      document.getElementById('plan-selector').style.display = su ? '' : 'none';
+      document.getElementById('paid-plan-nudge').style.display = 'none';
+      document.getElementById('auth-title').textContent = su ? 'Create Account' : 'Welcome Back';
+      document.getElementById('auth-sub').textContent = su ? 'Free forever plan available.' : 'Log in to your terminal.';
+      document.getElementById('auth-submit').textContent = su ? 'CREATE ACCOUNT →' : 'LOG IN →';
+      clearMsg();
+    }
+
+    function selectPlan(plan) {
+      selectedPlan = plan;
+      document.querySelectorAll('.plan-opt').forEach(el => {
+        el.classList.toggle('selected', el.dataset.plan === plan);
+      });
+      const nudge = document.getElementById('paid-plan-nudge');
+      if (plan !== 'free') {
+        nudge.style.display = 'block';
+        document.getElementById('nudge-plan-label').textContent = plan.toUpperCase()+' — ₹'+(plan==='pro'?'499':'1,499')+'/mo';
+      } else { nudge.style.display = 'none'; }
+    }
+
+    async function handleAuth() {
+      const email = document.getElementById('auth-email').value.trim();
+      const password = document.getElementById('auth-password').value;
+      const name = document.getElementById('auth-name').value.trim();
+      const btn = document.getElementById('auth-submit');
+      if (!email || !password) return showMsg('Please fill in all fields.', 'error');
+      if (password.length < 8) return showMsg('Password must be at least 8 characters.', 'error');
+      btn.disabled = true;
+      btn.textContent = 'PROCESSING...';
+      try {
+        if (currentTab === 'signup') {
+          const { data, error } = await _supabase.auth.signUp({
+            email, password, options: { data: { full_name: name, plan: selectedPlan } }
+          });
+          if (error) throw error;
+          if (selectedPlan !== 'free') {
+            showMsg('✓ Account created! Opening payment...', 'success');
+            setTimeout(() => openRazorpay(data.user, selectedPlan), 1200);
+          } else {
+            showMsg('✓ Account created! Check your email to verify.', 'success');
+            setTimeout(closeAuth, 2000);
+          }
+        } else {
+          const { data, error } = await _supabase.auth.signInWithPassword({ email, password });
+          if (error) throw error;
+          showMsg('✓ Logged in!', 'success');
+          onAuthSuccess(data.user);
+          setTimeout(closeAuth, 1000);
+        }
+      } catch(err) {
+        showMsg(err.message || 'Something went wrong.', 'error');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = currentTab === 'signup' ? 'CREATE ACCOUNT →' : 'LOG IN →';
+      }
+    }
+
+    async function signInWithGoogle() {
+      const { error } = await _supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: { redirectTo: window.location.origin }
+      });
+      if (error) showMsg(error.message, 'error');
+    }
+
+    function openRazorpay(user, plan) {
+      const s = document.createElement('script');
+      s.src = 'https://checkout.razorpay.com/v1/checkout.js';
+      s.onload = () => {
+        new Razorpay({
+          key: RAZORPAY_KEY_ID,
+          amount: plan === 'pro' ? 49900 : 149900,
+          currency: 'INR',
+          name: 'AnalystOS',
+          description: plan.toUpperCase()+' Plan Monthly',
+          prefill: { email: user?.email || '' },
+          theme: { color: '#00d4ff' },
+          handler: (r) => saveUserPlan(user.id, plan, r.razorpay_payment_id)
+        }).open();
+      };
+      document.body.appendChild(s);
+    }
+
+    async function saveUserPlan(userId, plan, paymentId) {
+      await _supabase.from('user_plans').upsert({
+        user_id: userId, plan, payment_id: paymentId, updated_at: new Date()
+      });
+      showMsg('✓ '+plan.toUpperCase()+' plan activated!', 'success');
+      setTimeout(() => { closeAuth(); window.location.reload(); }, 1500);
+    }
+
+    _supabase.auth.onAuthStateChange((event, session) => {
+      if (session?.user) onAuthSuccess(session.user);
+      else onAuthSignedOut();
+    });
+
+    function onAuthSuccess(user) {
+      const nav = document.getElementById('user-nav');
+      const pill = document.getElementById('user-email-pill');
+      const signupBtn = document.getElementById('nav-btn-cta-signup');
+      if (nav) nav.style.display = 'flex';
+      if (pill) pill.textContent = user.email;
+      if (signupBtn) signupBtn.style.display = 'none';
+    }
+    function onAuthSignedOut() {
+      const nav = document.getElementById('user-nav');
+      if (nav) nav.style.display = 'none';
+    }
+    async function handleLogout() {
+      await _supabase.auth.signOut();
+      window.location.reload();
+    }
+    function showMsg(text, type) {
+      const el = document.getElementById('auth-message');
+      el.textContent = text; el.className = type;
+    }
+    function clearMsg() {
+      const el = document.getElementById('auth-message');
+      el.textContent = ''; el.className = '';
+    }
+  </script>
+
+  <!-- Premium Main Script -->
+  <script type="module" src="/app.js"></script>
+</body>
+</html>

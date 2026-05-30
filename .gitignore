@@ -1,0 +1,21 @@
+# Environment Variables
+.env
+.env.local
+.env.*.local
+
+# Dependency Directory
+node_modules/
+
+# Production Build Directory
+dist/
+dist-ssr/
+
+# IDE / System Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.eslintcache
+.DS_Store
+Thumbs.db
+
+.vercel
