@@ -1201,6 +1201,33 @@
     updateCountdown();
     setInterval(updateCountdown, 1000);
 
+    // Sync the Hero Countdown Badge to June 14th without touching app.js
+    const badge = document.getElementById("hero-badge");
+    if (badge) {
+      const updateHeroBadge = () => {
+        const diff = LAUNCH_DATE - new Date();
+        if (diff <= 0) {
+          badge.innerHTML = '<span class="badge-pulse"></span> Live Access Active 🟢';
+        } else {
+          const d = Math.floor(diff / 86400000);
+          const h = Math.floor((diff % 86400000) / 3600000);
+          const m = Math.floor((diff % 3600000) / 60000);
+          const s = Math.floor((diff % 60000) / 1000);
+          badge.innerHTML = `<span class="badge-pulse"></span> Launching in: <span class="badge-countdown">${d}d ${String(h).padStart(2,'0')}h ${String(m).padStart(2,'0')}m ${String(s).padStart(2,'0')}s</span>`;
+        }
+      };
+      
+      const observer = new MutationObserver(() => {
+        observer.disconnect();
+        updateHeroBadge();
+        observer.observe(badge, { childList: true, characterData: true, subtree: true });
+      });
+      
+      observer.observe(badge, { childList: true, characterData: true, subtree: true });
+      // Run once initially
+      updateHeroBadge();
+    }
+
     function openAuth(tab='signup', plan=null) {
       document.getElementById('auth-overlay').classList.add('active');
       switchTab(tab);
