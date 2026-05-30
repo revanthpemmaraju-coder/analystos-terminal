@@ -390,6 +390,553 @@
       background: rgba(0, 212, 255, 0.08);
       border-color: #00d4ff;
     }
+
+    /* Premium Design overrides */
+    :root {
+      --premium-accent: #00f0ff;
+      --premium-accent-rgb: 0, 240, 255;
+      --premium-accent-hover: #4df8ff;
+      --premium-glow: 0 0 20px rgba(0, 240, 255, 0.15);
+      --premium-glow-strong: 0 0 35px rgba(0, 240, 255, 0.3);
+    }
+
+    /* Better Spacing & Layout spacing adjustment */
+    .hero-section {
+      padding: 140px 0 100px 0 !important;
+      position: relative;
+    }
+    
+    .premium-tagline-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 16px;
+      background: rgba(0, 240, 255, 0.06);
+      border: 1px solid rgba(0, 240, 255, 0.25);
+      border-radius: 30px;
+      color: var(--premium-accent);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      margin-bottom: 24px;
+      box-shadow: 0 4px 20px rgba(0, 240, 255, 0.05);
+      backdrop-filter: blur(10px);
+      animation: floatBadge 4s ease-in-out infinite;
+    }
+    
+    @keyframes floatBadge {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-4px); }
+    }
+    
+    .badge-pulse-blue {
+      width: 8px;
+      height: 8px;
+      background: var(--premium-accent);
+      border-radius: 50%;
+      position: relative;
+      display: inline-block;
+    }
+    
+    .badge-pulse-blue::after {
+      content: '';
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      top: 0;
+      left: 0;
+      background: var(--premium-accent);
+      border-radius: 50%;
+      animation: pulseBlue 1.5s ease-out infinite;
+    }
+    
+    @keyframes pulseBlue {
+      0% { transform: scale(1); opacity: 1; }
+      100% { transform: scale(2.8); opacity: 0; }
+    }
+
+    /* Typography fixes */
+    .hero-headline {
+      font-family: 'Inter Tight', sans-serif !important;
+      font-size: 56px !important;
+      line-height: 1.15 !important;
+      letter-spacing: -0.02em !important;
+      font-weight: 800 !important;
+      margin-bottom: 20px !important;
+    }
+    
+    .hero-subheadline {
+      font-family: 'Inter', sans-serif !important;
+      font-size: 18px !important;
+      line-height: 1.6 !important;
+      color: #9CA3AF !important;
+      max-width: 680px !important;
+      margin: 0 auto 36px auto !important;
+    }
+
+    /* Primary Cta color overrides */
+    #btn-hero-primary-waitlist, #btn-hero-primary-launch, #btn-submit-waitlist, #auth-submit {
+      background: var(--premium-accent) !important;
+      color: #05070a !important;
+      font-weight: 700 !important;
+      box-shadow: 0 4px 20px rgba(0, 240, 255, 0.25) !important;
+    }
+    #btn-hero-primary-waitlist:hover, #btn-hero-primary-launch:hover, #btn-submit-waitlist:hover:not(:disabled), #auth-submit:hover:not(:disabled) {
+      background: var(--premium-accent-hover) !important;
+      box-shadow: 0 4px 28px rgba(0, 240, 255, 0.4) !important;
+    }
+    
+    .gradient-text {
+      background: linear-gradient(135deg, #ffffff 30%, var(--premium-accent) 100%) !important;
+      -webkit-background-clip: text !important;
+      -webkit-text-fill-color: transparent !important;
+    }
+
+    /* Showcase section styling */
+    .workspace-showcase-section {
+      padding: 120px 0 100px 0;
+      background: radial-gradient(circle at 50% 0%, rgba(0, 240, 255, 0.03) 0%, rgba(5, 7, 10, 0) 70%);
+      position: relative;
+      z-index: 10;
+      border-top: 1px solid rgba(255, 255, 255, 0.03);
+    }
+    
+    .showcase-container {
+      max-width: var(--container-max-width);
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+    
+    .showcase-header {
+      text-align: center;
+      margin-bottom: 64px;
+    }
+    
+    .showcase-badge {
+      display: inline-block;
+      padding: 6px 12px;
+      background: rgba(0, 240, 255, 0.05);
+      border: 1px solid rgba(0, 240, 255, 0.15);
+      border-radius: 20px;
+      color: var(--premium-accent);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-bottom: 16px;
+    }
+    
+    .showcase-title {
+      font-family: 'Inter Tight', sans-serif;
+      font-size: 38px;
+      font-weight: 800;
+      line-height: 1.25;
+      color: #F9FAFB;
+      letter-spacing: -0.01em;
+      margin-bottom: 16px;
+    }
+    
+    .showcase-desc {
+      font-family: 'Inter', sans-serif;
+      font-size: 16px;
+      color: #9CA3AF;
+      max-width: 600px;
+      margin: 0 auto;
+      line-height: 1.5;
+    }
+    
+    .showcase-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 32px;
+    }
+    
+    @media (max-width: 1024px) {
+      .showcase-grid {
+        grid-template-columns: 1fr;
+        gap: 40px;
+      }
+    }
+    
+    /* Showcase card wrapper */
+    .showcase-card {
+      background: rgba(11, 15, 23, 0.65);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 16px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      height: 480px;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+      transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    
+    .showcase-card:hover {
+      transform: translateY(-8px);
+      border-color: rgba(0, 240, 255, 0.3);
+      box-shadow: var(--premium-glow), 0 12px 40px rgba(0, 0, 0, 0.6);
+    }
+    
+    .card-topbar {
+      padding: 16px 20px;
+      background: rgba(17, 24, 39, 0.8);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .card-indicator {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .card-dot-decor {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #EF4444;
+    }
+    .showcase-card:hover .card-dot-decor {
+      background: var(--premium-accent);
+      box-shadow: 0 0 8px var(--premium-accent);
+    }
+    
+    .card-tag {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      font-weight: 500;
+      color: #6B7280;
+    }
+    
+    .showcase-card:hover .card-tag {
+      color: #F9FAFB;
+    }
+    
+    .card-content-body {
+      flex: 1;
+      padding: 24px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      position: relative;
+    }
+
+    /* 1. PDF Parser Styles */
+    .pdf-viewer-sim {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      height: 100%;
+    }
+    
+    .pdf-file-header {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px dashed rgba(255, 255, 255, 0.1);
+      padding: 10px 14px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      color: #F9FAFB;
+    }
+    
+    .pdf-icon-decor {
+      color: #EF4444;
+      font-weight: 700;
+    }
+    
+    .pdf-text-highlighted-box {
+      font-family: 'Inter', sans-serif;
+      font-size: 12px;
+      line-height: 1.55;
+      color: #9CA3AF;
+      background: rgba(255, 255, 255, 0.01);
+      border-left: 2px solid rgba(255, 255, 255, 0.1);
+      padding: 10px;
+      margin-bottom: 4px;
+      text-align: left;
+    }
+    
+    .ocr-highlight {
+      background: rgba(0, 240, 255, 0.15);
+      border-bottom: 2px solid var(--premium-accent);
+      color: #F9FAFB;
+      font-weight: 500;
+      padding: 2px 0;
+      position: relative;
+    }
+    
+    .ocr-highlight::after {
+      content: 'AI EXTRACT';
+      position: absolute;
+      bottom: -16px;
+      right: 0;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 8px;
+      font-weight: 700;
+      color: var(--premium-accent);
+      letter-spacing: 0.05em;
+    }
+    
+    .ocr-results-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: auto;
+    }
+    
+    .ocr-result-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 12px;
+      background: rgba(0, 240, 255, 0.03);
+      border: 1px solid rgba(0, 240, 255, 0.08);
+      border-radius: 8px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+    }
+    
+    .ocr-key {
+      color: #9CA3AF;
+    }
+    
+    .ocr-val {
+      font-weight: 700;
+      color: var(--premium-accent);
+    }
+    
+    .ocr-pct {
+      color: #10B981;
+      font-weight: 700;
+      margin-left: 6px;
+    }
+
+    /* 2. Company Profile Styles */
+    .company-sim-dashboard {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      height: 100%;
+    }
+    
+    .company-header-sim {
+      display: flex;
+      justify-content: space-between;
+      align-items: start;
+    }
+    
+    .company-info-decor {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      text-align: left;
+    }
+    
+    .comp-name-decor {
+      font-family: 'Inter Tight', sans-serif;
+      font-weight: 700;
+      font-size: 15px;
+      color: #F9FAFB;
+    }
+    
+    .comp-ticker-decor {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: #6B7280;
+    }
+    
+    .comp-rating-badge {
+      background: rgba(16, 185, 129, 0.1);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      color: #10B981;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      font-weight: 700;
+    }
+    
+    .metrics-gauges-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+    
+    .metric-gauge-card {
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 8px;
+      padding: 10px;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    
+    .gauge-label {
+      font-family: 'Inter', sans-serif;
+      font-size: 10px;
+      color: #6B7280;
+      text-transform: uppercase;
+      letter-spacing: 0.02em;
+    }
+    
+    .gauge-value {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 14px;
+      font-weight: 700;
+      color: #F9FAFB;
+    }
+    
+    .showcase-card:hover .gauge-value {
+      color: var(--premium-accent);
+    }
+    
+    .gauge-status {
+      font-size: 9px;
+      font-family: 'JetBrains Mono', monospace;
+      color: #10B981;
+    }
+    
+    .comps-comparison-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: auto;
+    }
+    
+    .comps-comparison-table th, .comps-comparison-table td {
+      text-align: left;
+      padding: 8px 6px;
+      font-size: 10px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    }
+    
+    .comps-comparison-table th {
+      font-family: 'Inter', sans-serif;
+      color: #6B7280;
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+    
+    .comps-comparison-table td {
+      font-family: 'JetBrains Mono', monospace;
+      color: #9CA3AF;
+    }
+    
+    .comps-comparison-table tr.active td {
+      color: #F9FAFB;
+      font-weight: 600;
+      background: rgba(0, 240, 255, 0.03);
+    }
+
+    /* 3. Thesis Memorandum Styles */
+    .thesis-sim-memo {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      height: 100%;
+      text-align: left;
+    }
+    
+    .memo-header {
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      padding-bottom: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    
+    .memo-label {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9px;
+      color: var(--premium-accent);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      font-weight: 700;
+    }
+    
+    .memo-title-decor {
+      font-family: 'Inter Tight', sans-serif;
+      font-size: 14px;
+      font-weight: 800;
+      color: #F9FAFB;
+    }
+    
+    .memo-body-scroll {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      font-size: 11px;
+      line-height: 1.5;
+      color: #9CA3AF;
+      overflow: hidden;
+    }
+    
+    .memo-section {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    
+    .memo-sec-title {
+      font-family: 'Inter Tight', sans-serif;
+      font-weight: 700;
+      color: #F9FAFB;
+      font-size: 12px;
+    }
+    
+    .memo-sec-desc {
+      font-family: 'Inter', sans-serif;
+    }
+    
+    .memo-bullet {
+      display: flex;
+      align-items: start;
+      gap: 8px;
+      padding-left: 4px;
+    }
+    
+    .bullet-icon-decor {
+      color: var(--premium-accent);
+      font-weight: 700;
+    }
+    
+    .memo-upside-callout {
+      margin-top: auto;
+      background: linear-gradient(90deg, rgba(0, 240, 255, 0.08) 0%, rgba(0, 0, 0, 0) 100%);
+      border-left: 2px solid var(--premium-accent);
+      padding: 10px 14px;
+      border-radius: 0 8px 8px 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .callout-title {
+      font-family: 'Inter', sans-serif;
+      font-weight: 600;
+      color: #F9FAFB;
+      font-size: 11px;
+    }
+    
+    .callout-val {
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 800;
+      color: #10B981;
+      font-size: 13px;
+    }
   </style>
 </head>
 <body>
@@ -455,12 +1002,17 @@
           Now in Beta — Join 500+ analysts
         </div>
         
+        <div class="premium-tagline-badge reveal" style="margin-top: 16px;">
+          <span class="badge-pulse-blue"></span>
+          Hedge Fund Research — Generate investment theses faster
+        </div>
+        
         <h1 class="hero-headline reveal" id="hero-title">
-          Institutional Research.<br><span class="gradient-text">Retail Accessibility.</span>
+          AI Research Terminal for<br><span class="gradient-text">Finance & Investment Analysis</span>
         </h1>
         
         <p class="hero-subheadline reveal" id="hero-subtitle">
-          The AI-Powered Equity Research Terminal for Investors, Students and Analysts.
+          Upload reports, analyze companies, generate investment research, and organize knowledge in one workspace.
         </p>
         
         <div class="hero-actions reveal" id="hero-cta-buttons">
@@ -682,6 +1234,170 @@
                       </p>
                     </div>
                   </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Workspace Showcase Section -->
+    <section class="workspace-showcase-section" id="workspace-showcase">
+      <div class="showcase-container">
+        <div class="showcase-header reveal">
+          <span class="showcase-badge">Showcase Sandbox</span>
+          <h2 class="showcase-title">The Terminal Workspace in Action</h2>
+          <p class="showcase-desc">Explore the exact tools used by elite hedge funds to ingest data, evaluate comps, and synthesize long-form investment theses faster.</p>
+        </div>
+        
+        <div class="showcase-grid reveal">
+          <!-- Card 1: PDF Report Ingestion -->
+          <div class="showcase-card">
+            <div class="card-topbar">
+              <div class="card-indicator">
+                <span class="card-dot-decor"></span>
+                <span class="card-tag">INGEST_OCR.SERVICE</span>
+              </div>
+              <span class="card-tag">[PDF_EXTRACT]</span>
+            </div>
+            <div class="card-content-body">
+              <div class="pdf-viewer-sim">
+                <div class="pdf-file-header">
+                  <span class="pdf-icon-decor">PDF</span>
+                  <span>NVDA_Q4_2026_EARNINGS.pdf</span>
+                </div>
+                
+                <div class="pdf-text-highlighted-box">
+                  "...Data Center revenue for the fourth quarter was <span class="ocr-highlight">a record $18.4 billion</span>, up 27% from the previous quarter and up 409% from a year ago. Full-year Data Center revenue grew 217% to a record $47.5 billion..."
+                </div>
+                
+                <div class="ocr-results-panel">
+                  <div class="ocr-result-item">
+                    <span class="ocr-key">Target Company</span>
+                    <span class="ocr-val">NVIDIA (NVDA:US)</span>
+                  </div>
+                  <div class="ocr-result-item">
+                    <span class="ocr-key">Extracted Data Center Rev</span>
+                    <span class="ocr-val">$18.40B <span class="ocr-pct">+409% YoY</span></span>
+                  </div>
+                  <div class="ocr-result-item">
+                    <span class="ocr-key">Full-Year Segment Revenue</span>
+                    <span class="ocr-val">$47.50B <span class="ocr-pct">+217% YoY</span></span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Card 2: Company Metrics Profile -->
+          <div class="showcase-card">
+            <div class="card-topbar">
+              <div class="card-indicator">
+                <span class="card-dot-decor"></span>
+                <span class="card-tag">VALUATION_ENGINE.COMPS</span>
+              </div>
+              <span class="card-tag">[MULTIPLES]</span>
+            </div>
+            <div class="card-content-body">
+              <div class="company-sim-dashboard">
+                <div class="company-header-sim">
+                  <div class="company-info-decor">
+                    <span class="comp-name-decor">NVIDIA Corp.</span>
+                    <span class="comp-ticker-decor">NASDAQ: NVDA</span>
+                  </div>
+                  <span class="comp-rating-badge">BUY | Target $1,150</span>
+                </div>
+                
+                <div class="metrics-gauges-grid">
+                  <div class="metric-gauge-card">
+                    <span class="gauge-label">FWD P/E</span>
+                    <span class="gauge-value">28.4x</span>
+                    <span class="gauge-status">Sector Low</span>
+                  </div>
+                  <div class="metric-gauge-card">
+                    <span class="gauge-label">EV/EBITDA</span>
+                    <span class="gauge-value">21.8x</span>
+                    <span class="gauge-status">Optimal</span>
+                  </div>
+                  <div class="metric-gauge-card">
+                    <span class="gauge-label">PEG RATIO</span>
+                    <span class="gauge-value">1.15x</span>
+                    <span class="gauge-status">Undervalued</span>
+                  </div>
+                </div>
+                
+                <table class="comps-comparison-table">
+                  <thead>
+                    <tr>
+                      <th>Ticker</th>
+                      <th>P/E Fwd</th>
+                      <th>EV/EBITDA</th>
+                      <th>YoY Rev</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr class="active">
+                      <td>NVDA</td>
+                      <td>28.4x</td>
+                      <td>21.8x</td>
+                      <td>+265%</td>
+                    </tr>
+                    <tr>
+                      <td>AMD</td>
+                      <td>41.2x</td>
+                      <td>33.5x</td>
+                      <td>+12%</td>
+                    </tr>
+                    <tr>
+                      <td>INTC</td>
+                      <td>18.9x</td>
+                      <td>12.4x</td>
+                      <td>-4%</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Card 3: AI Investment Thesis Memorandum -->
+          <div class="showcase-card">
+            <div class="card-topbar">
+              <div class="card-indicator">
+                <span class="card-dot-decor"></span>
+                <span class="card-tag">SYNTHESIZER.MEMO</span>
+              </div>
+              <span class="card-tag">[RESEARCH_OUTPUT]</span>
+            </div>
+            <div class="card-content-body">
+              <div class="thesis-sim-memo">
+                <div class="memo-header">
+                  <span class="memo-label">EQUITY RESEARCH MEMORANDUM</span>
+                  <span class="memo-title-decor">NVDA: Sustainable AI Leadership</span>
+                </div>
+                
+                <div class="memo-body-scroll">
+                  <div class="memo-section">
+                    <span class="memo-sec-title">I. Thesis Foundation</span>
+                    <span class="memo-sec-desc">Market underestimates recurring software licensing and Blackwell hardware transition timeline.</span>
+                  </div>
+                  <div class="memo-section">
+                    <span class="memo-sec-title">II. Growth Catalysts</span>
+                    <div class="memo-bullet">
+                      <span class="bullet-icon-decor">▪</span>
+                      <span>Blackwell chip architecture commercial rollout Q3 2026.</span>
+                    </div>
+                    <div class="memo-bullet">
+                      <span class="bullet-icon-decor">▪</span>
+                      <span>Cuda developers database exceeds 4.5M (sticky ecosystem).</span>
+                    </div>
+                  </div>
+                </div>
+                
+                <div class="memo-upside-callout">
+                  <span class="callout-title">Implied Value Upside</span>
+                  <span class="callout-val">+32.4% BUY</span>
                 </div>
               </div>
             </div>
