@@ -55,29 +55,7 @@
   
   <!-- Custom Auth & Launch styling overrides -->
   <style>
-    /* Countdown Bar Styles */
-    #launch-countdown-bar {
-      position: sticky;
-      top: 0;
-      z-index: 10000;
-      background: #0a1628;
-      border-bottom: 1px solid #1e3a5f;
-      color: #9CA3AF;
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 13px;
-      text-align: center;
-      padding: 10px 15px;
-      letter-spacing: 0.05em;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      gap: 8px;
-    }
-    #launch-countdown-bar #countdown-display {
-      color: #00d4ff;
-      font-weight: 700;
-      text-shadow: 0 0 8px rgba(0, 212, 255, 0.4);
-    }
+
 
     /* Auth modal overlay */
     #auth-overlay {
@@ -415,10 +393,7 @@
   </style>
 </head>
 <body>
-  <div id="launch-countdown-bar" style="display:none">
-    🚀 LAUNCHING IN <span id="countdown-display">5d 00h 00m 00s</span>
-    — Join the waitlist now to get 3 months Pro free
-  </div>
+
   <!-- Header & Navigation -->
   <header class="navbar" id="navbar">
     <div class="navbar-container">
@@ -1173,7 +1148,6 @@
         const el = document.getElementById(id);
         if (el) el.style.display = visible ? '' : 'none';
       };
-      show('launch-countdown-bar', !launched);
       show('nav-btn-cta-waitlist', !launched);
       show('nav-btn-cta-signup', launched);
       show('nav-btn-mobile-waitlist', !launched);
@@ -1186,20 +1160,7 @@
       document.querySelectorAll('.launch-btn').forEach(b => b.style.display = launched ? '' : 'none');
     }
 
-    function updateCountdown() {
-      if (isLaunched()) { applyMode(); return; }
-      const diff = LAUNCH_DATE - new Date();
-      const d = Math.floor(diff / 86400000);
-      const h = Math.floor((diff % 86400000) / 3600000);
-      const m = Math.floor((diff % 3600000) / 60000);
-      const s = Math.floor((diff % 60000) / 1000);
-      const el = document.getElementById('countdown-display');
-      if (el) el.textContent = d+'d '+String(h).padStart(2,'0')+'h '+String(m).padStart(2,'0')+'m '+String(s).padStart(2,'0')+'s';
-    }
-
     applyMode();
-    updateCountdown();
-    setInterval(updateCountdown, 1000);
 
     // Sync the Hero Countdown Badge to June 14th without touching app.js
     const badge = document.getElementById("hero-badge");
