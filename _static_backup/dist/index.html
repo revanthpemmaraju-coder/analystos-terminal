@@ -1,0 +1,2975 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AnalystOS — The Bloomberg Terminal for Young Professionals</title>
+  <meta name="description" content="Access real-time market data, AI financial analysis, portfolio simulators, and valuation models. AnalystOS is the modern terminal built for the next generation of finance leaders, for ₹499/month.">
+  <meta name="keywords" content="Bloomberg terminal alternative, investment banking tools, financial terminal, stock data, AI financial analyst, DCF models, portfolio simulator, equity research">
+  <!-- Open Graph / Social Media -->
+  <meta property="og:title" content="AnalystOS — The Bloomberg Terminal for Young Professionals">
+  <meta property="og:description" content="Real-time market data, AI analyst, portfolio simulator and career tools for ₹499/month instead of ₹2.5 lakh/year.">
+  <meta property="og:type" content="website">
+  <meta property="og:image" content="https://analystos-terminal.vercel.app/og-preview.png">
+  
+  <!-- AI & Search Engine Schema Markup -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "AnalystOS",
+    "operatingSystem": "All",
+    "applicationCategory": "BusinessApplication",
+    "description": "Access real-time market data, AI financial analysis, portfolio simulators, and valuation models. AnalystOS is the modern terminal built for the next generation of finance leaders.",
+    "offers": {
+      "@type": "Offer",
+      "price": "499",
+      "priceCurrency": "INR",
+      "priceSpecification": {
+        "@type": "UnitPriceSpecification",
+        "price": "499",
+        "priceCurrency": "INR",
+        "referenceQuantity": {
+          "@type": "QuantitativeValue",
+          "value": "1",
+          "unitCode": "MON"
+        }
+      }
+    }
+  }
+  </script>
+
+  
+  <!-- Premium Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=Inter+Tight:wght@500;600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  
+  
+  <!-- Razorpay Official Checkout SDK -->
+  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+  
+  <!-- Supabase CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  
+  <!-- Custom Auth & Launch styling overrides -->
+  <style>
+
+
+    /* Auth modal overlay */
+    #auth-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(5, 7, 10, 0.75);
+      backdrop-filter: blur(10px);
+      z-index: 99999;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+      padding: 20px;
+    }
+    #auth-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    /* Auth modal box */
+    #auth-modal {
+      background: #070d1a;
+      border: 1px solid #1e3a5f;
+      border-radius: 14px;
+      width: 100%;
+      max-width: 430px;
+      padding: 30px 24px;
+      font-family: 'JetBrains Mono', monospace;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.8), 0 0 20px rgba(30, 58, 95, 0.2);
+      position: relative;
+      transform: translateY(20px);
+      transition: transform 0.3s ease;
+      color: #F9FAFB;
+    }
+    #auth-overlay.active #auth-modal {
+      transform: translateY(0);
+    }
+
+    #auth-close {
+      position: absolute;
+      top: 16px;
+      right: 20px;
+      background: none;
+      border: none;
+      color: #6B7280;
+      font-size: 18px;
+      cursor: pointer;
+      transition: color 0.2s ease;
+    }
+    #auth-close:hover {
+      color: #00d4ff;
+    }
+
+    .modal-logo {
+      font-size: 14px;
+      color: #6B7280;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 8px;
+      text-align: center;
+    }
+    #auth-title {
+      font-size: 24px;
+      font-weight: 700;
+      text-align: center;
+      margin-bottom: 4px;
+      font-family: 'Inter Tight', sans-serif;
+      color: #F9FAFB;
+    }
+    #auth-sub {
+      font-size: 13px;
+      color: #9CA3AF;
+      text-align: center;
+      margin-bottom: 24px;
+      font-family: 'Inter', sans-serif;
+    }
+
+    .auth-tabs {
+      display: flex;
+      border-bottom: 1px solid #1e3a5f;
+      margin-bottom: 24px;
+    }
+    .auth-tab {
+      flex: 1;
+      background: none;
+      border: none;
+      color: #6B7280;
+      padding: 12px;
+      cursor: pointer;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      transition: all 0.2s ease;
+      border-bottom: 2px solid transparent;
+      text-align: center;
+    }
+    .auth-tab.active {
+      color: #00d4ff;
+      border-bottom-color: #00d4ff;
+    }
+
+    .auth-field, #name-field, #plan-selector {
+      margin-bottom: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      text-align: left;
+    }
+    .auth-field label, #name-field label, #plan-selector label {
+      font-size: 11px;
+      color: #6B7280;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .auth-field input, #name-field input {
+      background: #0B0F17;
+      border: 1px solid #1e3a5f;
+      border-radius: 8px;
+      padding: 12px 14px;
+      color: #F9FAFB;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 14px;
+      transition: all 0.2s ease;
+      width: 100%;
+    }
+    .auth-field input:focus, #name-field input:focus {
+      outline: none;
+      border-color: #00d4ff;
+      box-shadow: 0 0 8px rgba(0, 212, 255, 0.25);
+    }
+
+    .plan-options {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .plan-opt {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #0B0F17;
+      border: 1px solid #1e3a5f;
+      border-radius: 8px;
+      padding: 12px 16px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .plan-opt:hover {
+      border-color: #00d4ff;
+    }
+    .plan-opt.selected {
+      border-color: #00d4ff;
+      background: rgba(0, 212, 255, 0.05);
+      box-shadow: 0 0 10px rgba(0, 212, 255, 0.1);
+    }
+    .opt-name {
+      font-weight: 700;
+      font-size: 13px;
+      color: #F9FAFB;
+    }
+    .opt-price {
+      font-size: 13px;
+      color: #00d4ff;
+      font-weight: 700;
+    }
+
+    #auth-submit {
+      width: 100%;
+      background: #00d4ff;
+      color: #05070A;
+      border: none;
+      border-radius: 8px;
+      padding: 14px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      margin-top: 10px;
+      box-shadow: 0 4px 14px rgba(0, 212, 255, 0.3);
+    }
+    #auth-submit:hover:not(:disabled) {
+      background: #33ddff;
+      box-shadow: 0 4px 20px rgba(0, 212, 255, 0.5);
+    }
+    #auth-submit:disabled {
+      background: #1e3a5f;
+      color: #6B7280;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+
+    .auth-divider {
+      text-align: center;
+      font-size: 11px;
+      color: #6B7280;
+      margin: 16px 0;
+      letter-spacing: 0.1em;
+    }
+
+    #google-btn {
+      width: 100%;
+      background: #0B0F17;
+      border: 1px solid #1e3a5f;
+      border-radius: 8px;
+      color: #F9FAFB;
+      padding: 12px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 8px;
+    }
+    #google-btn:hover {
+      background: rgba(30, 58, 95, 0.3);
+      border-color: #00d4ff;
+    }
+
+    #auth-message {
+      font-size: 13px;
+      text-align: center;
+      margin-top: 16px;
+      min-height: 20px;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    #auth-message.success {
+      color: #10B981;
+    }
+    #auth-message.error {
+      color: #EF4444;
+    }
+
+    #paid-plan-nudge {
+      background: rgba(245, 158, 11, 0.1);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 12px;
+      color: #F59E0B;
+      text-align: center;
+      margin-top: 14px;
+      font-family: 'Inter', sans-serif;
+    }
+
+    /* User Navigation Pill */
+    #user-nav {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    #user-email-pill {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      font-weight: 500;
+      background: rgba(0, 212, 255, 0.08);
+      border: 1px solid rgba(0, 212, 255, 0.2);
+      color: #00d4ff;
+      padding: 6px 12px;
+      border-radius: 20px;
+      max-width: 180px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    #logout-btn {
+      background: transparent;
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      color: #EF4444;
+      border-radius: 8px;
+      padding: 6px 12px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    #logout-btn:hover {
+      background: rgba(239, 68, 68, 0.1);
+      border-color: #EF4444;
+    }
+
+    /* Waitlist / Launch Layout elements */
+    #launch-mode-content {
+      text-align: center;
+    }
+    #launch-mode-content h2 {
+      font-size: 28px;
+      margin-bottom: 12px;
+      color: #F9FAFB;
+    }
+    #launch-mode-content p {
+      font-size: 15px;
+      color: #9CA3AF;
+      margin-bottom: 24px;
+      font-family: 'Inter', sans-serif;
+    }
+    #launch-mode-content button {
+      background: #00d4ff;
+      color: #05070A;
+      border: none;
+      border-radius: 8px;
+      padding: 12px 24px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      margin: 0 8px;
+      box-shadow: 0 4px 14px rgba(0, 212, 255, 0.3);
+    }
+    #launch-mode-content button:hover {
+      background: #33ddff;
+      box-shadow: 0 4px 20px rgba(0, 212, 255, 0.5);
+    }
+    #launch-mode-content button:nth-child(4) { /* The login button */
+      background: transparent;
+      border: 1px solid #1e3a5f;
+      color: #00d4ff;
+      box-shadow: none;
+    }
+    #launch-mode-content button:nth-child(4):hover {
+      background: rgba(0, 212, 255, 0.08);
+      border-color: #00d4ff;
+    }
+
+    /* Premium Institutional Finance overrides */
+    :root {
+      --premium-accent: #00f0ff;
+      --premium-accent-rgb: 0, 240, 255;
+      --premium-accent-hover: #4df8ff;
+      --premium-green: #00e676;
+      --premium-green-rgb: 0, 230, 118;
+      --premium-glow: 0 0 25px rgba(0, 240, 255, 0.15);
+      --premium-green-glow: 0 0 25px rgba(0, 230, 118, 0.15);
+    }
+
+    /* Better Spacing & Layout spacing adjustment */
+    .hero-section {
+      padding: 150px 0 100px 0 !important;
+      position: relative;
+      background: radial-gradient(circle at 50% 0%, rgba(0, 240, 255, 0.05) 0%, rgba(5, 7, 10, 0) 65%) !important;
+    }
+    
+    .premium-tagline-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 16px;
+      background: rgba(0, 240, 255, 0.06);
+      border: 1px solid rgba(0, 240, 255, 0.25);
+      border-radius: 30px;
+      color: var(--premium-accent);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 24px;
+      box-shadow: 0 4px 20px rgba(0, 240, 255, 0.05);
+      backdrop-filter: blur(10px);
+      animation: floatBadge 4s ease-in-out infinite;
+    }
+    
+    @keyframes floatBadge {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-4px); }
+    }
+    
+    .badge-pulse-blue {
+      width: 8px;
+      height: 8px;
+      background: var(--premium-accent);
+      border-radius: 50%;
+      position: relative;
+      display: inline-block;
+    }
+    .badge-pulse-blue::after {
+      content: '';
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      top: 0;
+      left: 0;
+      background: var(--premium-accent);
+      border-radius: 50%;
+      animation: pulseBlue 1.5s ease-out infinite;
+    }
+    @keyframes pulseBlue {
+      0% { transform: scale(1); opacity: 1; }
+      100% { transform: scale(2.8); opacity: 0; }
+    }
+
+    .badge-pulse-green {
+      width: 8px;
+      height: 8px;
+      background: var(--premium-green);
+      border-radius: 50%;
+      position: relative;
+      display: inline-block;
+    }
+    .badge-pulse-green::after {
+      content: '';
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      top: 0;
+      left: 0;
+      background: var(--premium-green);
+      border-radius: 50%;
+      animation: pulseGreen 1.5s ease-out infinite;
+    }
+    @keyframes pulseGreen {
+      0% { transform: scale(1); opacity: 1; }
+      100% { transform: scale(2.8); opacity: 0; }
+    }
+
+    /* System Heartbeat Log */
+    .system-heartbeat-ticker {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: #6B7280;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-top: 14px;
+    }
+    .heartbeat-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--premium-green);
+      animation: pulseBlink 1.2s infinite;
+      box-shadow: 0 0 8px var(--premium-green);
+    }
+    @keyframes pulseBlink {
+      0%, 100% { opacity: 0.3; }
+      50% { opacity: 1; }
+    }
+
+    /* Typography fixes */
+    .hero-headline {
+      font-family: 'Inter Tight', sans-serif !important;
+      font-size: 58px !important;
+      line-height: 1.12 !important;
+      letter-spacing: -0.03em !important;
+      font-weight: 800 !important;
+      margin-bottom: 20px !important;
+    }
+    
+    .hero-subheadline {
+      font-family: 'Inter', sans-serif !important;
+      font-size: 19px !important;
+      line-height: 1.6 !important;
+      color: #9CA3AF !important;
+      max-width: 680px !important;
+      margin: 0 auto 36px auto !important;
+    }
+
+    /* Primary Cta color overrides */
+    #btn-hero-primary-waitlist, #btn-hero-primary-launch, #btn-submit-waitlist, #auth-submit {
+      background: var(--premium-accent) !important;
+      color: #05070a !important;
+      font-weight: 700 !important;
+      box-shadow: 0 4px 20px rgba(0, 240, 255, 0.25) !important;
+    }
+    #btn-hero-primary-waitlist:hover, #btn-hero-primary-launch:hover, #btn-submit-waitlist:hover:not(:disabled), #auth-submit:hover:not(:disabled) {
+      background: var(--premium-accent-hover) !important;
+      box-shadow: 0 4px 28px rgba(0, 240, 255, 0.4) !important;
+    }
+    
+    .gradient-text {
+      background: linear-gradient(135deg, #ffffff 30%, var(--premium-accent) 100%) !important;
+      -webkit-background-clip: text !important;
+      -webkit-text-fill-color: transparent !important;
+    }
+
+    /* Institutional Previews Section */
+    .institutional-previews-section {
+      padding: 120px 0 100px 0;
+      border-top: 1px solid rgba(255, 255, 255, 0.03);
+      background: radial-gradient(circle at 50% 0%, rgba(0, 240, 255, 0.02) 0%, rgba(5, 7, 10, 0) 70%);
+      position: relative;
+      z-index: 10;
+    }
+    .previews-container {
+      max-width: var(--container-max-width);
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+    .previews-header {
+      text-align: center;
+      margin-bottom: 64px;
+    }
+    .previews-badge {
+      display: inline-block;
+      padding: 6px 12px;
+      background: rgba(0, 240, 255, 0.05);
+      border: 1px solid rgba(0, 240, 255, 0.15);
+      border-radius: 20px;
+      color: var(--premium-accent);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-bottom: 16px;
+    }
+    .previews-title {
+      font-family: 'Inter Tight', sans-serif;
+      font-size: 40px;
+      font-weight: 800;
+      line-height: 1.25;
+      color: #F9FAFB;
+      letter-spacing: -0.01em;
+      margin-bottom: 16px;
+    }
+    .previews-desc {
+      font-family: 'Inter', sans-serif;
+      font-size: 16px;
+      color: #9CA3AF;
+      max-width: 600px;
+      margin: 0 auto;
+      line-height: 1.5;
+    }
+    .previews-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 32px;
+    }
+    @media (max-width: 900px) {
+      .previews-grid {
+        grid-template-columns: 1fr;
+        gap: 40px;
+      }
+    }
+    
+    /* Institutional Previews Card style */
+    .preview-card {
+      background: rgba(11, 15, 23, 0.65);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 14px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      height: 400px;
+      backdrop-filter: blur(12px);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+      transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .preview-card:hover {
+      transform: translateY(-6px);
+      border-color: rgba(0, 240, 255, 0.25);
+      box-shadow: var(--premium-glow), 0 12px 40px rgba(0, 0, 0, 0.6);
+    }
+    .preview-topbar {
+      padding: 14px 18px;
+      background: rgba(17, 24, 39, 0.85);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+    }
+    .preview-sys {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: #6B7280;
+    }
+    .preview-card:hover .preview-sys {
+      color: #F9FAFB;
+    }
+    .preview-title-tag {
+      font-weight: 700;
+      color: var(--premium-accent);
+    }
+    .preview-content {
+      flex: 1;
+      padding: 20px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* Preview 1: Professional Dashboard */
+    .dash-sim {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      height: 100%;
+    }
+    .dash-stats-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+    .dash-stat-box {
+      background: rgba(255,255,255,0.02);
+      border: 1px solid rgba(255,255,255,0.05);
+      border-radius: 8px;
+      padding: 10px;
+      text-align: left;
+    }
+    .dash-stat-lbl {
+      font-family: 'Inter', sans-serif;
+      font-size: 9px;
+      color: #6B7280;
+      text-transform: uppercase;
+      letter-spacing: 0.02em;
+    }
+    .dash-stat-val {
+      font-family: 'IBM Plex Sans', sans-serif;
+      font-size: 14px;
+      font-weight: 700;
+      color: #F9FAFB;
+      margin-top: 4px;
+    }
+    .dash-stat-trend {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9px;
+      color: var(--premium-green);
+      margin-top: 2px;
+    }
+    .dash-pie-comps {
+      display: flex;
+      gap: 16px;
+      margin-top: auto;
+      align-items: center;
+    }
+    .dash-pie-circle {
+      width: 110px;
+      height: 110px;
+      border-radius: 50%;
+      background: conic-gradient(
+        var(--premium-accent) 0% 45%,
+        #3B82F6 45% 75%,
+        var(--premium-green) 75% 100%
+      );
+      position: relative;
+    }
+    .dash-pie-circle::before {
+      content: '';
+      position: absolute;
+      width: 60px;
+      height: 60px;
+      top: 25px;
+      left: 25px;
+      background: #0B0F17;
+      border-radius: 50%;
+    }
+    .dash-legend {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      font-family: 'Inter', sans-serif;
+      font-size: 11px;
+      color: #9CA3AF;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .legend-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+    }
+    .dot-blue { background: var(--premium-accent); }
+    .dot-mid { background: #3B82F6; }
+    .dot-green { background: var(--premium-green); }
+
+    /* Preview 2: Terminal Preview */
+    .term-sim {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      height: 100%;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: #9CA3AF;
+      text-align: left;
+    }
+    .term-log-stream {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      overflow: hidden;
+    }
+    .log-line {
+      display: flex;
+      gap: 10px;
+    }
+    .log-time { color: #6B7280; }
+    .log-sec { color: var(--premium-accent); }
+    .log-msg { color: #F9FAFB; }
+    .term-input-prompt {
+      margin-top: auto;
+      border-top: 1px solid rgba(255,255,255,0.06);
+      padding-top: 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .term-caret {
+      color: var(--premium-accent);
+      font-weight: 700;
+      animation: pulseBlink 0.8s infinite;
+    }
+
+    /* Preview 3: Market Data Mockup */
+    .market-sim {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      height: 100%;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .market-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 11px;
+    }
+    .market-table th, .market-table td {
+      padding: 8px;
+      text-align: left;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    }
+    .market-table th {
+      color: #6B7280;
+      font-weight: 600;
+    }
+    .market-table td {
+      color: #9CA3AF;
+    }
+    .tick-up { color: var(--premium-green) !important; font-weight: 700; }
+    .tick-down { color: #EF4444 !important; font-weight: 700; }
+    .market-bid-ask {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      margin-top: auto;
+      background: rgba(255,255,255,0.02);
+      border: 1px solid rgba(255,255,255,0.05);
+      border-radius: 8px;
+      padding: 10px;
+    }
+    .bid-ask-box {
+      flex: 1;
+      text-align: center;
+    }
+    .bid-ask-lbl {
+      font-size: 9px;
+      color: #6B7280;
+      text-transform: uppercase;
+    }
+    .bid-ask-val {
+      font-size: 13px;
+      font-weight: 700;
+      color: #F9FAFB;
+      margin-top: 4px;
+    }
+
+    /* Preview 4: DCF Valuation Preview */
+    .dcf-sim-preview {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      height: 100%;
+      text-align: left;
+    }
+    .dcf-grid-pe {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+    }
+    .dcf-pe-header {
+      font-family: 'Inter', sans-serif;
+      color: #6B7280;
+      font-weight: 600;
+    }
+    .dcf-pe-cell {
+      background: rgba(255,255,255,0.02);
+      border: 1px solid rgba(255,255,255,0.05);
+      border-radius: 4px;
+      padding: 6px;
+      text-align: center;
+      color: #9CA3AF;
+    }
+    .dcf-pe-cell.active-val {
+      background: rgba(0, 240, 255, 0.05);
+      border-color: var(--premium-accent);
+      color: #F9FAFB;
+      font-weight: 700;
+    }
+    .dcf-calc-box {
+      margin-top: auto;
+      background: linear-gradient(90deg, rgba(0, 240, 255, 0.08) 0%, rgba(0,0,0,0) 100%);
+      border-left: 2px solid var(--premium-accent);
+      padding: 10px 14px;
+      border-radius: 0 8px 8px 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .dcf-calc-lbl {
+      font-family: 'Inter', sans-serif;
+      font-size: 11px;
+      color: #F9FAFB;
+      font-weight: 600;
+    }
+    .dcf-calc-val {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      font-weight: 800;
+      color: var(--premium-green);
+    }
+
+    /* Features Section */
+    .specs-section {
+      padding: 120px 0 100px 0;
+      border-top: 1px solid rgba(255, 255, 255, 0.03);
+      position: relative;
+      z-index: 10;
+    }
+    .specs-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 32px;
+      margin-top: 50px;
+    }
+    @media (max-width: 1024px) {
+      .specs-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+    @media (max-width: 640px) {
+      .specs-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+    .spec-card {
+      background: rgba(11, 15, 23, 0.55);
+      border: 1px solid rgba(255, 255, 255, 0.04);
+      border-radius: 12px;
+      padding: 24px;
+      backdrop-filter: blur(10px);
+      text-align: left;
+      transition: all 0.3s ease;
+    }
+    .spec-card:hover {
+      border-color: rgba(0, 240, 255, 0.2);
+      transform: translateY(-4px);
+      box-shadow: 0 4px 20px rgba(0, 240, 255, 0.05);
+    }
+    .spec-icon-wrapper {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      background: rgba(0, 240, 255, 0.06);
+      border: 1px solid rgba(0, 240, 255, 0.15);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      color: var(--premium-accent);
+      margin-bottom: 18px;
+    }
+    .spec-title {
+      font-family: 'Inter Tight', sans-serif;
+      font-size: 16px;
+      font-weight: 700;
+      color: #F9FAFB;
+      margin-bottom: 8px;
+    }
+    .spec-desc {
+      font-family: 'Inter', sans-serif;
+      font-size: 13px;
+      color: #9CA3AF;
+      line-height: 1.5;
+    }
+
+    /* Resources Locker (Lead Magnet) Section */
+    .vault-section {
+      padding: 120px 0;
+      border-top: 1px solid rgba(255,255,255,0.03);
+      background: radial-gradient(circle at 50% 100%, rgba(0, 230, 118, 0.03) 0%, rgba(5, 7, 10, 0) 65%);
+      position: relative;
+      z-index: 10;
+    }
+    .vault-inner {
+      max-width: 800px;
+      margin: 0 auto;
+      background: rgba(11, 15, 23, 0.7);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 18px;
+      padding: 40px 32px;
+      backdrop-filter: blur(12px);
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+    }
+    .vault-header {
+      text-align: center;
+      margin-bottom: 36px;
+    }
+    .vault-badge {
+      display: inline-block;
+      padding: 6px 12px;
+      background: rgba(0, 230, 118, 0.06);
+      border: 1px solid rgba(0, 230, 118, 0.2);
+      border-radius: 20px;
+      color: var(--premium-green);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      margin-bottom: 16px;
+    }
+    .vault-title {
+      font-family: 'Inter Tight', sans-serif;
+      font-size: 28px;
+      font-weight: 800;
+      color: #F9FAFB;
+      margin-bottom: 12px;
+    }
+    .vault-desc {
+      font-family: 'Inter', sans-serif;
+      font-size: 14px;
+      color: #9CA3AF;
+      line-height: 1.5;
+    }
+    .vault-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 36px;
+    }
+    .vault-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 14px 18px;
+      background: rgba(255,255,255,0.02);
+      border: 1px solid rgba(255,255,255,0.04);
+      border-radius: 8px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      text-align: left;
+    }
+    .vault-item-lbl {
+      color: #F9FAFB;
+      font-weight: 500;
+    }
+    .vault-status-pill {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-size: 10px;
+      font-weight: 700;
+    }
+    .vault-status-pill.locked {
+      background: rgba(239, 68, 68, 0.08);
+      border: 1px solid rgba(239, 68, 68, 0.25);
+      color: #EF4444;
+    }
+    .vault-status-pill.unlocked {
+      background: rgba(0, 230, 118, 0.08);
+      border: 1px solid rgba(0, 230, 118, 0.25);
+      color: var(--premium-green);
+    }
+    .vault-form {
+      display: flex;
+      gap: 16px;
+    }
+    @media (max-width: 640px) {
+      .vault-form {
+        flex-direction: column;
+      }
+    }
+    .vault-input {
+      flex: 1;
+      background: #05070A;
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 8px;
+      padding: 14px;
+      color: #F9FAFB;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 14px;
+      transition: all 0.2s ease;
+    }
+    .vault-input:focus {
+      outline: none;
+      border-color: var(--premium-green);
+      box-shadow: 0 0 10px rgba(0, 230, 118, 0.15);
+    }
+    .vault-submit-btn {
+      background: var(--premium-green) !important;
+      color: #05070a !important;
+      border: none;
+      border-radius: 8px;
+      padding: 14px 28px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: var(--premium-green-glow) !important;
+      transition: all 0.2s ease;
+    }
+    .vault-submit-btn:hover {
+      background: #33f092 !important;
+      box-shadow: 0 0 35px rgba(0, 230, 118, 0.35) !important;
+    }
+    
+    /* Unlocked Content Drawer */
+    .unlocked-vault-cabinet {
+      display: none;
+      flex-direction: column;
+      gap: 24px;
+      text-align: left;
+    }
+    .unlocked-resource-card {
+      background: rgba(255,255,255,0.02);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 12px;
+      padding: 20px;
+    }
+    .unlocked-resource-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      padding-bottom: 12px;
+      margin-bottom: 14px;
+    }
+    .unlocked-resource-title {
+      font-family: 'Inter Tight', sans-serif;
+      font-weight: 700;
+      color: #F9FAFB;
+      font-size: 15px;
+    }
+    .btn-copy-resource {
+      background: rgba(0, 230, 118, 0.08);
+      border: 1px solid rgba(0, 230, 118, 0.2);
+      color: var(--premium-green);
+      border-radius: 4px;
+      padding: 4px 10px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .btn-copy-resource:hover {
+      background: var(--premium-green);
+      color: #05070A;
+    }
+    .unlocked-resource-content {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      line-height: 1.5;
+      color: #9CA3AF;
+      max-height: 180px;
+      overflow-y: auto;
+      background: #05070A;
+      padding: 12px;
+      border-radius: 6px;
+      border: 1px solid rgba(255,255,255,0.03);
+    }
+
+    /* Dynamic Info Hub Sidebar Overlay */
+    .info-hub-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(5, 7, 10, 0.75);
+      backdrop-filter: blur(25px);
+      -webkit-backdrop-filter: blur(25px);
+      z-index: 99999;
+      display: flex;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .info-hub-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .info-hub-cabinet {
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 85%;
+      max-width: 900px;
+      height: 100%;
+      background: #070d1a;
+      border-left: 1px solid rgba(0, 240, 255, 0.15);
+      box-shadow: -10px 0 40px rgba(0,0,0,0.8);
+      display: flex;
+      transform: translateX(100%);
+      transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .info-hub-overlay.active .info-hub-cabinet {
+      transform: translateX(0);
+    }
+    @media (max-width: 768px) {
+      .info-hub-cabinet {
+        width: 100%;
+        flex-direction: column;
+      }
+    }
+    
+    .info-hub-sidebar {
+      width: 260px;
+      background: rgba(11, 15, 23, 0.85);
+      border-right: 1px solid rgba(255,255,255,0.04);
+      padding: 30px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+    @media (max-width: 768px) {
+      .info-hub-sidebar {
+        width: 100%;
+        height: auto;
+        padding: 20px;
+        flex-direction: row;
+        overflow-x: auto;
+        gap: 12px;
+      }
+    }
+    .sidebar-header-title {
+      font-family: 'Inter Tight', sans-serif;
+      font-size: 15px;
+      font-weight: 800;
+      color: #F9FAFB;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      padding-bottom: 12px;
+      text-align: left;
+    }
+    @media (max-width: 768px) {
+      .sidebar-header-title {
+        display: none;
+      }
+    }
+    .sidebar-menu-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    @media (max-width: 768px) {
+      .sidebar-menu-list {
+        flex-direction: row;
+        width: 100%;
+      }
+    }
+    .hub-menu-btn {
+      background: none;
+      border: none;
+      text-align: left;
+      padding: 12px 14px;
+      border-radius: 6px;
+      color: #6B7280;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .hub-menu-btn.active {
+      color: var(--premium-accent);
+      background: rgba(0, 240, 255, 0.05);
+      border: 1px solid rgba(0, 240, 255, 0.1);
+    }
+    .hub-menu-btn:hover:not(.active) {
+      color: #F9FAFB;
+      background: rgba(255,255,255,0.02);
+    }
+    
+    .info-hub-content-viewport {
+      flex: 1;
+      padding: 40px;
+      overflow-y: auto;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+    }
+    @media (max-width: 768px) {
+      .info-hub-content-viewport {
+        padding: 24px;
+      }
+    }
+    .hub-close-btn {
+      position: absolute;
+      top: 30px;
+      right: 40px;
+      background: none;
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 6px;
+      padding: 6px 12px;
+      color: #9CA3AF;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      z-index: 10;
+    }
+    .hub-close-btn:hover {
+      border-color: var(--premium-accent);
+      color: var(--premium-accent);
+    }
+    
+    /* Hub View Panels */
+    .hub-view-panel {
+      display: none;
+      flex-direction: column;
+      gap: 20px;
+      height: 100%;
+      text-align: left;
+    }
+    .hub-view-panel.active {
+      display: flex;
+    }
+    .hub-panel-badge {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--premium-accent);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+    .hub-panel-title {
+      font-family: 'Inter Tight', sans-serif;
+      font-size: 32px;
+      font-weight: 800;
+      color: #F9FAFB;
+      letter-spacing: -0.01em;
+      margin-bottom: 8px;
+    }
+    .hub-panel-desc {
+      font-family: 'Inter', sans-serif;
+      font-size: 15px;
+      color: #9CA3AF;
+      line-height: 1.6;
+    }
+    
+    /* Custom Contact Form elements inside Hub */
+    .hub-form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    .hub-form-group label {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      color: #6B7280;
+      text-transform: uppercase;
+    }
+    .hub-form-input, .hub-form-select, .hub-form-textarea {
+      background: #05070A;
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 6px;
+      padding: 12px 14px;
+      color: #F9FAFB;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      width: 100%;
+    }
+    .hub-form-input:focus, .hub-form-select:focus, .hub-form-textarea:focus {
+      outline: none;
+      border-color: var(--premium-accent);
+    }
+    .hub-submit-btn {
+      background: var(--premium-accent);
+      color: #05070A;
+      border: none;
+      border-radius: 6px;
+      padding: 14px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      width: 100%;
+      box-shadow: var(--premium-glow);
+    }
+    .hub-submit-btn:hover {
+      background: var(--premium-accent-hover);
+    }
+  </style>
+  <script type="module" crossorigin src="/assets/index-Bcws5WnX.js"></script>
+  <link rel="stylesheet" crossorigin href="/assets/index-JKHTBoIb.css">
+</head>
+<body>
+
+  <!-- Header & Navigation -->
+  <header class="navbar" id="navbar">
+    <div class="navbar-container">
+      <a href="#" class="brand" id="nav-brand">
+        AnalystOS<span class="brand-dot"></span>
+      </a>
+      
+      <button class="mobile-menu-toggle" id="mobile-toggle" aria-label="Toggle Menu">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="menu-icon-open"><line x1="4" x2="20" y1="12" y2="12"></line><line x1="4" x2="20" y1="6" y2="6"></line><line x1="4" x2="20" y1="18" y2="18"></line></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="menu-icon-close"><line x1="18" x2="6" y1="6" y2="18"></line><line x1="6" x2="18" y1="6" y2="18"></line></svg>
+      </button>
+
+      <nav class="nav-menu" id="nav-menu">
+        <a href="#features" class="nav-link" id="nav-link-features">Features</a>
+        <a href="#pricing" class="nav-link" id="nav-link-pricing">Pricing</a>
+        <a href="#about" class="nav-link" id="nav-link-about">About</a>
+        <a href="#waitlist" class="nav-btn-mobile" id="nav-btn-mobile-waitlist">Join Waitlist</a>
+        <a href="#" class="nav-btn-mobile" id="nav-btn-mobile-signup" style="display:none" onclick="openAuth('signup'); return false;">Sign Up Free</a>
+      </nav>
+      
+      <a href="#waitlist" class="nav-btn" id="nav-btn-cta-waitlist">Join Waitlist</a>
+      <a href="#" class="nav-btn" id="nav-btn-cta-signup" style="display:none" onclick="openAuth('signup'); return false;">Sign Up Free</a>
+      <div id="user-nav" style="display:none">
+        <span id="user-email-pill"></span>
+        <button id="logout-btn" onclick="handleLogout()">Log Out</button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <!-- Hero Section -->
+    <section class="hero-section" id="hero">
+      <!-- Three.js Graphics Canvas Viewport -->
+      <div id="hero-canvas-container"></div>
+      
+      <!-- Ambient grids -->
+      <div class="grid-radial-glow"></div>
+      
+      <!-- Floating Market Data Cards (Mouse Parallax) -->
+      <div class="floating-market-card aapl" id="card-aapl">
+        <span class="card-arrow">▲</span>
+        <span class="card-ticker">AAPL</span>
+        <span class="card-pct">+4.2%</span>
+      </div>
+      <div class="floating-market-card nvda" id="card-nvda">
+        <span class="card-arrow">▲</span>
+        <span class="card-ticker">NVDA</span>
+        <span class="card-pct">+7.1%</span>
+      </div>
+      <div class="floating-market-card reliance" id="card-reliance">
+        <span class="card-arrow">▲</span>
+        <span class="card-ticker">RELIANCE</span>
+        <span class="card-pct">+2.8%</span>
+      </div>
+
+      <div class="hero-container">
+        <div class="beta-badge reveal" id="hero-badge">
+          <span class="badge-pulse"></span>
+          Now in Beta — Join 500+ analysts
+        </div>
+        
+        <div class="premium-tagline-badge reveal" style="margin-top: 16px;">
+          <span class="badge-pulse-blue"></span>
+          Bloomberg Alternative for Next-Gen Analysts
+        </div>
+        
+        <h1 class="hero-headline reveal" id="hero-title">
+          Research. Analyze. Execute.
+        </h1>
+        
+        <p class="hero-subheadline reveal" id="hero-subtitle">
+          The Institutional Finance Terminal for Hedge Fund & Investment Research.
+        </p>
+        
+        <div class="system-heartbeat-ticker reveal" style="justify-content: center; margin-bottom: 24px;">
+          <span class="heartbeat-dot"></span>
+          <span>SYS_FEED: ACTIVE</span>
+          <span>•</span>
+          <span>PORTAL_LATENCY: 12ms</span>
+          <span>•</span>
+          <span>DATABASE_SYNC: ONLINE</span>
+        </div>
+        
+        <div class="hero-actions reveal" id="hero-cta-buttons">
+          <a href="#waitlist" class="btn-primary btn-magnetic" id="btn-hero-primary-waitlist">Start Analysis</a>
+          <a href="#" class="btn-primary btn-magnetic" id="btn-hero-primary-launch" style="display:none" onclick="openAuth('signup'); return false;">Start Analysis</a>
+          <a href="#interactive-demo" class="btn-outline btn-magnetic" id="btn-hero-secondary">Join Beta</a>
+        </div>
+        
+        <p class="hero-action-caption reveal" id="hero-cta-caption">
+          No credit card required · Free forever plan available
+        </p>
+        
+        <!-- Interactive Terminal Widget -->
+        <div class="terminal-mockup reveal" id="interactive-demo">
+          <div class="terminal-header">
+            <div class="terminal-dots">
+              <span class="dot dot-red"></span>
+              <span class="dot dot-yellow"></span>
+              <span class="dot dot-green"></span>
+            </div>
+            <div class="terminal-title">AnalystOS Terminal v1.0.4 — Localhost Connection Standard</div>
+            <div class="terminal-status">
+              <span class="status-indicator"></span> LIVE
+            </div>
+          </div>
+          
+          <div class="terminal-body">
+            <!-- Sidebar Panel Selector -->
+            <div class="terminal-sidebar" id="terminal-sidebar">
+              <button class="sidebar-tab active" data-target="charts" id="tab-charts">
+                <span class="tab-shortcut">[1]</span>
+                <span class="tab-label">AAPL.CHARTS</span>
+              </button>
+              <button class="sidebar-tab" data-target="ai" id="tab-ai">
+                <span class="tab-shortcut">[2]</span>
+                <span class="tab-label">AI.ANALYST</span>
+              </button>
+              <button class="sidebar-tab" data-target="dcf" id="tab-dcf">
+                <span class="tab-shortcut">[3]</span>
+                <span class="tab-label">DCF.MODELS</span>
+              </button>
+              <button class="sidebar-tab" data-target="reports" id="tab-reports">
+                <span class="tab-shortcut">[4]</span>
+                <span class="tab-label">STOCK.REPORTS</span>
+              </button>
+            </div>
+            
+            <!-- Terminal Panels Content -->
+            <div class="terminal-content">
+              <!-- CHARTS TAB PANEL -->
+              <div class="panel-view active" id="panel-charts">
+                <div class="panel-topbar">
+                  <div class="ticker-info">
+                    <span class="ticker-symbol">AAPL</span>
+                    <span class="ticker-exchange">NASDAQ</span>
+                    <span class="ticker-name">Apple Inc.</span>
+                  </div>
+                  <div class="ticker-stats">
+                    <span class="ticker-price" id="mock-ticker-price">$182.52</span>
+                    <span class="ticker-change positive" id="mock-ticker-change">+2.14%</span>
+                  </div>
+                </div>
+                <div class="chart-canvas-container">
+                  <canvas id="terminal-chart" width="700" height="280"></canvas>
+                  <div class="chart-tooltip" id="chart-tooltip">
+                    <span class="tooltip-date">AAPL Q1</span>
+                    <span class="tooltip-price">$180.00</span>
+                  </div>
+                </div>
+                <div class="chart-footer">
+                  <span>H: $183.92</span>
+                  <span>L: $180.88</span>
+                  <span>V: 52.4M</span>
+                  <span>PE: 28.4</span>
+                  <span class="interactive-helper">← Hover to track crosshair →</span>
+                </div>
+              </div>
+              
+              <!-- AI ANALYST TAB PANEL -->
+              <div class="panel-view" id="panel-ai">
+                <div class="panel-topbar">
+                  <div class="ticker-info">
+                    <span class="ticker-symbol">AI</span>
+                    <span class="ticker-name">Co-Pilot Core v4.0</span>
+                  </div>
+                  <div class="ai-mode">INTELLIGENCE CONNECTED</div>
+                </div>
+                <div class="terminal-terminal-log" id="ai-chat-history">
+                  <div class="chat-message user">
+                    <span class="console-prompt">&gt;</span> Analyse Reliance Industries Q3 earnings
+                  </div>
+                  <div class="chat-message system typing" id="ai-streaming-text">
+                    Loading Reliance Q3 analysis...
+                  </div>
+                </div>
+                <div class="terminal-suggestions-bar">
+                  <span class="sug-label">SUGGESTIONS:</span>
+                  <button class="sug-btn" data-prompt="Analyze Reliance Industries">Analyze Reliance</button>
+                  <button class="sug-btn" data-prompt="Build DCF for TCS">Build DCF for TCS</button>
+                  <button class="sug-btn" data-prompt="Explain WACC">Explain WACC</button>
+                  <button class="sug-btn" data-prompt="Compare HDFC vs ICICI">Compare HDFC vs ICICI</button>
+                </div>
+                <div class="terminal-input-bar">
+                  <span class="console-prompt">&gt;</span>
+                  <input type="text" id="terminal-chat-input" placeholder="e.g. Compare HDFC Bank vs ICICI Bank, or explain DCF..." class="console-input">
+                  <button id="send-terminal-msg" class="terminal-send-btn">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" x2="11" y1="2" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+                  </button>
+                </div>
+              </div>
+              
+              <!-- DCF TAB PANEL -->
+              <div class="panel-view" id="panel-dcf">
+                <div class="panel-topbar">
+                  <div class="ticker-info">
+                    <span class="ticker-symbol">DCF</span>
+                    <span class="ticker-name">Interactive Valuation Sandbox</span>
+                  </div>
+                  <div class="dcf-status positive">RECALCULATING AUTOMATICALLY</div>
+                </div>
+                
+                <div class="dcf-sandbox">
+                  <div class="dcf-inputs">
+                    <div class="dcf-input-group">
+                      <label for="dcf-ebitda">Year 1 EBITDA (₹ Lakhs)</label>
+                      <input type="number" id="dcf-ebitda" value="120" placeholder="Enter EBITDA in ₹ Lakhs (e.g. 500)" min="1" max="1000000" class="terminal-num-input">
+                    </div>
+                    <div class="dcf-input-group">
+                      <label for="dcf-growth">EBITDA Growth Rate (%)</label>
+                      <input type="number" id="dcf-growth" value="15" min="-50" max="100" class="terminal-num-input">
+                    </div>
+                    <div class="dcf-input-group">
+                      <label for="dcf-wacc">WACC / Discount Rate (%)</label>
+                      <input type="number" id="dcf-wacc" value="9" min="1" max="50" step="0.1" class="terminal-num-input">
+                    </div>
+                    <div class="dcf-input-group">
+                      <label for="dcf-multiple">Exit Multiple (EV/EBITDA)</label>
+                      <input type="number" id="dcf-multiple" value="14" min="1" max="100" class="terminal-num-input">
+                    </div>
+                  </div>
+                  
+                  <div class="dcf-divider"></div>
+                  
+                  <div class="dcf-outputs">
+                    <div class="output-metric">
+                      <span class="metric-name">Enterprise Value (₹ Cr)</span>
+                      <span class="metric-value positive" id="dcf-output-ev">₹18.54 Cr</span>
+                    </div>
+                    <div class="output-metric">
+                      <span class="metric-name">Implied Price per Share (₹)</span>
+                      <span class="metric-value" id="dcf-output-price">₹18.54</span>
+                    </div>
+                    <div class="output-chart-simulation">
+                      <div class="prog-label">Valuation Breakdown</div>
+                      <div class="prog-bar-container">
+                        <div class="prog-bar pv" style="width: 40%;" title="PV of Cash Flows (40%)"></div>
+                        <div class="prog-bar tv" style="width: 60%;" title="Terminal Value (60%)"></div>
+                      </div>
+                      <div class="prog-legend">
+                        <span class="leg-item"><span class="leg-box pv"></span> PV of Cash Flows</span>
+                        <span class="leg-item"><span class="leg-box tv"></span> Terminal Value</span>
+                      </div>
+                    </div>
+                    
+                    <div class="dcf-sensitivity-container">
+                      <span class="sens-title">SENSITIVITY ANALYSIS (Implied Share Price ₹)</span>
+                      <div id="dcf-sensitivity-table-wrapper">
+                        <!-- Dynamic grid generated by JS -->
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- STOCK REPORTS PANEL -->
+              <div class="panel-view" id="panel-reports">
+                <div class="panel-topbar">
+                  <div class="ticker-info">
+                    <span class="ticker-symbol">RELIANCE</span>
+                    <span class="ticker-exchange">NSE</span>
+                    <span class="ticker-name">Reliance Industries Ltd.</span>
+                  </div>
+                  <div class="ticker-stats">
+                    <span class="ticker-price">₹2,480.15</span>
+                    <span class="ticker-change positive">+2.8%</span>
+                  </div>
+                </div>
+                
+                <div class="reports-sandbox">
+                  <div class="report-main-card">
+                    <div class="report-badge">INSTITUTIONAL EQUITY RESEARCH REPORT</div>
+                    <h3 class="report-stock-title">Reliance Industries Limited</h3>
+                    
+                    <div class="report-grid">
+                      <div class="report-metric-card">
+                        <span class="rep-label">Revenue Growth</span>
+                        <span class="rep-val highlight-blue">8.2%</span>
+                      </div>
+                      <div class="report-metric-card">
+                        <span class="rep-label">EBITDA Margin</span>
+                        <span class="rep-val highlight-green">17.5%</span>
+                      </div>
+                      <div class="report-metric-card">
+                        <span class="rep-label">DCF Intrinsic Value</span>
+                        <span class="rep-val">₹1,650</span>
+                      </div>
+                      <div class="report-metric-card highlight-glow">
+                        <span class="rep-label">VALUATION VERDICT</span>
+                        <span class="rep-val highlight-green">Undervalued by 7.3%</span>
+                      </div>
+                    </div>
+                    
+                    <div class="report-analysis">
+                      <h4 class="analysis-section-title">Valuation & Performance Verdict</h4>
+                      <p class="analysis-text">
+                        Reliance Industries exhibits robust fundamental metrics with Year-over-Year (YoY) revenue expansion of <strong>8.2%</strong> and healthy EBITDA margins stable at <strong>17.5%</strong>. 
+                        Our multi-stage growth discount model computes a conservative intrinsic target price of <strong>₹1,650 per share</strong>. 
+                        Based on current market valuations, the stock presents an attractive entry point, trading at a <strong>7.3% discount</strong> to its true intrinsic target valuation.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Institutional Previews Section -->
+    <section class="institutional-previews-section" id="workspace-previews">
+      <div class="previews-container">
+        <div class="previews-header reveal">
+          <span class="previews-badge">WORKSPACE PREVIEWS</span>
+          <h2 class="previews-title">Institutional Finance Sandbox</h2>
+          <p class="previews-desc">Experience the tools built on deep financial data, clean monospace caret logs, dynamic valuations, and high-frequency indices.</p>
+        </div>
+        
+        <div class="previews-grid reveal">
+          <!-- Preview 1: Professional Dashboard -->
+          <div class="preview-card">
+            <div class="preview-topbar">
+              <div class="preview-sys">
+                <span class="badge-pulse-blue"></span>
+                <span>SYS_FEEDS.DASHBOARD</span>
+              </div>
+              <span class="preview-title-tag">[ANALYST_VIEW]</span>
+            </div>
+            <div class="preview-content">
+              <div class="dash-sim">
+                <div class="dash-stats-row">
+                  <div class="dash-stat-box">
+                    <span class="dash-stat-lbl">Portfolio value</span>
+                    <div class="dash-stat-val">₹48,29,510</div>
+                    <div class="dash-stat-trend">▲ +14.8%</div>
+                  </div>
+                  <div class="dash-stat-box">
+                    <span class="dash-stat-lbl">Alpha index</span>
+                    <div class="dash-stat-val">8.42%</div>
+                    <div class="dash-stat-trend">▲ Outperforming</div>
+                  </div>
+                  <div class="dash-stat-box">
+                    <span class="dash-stat-lbl">Sharpe ratio</span>
+                    <div class="dash-stat-val">2.84</div>
+                    <div class="dash-stat-trend">▲ Excellent</div>
+                  </div>
+                </div>
+                
+                <div class="dash-pie-comps">
+                  <div class="dash-pie-circle"></div>
+                  <div class="dash-legend">
+                    <div class="legend-item">
+                      <span class="legend-dot dot-blue"></span>
+                      <span>Equities (45%)</span>
+                    </div>
+                    <div class="legend-item">
+                      <span class="legend-dot dot-mid"></span>
+                      <span>Fixed Income (30%)</span>
+                    </div>
+                    <div class="legend-item">
+                      <span class="legend-dot dot-green"></span>
+                      <span>Cash Reserves (25%)</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Preview 2: Terminal Preview -->
+          <div class="preview-card">
+            <div class="preview-topbar">
+              <div class="preview-sys">
+                <span class="badge-pulse-green"></span>
+                <span>CORE_DIAGNOSTICS.SYSTEM</span>
+              </div>
+              <span class="preview-title-tag">[SHELL_EXEC]</span>
+            </div>
+            <div class="preview-content">
+              <div class="term-sim">
+                <div class="term-log-stream">
+                  <div class="log-line">
+                    <span class="log-time">[10:14:02]</span>
+                    <span class="log-sec">CORE.INIT</span>
+                    <span class="log-msg">Aladdin system boot sequence complete.</span>
+                  </div>
+                  <div class="log-line">
+                    <span class="log-time">[10:14:03]</span>
+                    <span class="log-sec">DB.SYNC</span>
+                    <span class="log-msg">Supabase active databases linked standard.</span>
+                  </div>
+                  <div class="log-line">
+                    <span class="log-time">[10:14:05]</span>
+                    <span class="log-sec">API.MARKET</span>
+                    <span class="log-msg">High-frequency bid-ask streams connected.</span>
+                  </div>
+                  <div class="log-line">
+                    <span class="log-time">[10:14:06]</span>
+                    <span class="log-sec">VAL.DCF</span>
+                    <span class="log-msg">Recalculating sensitivity indexes for NVDA...</span>
+                  </div>
+                </div>
+                
+                <div class="term-input-prompt">
+                  <span class="term-caret">&gt;</span>
+                  <span>run --sec=NVDA --val=DCF_COMPARE</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Preview 3: Market Data Mockup -->
+          <div class="preview-card">
+            <div class="preview-topbar">
+              <div class="preview-sys">
+                <span class="badge-pulse-blue"></span>
+                <span>REAL_TIME.MARKET_DATA</span>
+              </div>
+              <span class="preview-title-tag">[TICK_STREAM]</span>
+            </div>
+            <div class="preview-content">
+              <div class="market-sim">
+                <table class="market-table">
+                  <thead>
+                    <tr>
+                      <th>Ticker</th>
+                      <th>Last Price</th>
+                      <th>Chg%</th>
+                      <th>Volume</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>NVDA</td>
+                      <td>$875.12</td>
+                      <td class="tick-up">+4.20%</td>
+                      <td>48.2M</td>
+                    </tr>
+                    <tr>
+                      <td>AAPL</td>
+                      <td>$182.52</td>
+                      <td class="tick-up">+2.14%</td>
+                      <td>52.4M</td>
+                    </tr>
+                    <tr>
+                      <td>RELIANCE</td>
+                      <td>₹2,480.15</td>
+                      <td class="tick-up">+2.80%</td>
+                      <td>12.8M</td>
+                    </tr>
+                    <tr>
+                      <td>TCS</td>
+                      <td>₹3,892.40</td>
+                      <td class="tick-down">-1.15%</td>
+                      <td>4.2M</td>
+                    </tr>
+                  </tbody>
+                </table>
+                
+                <div class="market-bid-ask">
+                  <div class="bid-ask-box">
+                    <span class="bid-ask-lbl">BID</span>
+                    <div class="bid-ask-val" style="color: var(--premium-green);">874.98</div>
+                  </div>
+                  <div class="bid-ask-box" style="border-left: 1px solid rgba(255,255,255,0.06);">
+                    <span class="bid-ask-lbl">ASK</span>
+                    <div class="bid-ask-val" style="color: #EF4444;">875.15</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Preview 4: DCF Valuation Preview -->
+          <div class="preview-card">
+            <div class="preview-topbar">
+              <div class="preview-sys">
+                <span class="badge-pulse-green"></span>
+                <span>VALUATION_MODEL.DCF_SENSITIVITY</span>
+              </div>
+              <span class="preview-title-tag">[PRO_FORMA]</span>
+            </div>
+            <div class="preview-content">
+              <div class="dcf-sim-preview">
+                <div class="dcf-calc-box" style="margin-top: 0; margin-bottom: 8px;">
+                  <span class="dcf-calc-lbl">Baseline WACC Discount</span>
+                  <span class="dcf-calc-val">9.0%</span>
+                </div>
+                
+                <span class="dcf-pe-header" style="font-size: 9px; text-transform: uppercase;">Implied Share Value (₹) by WACC vs Growth</span>
+                <div class="dcf-grid-pe">
+                  <span class="dcf-pe-header">WACC / G</span>
+                  <span class="dcf-pe-header">10%</span>
+                  <span class="dcf-pe-header">12%</span>
+                  <span class="dcf-pe-header">14%</span>
+                  
+                  <span>8.0%</span>
+                  <span class="dcf-pe-cell">₹1,742</span>
+                  <span class="dcf-pe-cell">₹1,850</span>
+                  <span class="dcf-pe-cell">₹1,992</span>
+                  
+                  <span>9.0%</span>
+                  <span class="dcf-pe-cell">₹1,620</span>
+                  <span class="dcf-pe-cell active-val">₹1,650</span>
+                  <span class="dcf-pe-cell">₹1,754</span>
+                  
+                  <span>10.0%</span>
+                  <span class="dcf-pe-cell">₹1,480</span>
+                  <span class="dcf-pe-cell">₹1,510</span>
+                  <span class="dcf-pe-cell">₹1,598</span>
+                </div>
+                
+                <div class="dcf-calc-box">
+                  <span class="dcf-calc-lbl">Implied Equity Upside (Target)</span>
+                  <span class="dcf-calc-val">+32.4% BUY</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Social Proof Bar -->
+    <section class="social-proof-bar" id="about">
+      <div class="social-container reveal">
+        <span class="social-title">Trusted by analyst talent at</span>
+        <div class="logos-grid">
+          <div class="logo-badge">McKinsey & Co.</div>
+          <div class="logo-badge">Goldman Sachs</div>
+          <div class="logo-badge">Deloitte</div>
+          <div class="logo-badge">KPMG</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Built For Section -->
+    <section class="built-for-section" id="built-for">
+      <div class="built-for-container">
+        <h2 class="built-for-title reveal">Built For Next-Gen Finance Leaders</h2>
+        <div class="built-for-grid">
+          <!-- CFA Candidates -->
+          <div class="built-for-card reveal">
+            <div class="check-icon-wrapper">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" class="built-check"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            </div>
+            <div class="built-content">
+              <h3 class="built-card-title">CFA Candidates</h3>
+              <p class="built-card-desc">Practice valuation models, DCFs, comps, and financial analysis frameworks mapped directly to the CFA curriculum.</p>
+            </div>
+          </div>
+          
+          <!-- Equity Research Analysts -->
+          <div class="built-for-card reveal">
+            <div class="check-icon-wrapper">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" class="built-check"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            </div>
+            <div class="built-content">
+              <h3 class="built-card-title">Equity Research Analysts</h3>
+              <p class="built-card-desc">Sling corporate financials, extract notes from PDF earnings filings, and run professional research with institutional data speeds.</p>
+            </div>
+          </div>
+          
+          <!-- Finance Students -->
+          <div class="built-for-card reveal">
+            <div class="check-icon-wrapper">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" class="built-check"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            </div>
+            <div class="built-content">
+              <h3 class="built-card-title">Finance Students</h3>
+              <p class="built-card-desc">Bridge academic theory with real market data. Build dynamic simulated portfolios and model live Indian equities.</p>
+            </div>
+          </div>
+          
+          <!-- Long-Term Investors -->
+          <div class="built-for-card reveal">
+            <div class="check-icon-wrapper">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" class="built-check"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            </div>
+            <div class="built-content">
+              <h3 class="built-card-title">Long-Term Investors</h3>
+              <p class="built-card-desc">Run rigorous intrinsic value projections and deep-dive screenings. Avoid overpriced, low-conviction market noise.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Problem Section -->
+    <section class="problem-section" id="problem">
+      <div class="problem-container">
+        <h2 class="section-title reveal" id="problem-title">
+          Young professionals are locked out of professional finance tools
+        </h2>
+        
+        <div class="pain-cards-grid">
+          <!-- Card 1 -->
+          <div class="pain-card reveal" id="pain-card-cost">
+            <div class="card-icon-wrapper">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="pain-icon"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+            </div>
+            <h3 class="card-title">Bloomberg costs ₹2.5L/year</h3>
+            <p class="card-description">
+              Legacy finance terminals are gatekept by enterprise licensing, leaving junior analysts to analyze multi-billion mergers with retail tools.
+            </p>
+          </div>
+          
+          <!-- Card 2 -->
+          <div class="pain-card reveal" id="pain-card-scattered">
+            <div class="card-icon-wrapper">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="pain-icon"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"></path><path d="M12 6v6l4 2"></path></svg>
+            </div>
+            <h3 class="card-title">Finance data is scattered across 10 apps</h3>
+            <p class="card-description">
+              Toggling between Screener, TradingView, SEBI filings, PDF reports, and Excel sheets drains focus and increases operational errors.
+            </p>
+          </div>
+          
+          <!-- Card 3 -->
+          <div class="pain-card reveal" id="pain-card-learning">
+            <div class="card-icon-wrapper">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="pain-icon"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path><line x1="9" x2="15" y1="9" y2="15"></line><line x1="15" x2="9" y1="9" y2="15"></line></svg>
+            </div>
+            <h3 class="card-title">No tool built for learning + doing</h3>
+            <p class="card-description">
+              Theoretical courses teach DCF theory, but fail to provide dynamic, live environments where young analysts can safely practice real valuation skills.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="specs-section" id="features">
+      <div class="previews-container">
+        <div class="previews-header reveal">
+          <span class="previews-badge">TERMINAL SPECIFICATIONS</span>
+          <h2 class="previews-title">Everything an Elite Analyst Command Center Demands</h2>
+          <p class="previews-desc">Institutional-grade tools, dynamic calculations, and concept modules organized into a single high-fidelity terminal.</p>
+        </div>
+        
+        <div class="specs-grid reveal">
+          <!-- Spec 1: Financial Modeling -->
+          <div class="spec-card">
+            <div class="spec-icon-wrapper">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"></path><path d="M18.7 8l-5.1 5.2-2.8-2.7L7 14.3"></path></svg>
+            </div>
+            <h3 class="spec-title">Financial Modeling</h3>
+            <p class="spec-desc">Build pro-forma forecasts, income statements, and balance sheet models with structural integrity.</p>
+          </div>
+          
+          <!-- Spec 2: DCF Analysis -->
+          <div class="spec-card">
+            <div class="spec-icon-wrapper">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2" ry="2"></rect><line x1="12" y1="4" x2="12" y2="20"></line></svg>
+            </div>
+            <h3 class="spec-title">DCF Analysis</h3>
+            <p class="spec-desc">Calculate WACC, exit multiples, terminal values, and intrinsic target valuations instantly.</p>
+          </div>
+          
+          <!-- Spec 3: Valuation Tools -->
+          <div class="spec-card">
+            <div class="spec-icon-wrapper">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20"></path><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+            </div>
+            <h3 class="spec-title">Valuation Tools</h3>
+            <p class="spec-desc">Deploy LBO leverage builders, Comparable Comps matrices, and Dividend Discount Models.</p>
+          </div>
+          
+          <!-- Spec 4: Financial Statement Review -->
+          <div class="spec-card">
+            <div class="spec-icon-wrapper">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+            </div>
+            <h3 class="spec-title">Financial Statement Review</h3>
+            <p class="spec-desc">Audit financial statements (10-K, 10-Q) with automated calculations of liquidity and margin metrics.</p>
+          </div>
+          
+          <!-- Spec 5: Market Research -->
+          <div class="spec-card">
+            <div class="spec-icon-wrapper">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+            </div>
+            <h3 class="spec-title">Market Research</h3>
+            <p class="spec-desc">Track real-time macroeconomic datasets, industry sectors, indices, and global commodities.</p>
+          </div>
+          
+          <!-- Spec 6: Company Analysis -->
+          <div class="spec-card">
+            <div class="spec-icon-wrapper">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path></svg>
+            </div>
+            <h3 class="spec-title">Company Analysis</h3>
+            <p class="spec-desc">Scan leverage multipliers, debt service covers, red flags, and operating margins instantly.</p>
+          </div>
+          
+          <!-- Spec 7: Research Notes -->
+          <div class="spec-card">
+            <div class="spec-icon-wrapper">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+            </div>
+            <h3 class="spec-title">Research Notes</h3>
+            <p class="spec-desc">Create monospace markdown journals to organize knowledge, compile tickers, and log models.</p>
+          </div>
+          
+          <!-- Spec 8: Investment Frameworks -->
+          <div class="spec-card">
+            <div class="spec-icon-wrapper">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>
+            </div>
+            <h3 class="spec-title">Investment Frameworks</h3>
+            <p class="spec-desc">Apply Porter's 5 Forces, SWOT analysis, and competitive moat matrices to target firms.</p>
+          </div>
+          
+          <!-- Spec 9: Learning Hub -->
+          <div class="spec-card">
+            <div class="spec-icon-wrapper">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+            </div>
+            <h3 class="spec-title">Learning Hub</h3>
+            <p class="spec-desc">Simulate live market valuations and bridge theoretical metrics with real equity data.</p>
+          </div>
+          
+          <!-- Spec 10: CFA Concepts -->
+          <div class="spec-card">
+            <div class="spec-icon-wrapper">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"></path><path d="M6 12v5c0 2 2 3 6 3s6-1 6-3v-5"></path></svg>
+            </div>
+            <h3 class="spec-title">CFA Concepts</h3>
+            <p class="spec-desc">Practice formulas mapped directly to the CFA Level 1 (Quant, Equity, Portfolios) curriculum.</p>
+          </div>
+          
+          <!-- Spec 11: Excel Templates -->
+          <div class="spec-card">
+            <div class="spec-icon-wrapper">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="9" y1="3" x2="9" y2="21"></line><line x1="15" y1="3" x2="15" y2="21"></line><line x1="3" y1="9" x2="21" y2="9"></line><line x1="3" y1="15" x2="21" y2="15"></line></svg>
+            </div>
+            <h3 class="spec-title">Excel Templates</h3>
+            <p class="spec-desc">Access institutional Wall Street templates, sheets structures, and model shortcuts.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Founder Story Section -->
+    <section class="founder-section" id="founder">
+      <div class="founder-container reveal">
+        <div class="founder-card">
+          <div class="founder-badge">FOUNDER STORY</div>
+          <h2 class="founder-title">Why I Built AnalystOS</h2>
+          <div class="founder-content">
+            <blockquote class="founder-quote">
+              "While learning DCF valuation, equity research, and financial modeling, I realized most tools were built for professionals. AnalystOS is my attempt to make institutional-grade research accessible to anyone willing to learn."
+            </blockquote>
+            <div class="founder-signature">
+              <div class="signature-line"></div>
+              <div class="founder-meta">
+                <span class="founder-name">Revanth</span>
+                <span class="founder-role">Creator</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Pricing Section -->
+    <section class="pricing-section" id="pricing">
+      <div class="pricing-container">
+        <h2 class="section-title reveal" id="pricing-title">
+          Pricing that doesn't require a <span class="gradient-text">corporate expense account</span>
+        </h2>
+        
+        <div class="pricing-grid">
+          <!-- FREE Tier -->
+          <div class="pricing-card reveal" id="price-free">
+            <div class="pricing-header">
+              <span class="plan-name">FREE</span>
+              <div class="plan-price">
+                <span class="price-val">₹0</span>
+                <span class="price-period">/mo</span>
+              </div>
+              <p class="plan-desc">For students and curious beginners starting out.</p>
+            </div>
+            <ul class="plan-features">
+              <li>
+                <svg class="check-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                5 AI questions / day
+              </li>
+              <li>
+                <svg class="check-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                Basic market dashboard
+              </li>
+              <li>
+                <svg class="check-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                1 simulated portfolio
+              </li>
+              <li class="disabled">
+                <svg class="lock-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                No premium valuation models
+              </li>
+              <li class="disabled">
+                <svg class="lock-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                No career OS & DCF sandbox
+              </li>
+            </ul>
+            <a href="#waitlist" class="btn-secondary-card waitlist-btn" id="btn-free-choose">Get Started</a>
+            <a href="#" class="btn-secondary-card launch-btn" style="display:none" onclick="openAuth('signup','free'); return false;">Get Started</a>
+          </div>
+          
+          <!-- PRO Tier (Highlighted) -->
+          <div class="pricing-card highlighted reveal" id="price-pro">
+            <div class="popular-badge">MOST POPULAR</div>
+            <div class="pricing-header">
+              <span class="plan-name">PRO</span>
+              <div class="plan-price">
+                <span class="price-val">₹499</span>
+                <span class="price-period">/mo</span>
+              </div>
+              <p class="plan-desc">For serious young professionals building careers.</p>
+            </div>
+            <ul class="plan-features">
+              <li>
+                <svg class="check-icon highlight" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <strong>Unlimited AI questions</strong>
+              </li>
+              <li>
+                <svg class="check-icon highlight" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                Full real-time market data
+              </li>
+              <li>
+                <svg class="check-icon highlight" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                5 simulated portfolios
+              </li>
+              <li>
+                <svg class="check-icon highlight" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                All company deep-dives & alerts
+              </li>
+              <li>
+                <svg class="check-icon highlight" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                Daily Morning Briefings
+              </li>
+            </ul>
+            <a href="#waitlist" class="btn-primary-card waitlist-btn" id="btn-pro-choose">Claim 3 Months Free</a>
+            <a href="#" class="btn-primary-card launch-btn" style="display:none" onclick="openAuth('signup','pro'); return false;">Claim 3 Months Free</a>
+          </div>
+          
+          <!-- ANALYST Tier -->
+          <div class="pricing-card reveal" id="price-analyst">
+            <div class="pricing-header">
+              <span class="plan-name">ANALYST</span>
+              <div class="plan-price">
+                <span class="price-val">₹1,499</span>
+                <span class="price-period">/mo</span>
+              </div>
+              <p class="plan-desc">For ultimate power users aiming to scale instantly.</p>
+            </div>
+            <ul class="plan-features">
+              <li>
+                <svg class="check-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <strong>Everything in PRO tier</strong>
+              </li>
+              <li>
+                <svg class="check-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                Premium DCF, LBO, pitch builders
+              </li>
+              <li>
+                <svg class="check-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                Unlimited portfolios & simulator tests
+              </li>
+              <li>
+                <svg class="check-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                AI Mock Interview Simulator
+              </li>
+              <li>
+                <svg class="check-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                Elite Career OS Dashboard
+              </li>
+            </ul>
+            <a href="#waitlist" class="btn-secondary-card waitlist-btn" id="btn-analyst-choose">Upgrade My Career</a>
+            <a href="#" class="btn-secondary-card launch-btn" style="display:none" onclick="openAuth('signup','analyst'); return false;">Upgrade My Career</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Resources Vault Locker Section -->
+    <section class="vault-section" id="resources-vault">
+      <div class="previews-container">
+        <div class="vault-inner">
+          <div class="vault-header">
+            <span class="vault-badge">ANALYST TOOLKIT</span>
+            <h2 class="vault-title">Unlock Institutional Modeling Templates</h2>
+            <p class="vault-desc">Enter your email below to instantly activate your credentials and unlock 5 professional valuation, Excel, and CFA concepts tools for free.</p>
+          </div>
+          
+          <!-- Locked/Unlocked State lists -->
+          <div class="vault-list" id="vault-items-list">
+            <div class="vault-item">
+              <span class="vault-item-lbl">01. Corporate DCF Valuation Model Template (.xlsx)</span>
+              <span class="vault-status-pill locked" id="vault-status-1">LOCKED</span>
+            </div>
+            <div class="vault-item">
+              <span class="vault-item-lbl">02. 30+ Wall Street Excel Keyboard Shortcuts (.pdf)</span>
+              <span class="vault-status-pill locked" id="vault-status-2">LOCKED</span>
+            </div>
+            <div class="vault-item">
+              <span class="vault-item-lbl">03. Financial Ratios & Valuation Cheat Sheet (.pdf)</span>
+              <span class="vault-status-pill locked" id="vault-status-3">LOCKED</span>
+            </div>
+            <div class="vault-item">
+              <span class="vault-item-lbl">04. Institutional Equity Research Stock Template (.docx)</span>
+              <span class="vault-status-pill locked" id="vault-status-4">LOCKED</span>
+            </div>
+            <div class="vault-item">
+              <span class="vault-item-lbl">05. CFA Level 1 Study & Formula Notes (.pdf)</span>
+              <span class="vault-status-pill locked" id="vault-status-5">LOCKED</span>
+            </div>
+          </div>
+          
+          <!-- Email Form (locked state) -->
+          <form class="vault-form" id="vault-form-collector" onsubmit="handleUnlockVault(event)">
+            <input type="email" id="vault-email" class="vault-input" placeholder="Enter your professional email to unlock..." required>
+            <button type="submit" class="vault-submit-btn" id="btn-unlock-vault">Unlock Vault →</button>
+          </form>
+          
+          <!-- Unlocked Content Drawer -->
+          <div class="unlocked-vault-cabinet" id="vault-unlocked-drawer">
+            <div class="unlocked-resource-card">
+              <div class="unlocked-resource-header">
+                <span class="unlocked-resource-title">01. Corporate DCF Valuation Model Template</span>
+                <button class="btn-copy-resource" onclick="copyToClipboard('dcf-sheet-data')">Copy Excel Sheet Specs</button>
+              </div>
+              <pre class="unlocked-resource-content" id="dcf-sheet-data">
+[AnalystOS Corporate DCF Model Template v1.2]
+Sheet 1: assumptions
+--------------------------------------------
+WACC = 9.0% | Exit EBITDA Multiple = 14.0x
+EBITDA Growth Rate = 15.0% (Yr 1-3), 8.0% (Yr 4-5)
+Tax Rate = 25% | Capex / Sales = 4.0%
+--------------------------------------------
+Sheet 2: free cash flow projection (₹ Lakhs)
+Yr 1 EBITDA = 120.0 | Yr 2 = 138.0 | Yr 3 = 158.7
+Yr 4 EBITDA = 171.4 | Yr 5 = 185.1
+Implied Enterprise Value = ₹18.54 Cr
+Download Excel File Link: https://analystos-terminal.vercel.app/resources/AnalystOS_DCF_Valuation_Model.xlsx
+              </pre>
+            </div>
+            
+            <div class="unlocked-resource-card">
+              <div class="unlocked-resource-header">
+                <span class="unlocked-resource-title">02. 30+ Wall Street Excel Shortcuts Guide</span>
+                <button class="btn-copy-resource" onclick="copyToClipboard('shortcuts-data')">Copy Shortcuts</button>
+              </div>
+              <pre class="unlocked-resource-content" id="shortcuts-data">
+[AnalystOS Excel Modeling Shortcuts Handbook]
+Navigation & Selection:
+- Ctrl + [  : Trace precedent formulas
+- F5 + Enter: Return to previous cell after tracing
+- Shift + Space: Select entire row
+- Ctrl + Space : Select entire column
+Formatting & Editing:
+- Alt + E + S + V: Paste Special as Values
+- F2 : Edit active cell
+- Alt + H + B + A: Add border to selection
+- Alt + H + O + I: Autofit column widths
+              </pre>
+            </div>
+            
+            <div class="unlocked-resource-card">
+              <div class="unlocked-resource-header">
+                <span class="unlocked-resource-title">03. Financial Ratios & Valuation Cheat Sheet</span>
+                <button class="btn-copy-resource" onclick="copyToClipboard('valuation-data')">Copy Cheat Sheet</button>
+              </div>
+              <pre class="unlocked-resource-content" id="valuation-data">
+[AnalystOS Financial Formula Cheat Sheet]
+1. Enterprise Value (EV):
+   EV = Market Cap + Total Debt + Preferred Stock + Minority Interest - Cash
+2. Weighted Average Cost of Capital (WACC):
+   WACC = (E/V * Ke) + (D/V * Kd * (1 - Tax Rate))
+   - Cost of Equity (Ke) = Rf + Beta * (Rm - Rf) [CAPM]
+3. Free Cash Flow to Firm (FCFF):
+   FCFF = EBIT * (1 - Tax Rate) + D&A - Capex - Change in NWC
+              </pre>
+            </div>
+            
+            <div class="unlocked-resource-card">
+              <div class="unlocked-resource-header">
+                <span class="unlocked-resource-title">04. Institutional Equity Research Stock Template</span>
+                <button class="btn-copy-resource" onclick="copyToClipboard('research-notes-data')">Copy Template</button>
+              </div>
+              <pre class="unlocked-resource-content" id="research-notes-data">
+[AnalystOS Equity Research Report Outline]
+Section I: Executive Summary
+- Ticker: [TICKER] | Recommendation: BUY/HOLD/SELL
+- Current Price: [PRICE] | Target Intrinsic Target: [TARGET]
+Section III: Earnings Quality & Ratios Scan
+- Leverage scans, EBITDA margins, and operating diagnostic logs.
+Section IV: Target DCF Sensitivity Table
+              </pre>
+            </div>
+            
+            <div class="unlocked-resource-card">
+              <div class="unlocked-resource-header">
+                <span class="unlocked-resource-title">05. CFA Level 1 Study & Formula Notes</span>
+                <button class="btn-copy-resource" onclick="copyToClipboard('cfa-data')">Copy CFA Notes</button>
+              </div>
+              <pre class="unlocked-resource-content" id="cfa-data">
+[CFA Level 1 Equity & Quant concept notes]
+1. Capital Asset Pricing Model (CAPM):
+   Ke = Rf + Beta * (Rm - Rf)
+2. Dividend Discount Model (DDM) - Gordon Growth:
+   Po = D1 / (Ke - g)
+3. Dupont Analysis 3-Step:
+   ROE = Net Profit Margin * Asset Turnover * Financial Leverage
+   ROE = (Net Income / Sales) * (Sales / Assets) * (Assets / Equity)
+              </pre>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Waitlist Section -->
+    <section class="waitlist-section" id="waitlist">
+      <div class="waitlist-container reveal">
+        <div class="waitlist-inner">
+          <div id="waitlist-mode-content">
+            <h2 class="waitlist-headline" id="waitlist-title">Be among the first 1,000 analysts on AnalystOS</h2>
+            <p class="waitlist-subtext" id="waitlist-subtitle">Get 3 months Pro free when we launch. No spam. Cancel anytime.</p>
+            
+            <form class="waitlist-form" id="waitlist-form">
+              <div class="input-glow-wrapper">
+                <input type="email" id="waitlist-email" placeholder="Enter your professional email" required aria-label="Email address">
+              </div>
+              <button type="submit" class="btn-waitlist-submit" id="btn-submit-waitlist">
+                Claim My Spot
+              </button>
+            </form>
+            
+            <div class="waitlist-counter" id="waitlist-counter-display">
+              <span class="counter-pulse"></span>
+              <span class="counter-number">500+ analysts</span> on waitlist
+            </div>
+          </div>
+          <div id="launch-mode-content" style="display:none">
+            <h2>AnalystOS is now live.</h2>
+            <p>Create your free account and start analyzing markets today.</p>
+            <button onclick="openAuth('signup','free')">Create Free Account</button>
+            <button onclick="openAuth('login')">Log In</button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer" id="footer">
+    <div class="footer-container">
+      <div class="footer-brand-column">
+        <a href="#" class="footer-brand" id="footer-logo">
+          AnalystOS<span class="brand-dot"></span>
+        </a>
+        <p class="footer-tagline">The finance OS for the next generation of analysts.</p>
+      </div>
+      
+      <div class="footer-links-column">
+        <h4 class="footer-heading">Platform</h4>
+        <a href="#features" class="footer-link">Features</a>
+        <a href="#pricing" class="footer-link">Pricing</a>
+        <a href="#resources-vault" class="footer-link">Free Resources</a>
+      </div>
+      
+      <div class="footer-links-column">
+        <h4 class="footer-heading">Info Hub</h4>
+        <a href="#about" class="footer-link">About Us</a>
+        <a href="#contact" class="footer-link">Contact Support</a>
+        <a href="#changelog" class="footer-link">Changelog</a>
+      </div>
+      
+      <div class="footer-links-column">
+        <h4 class="footer-heading">Legal</h4>
+        <a href="#privacy" class="footer-link">Privacy Policy</a>
+        <a href="#terms" class="footer-link">Terms of Service</a>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span class="copyright" id="footer-copyright">&copy; 2025 AnalystOS. All rights reserved.</span>
+    </div>
+  </footer>
+
+  <!-- Interactive Info Hub Overlay Portal -->
+  <div id="info-hub-overlay" class="info-hub-overlay">
+    <div class="info-hub-cabinet">
+      <button class="hub-close-btn" onclick="closeInfoHub()">✕ RETURN</button>
+      
+      <div class="info-hub-sidebar">
+        <div class="sidebar-header-title">AnalystOS Hub</div>
+        <div class="sidebar-menu-list">
+          <button class="hub-menu-btn active" id="hub-tab-home" onclick="switchHubTab('home')">[01] TERMINAL_HOME</button>
+          <button class="hub-menu-btn" id="hub-tab-features" onclick="switchHubTab('features')">[02] SPEC_DIRECTORY</button>
+          <button class="hub-menu-btn" id="hub-tab-about" onclick="switchHubTab('about')">[03] FOUNDERS_NOTE</button>
+          <button class="hub-menu-btn" id="hub-tab-contact" onclick="switchHubTab('contact')">[04] CONNECT_DESK</button>
+          <button class="hub-menu-btn" id="hub-tab-changelog" onclick="switchHubTab('changelog')">[05] VER_HISTORY</button>
+          <button class="hub-menu-btn" id="hub-tab-privacy" onclick="switchHubTab('privacy')">[06] DATA_SAFEGUARD</button>
+          <button class="hub-menu-btn" id="hub-tab-terms" onclick="switchHubTab('terms')">[07] USER_LICENSE</button>
+        </div>
+      </div>
+      
+      <div class="info-hub-content-viewport">
+        <!-- Panel 1: Home -->
+        <div class="hub-view-panel active" id="hub-panel-home">
+          <span class="hub-panel-badge">CORE_MODULE.WELCOME</span>
+          <h2 class="hub-panel-title">AnalystOS Terminal Info Hub</h2>
+          <p class="hub-panel-desc">Welcome to the central command specifications center. Use the left FactSet-grade navigation index to explore features lists, founders story logs, connect directly with technical desks, and review compliance frameworks.</p>
+          <div style="margin-top: 24px; padding: 18px; border: 1px dashed rgba(0,240,255,0.15); background: rgba(0,240,255,0.02); border-radius: 8px;">
+            <h4 style="font-family: 'JetBrains Mono', monospace; font-size: 13px; color: var(--premium-accent); margin-bottom: 8px;">[SYSTEM_LOG: ACTIVE]</h4>
+            <p style="font-family: 'Inter', sans-serif; font-size: 13px; color: #9CA3AF; line-height: 1.5;">You are currently inside the active terminal subpage portal. Press **✕ RETURN** at the top right to revert to the main dashboard.</p>
+          </div>
+        </div>
+        
+        <!-- Panel 2: Features -->
+        <div class="hub-view-panel" id="hub-panel-features">
+          <span class="hub-panel-badge">MODULE_SPEC.DIRECTORY</span>
+          <h2 class="hub-panel-title">Institutional Features specs</h2>
+          <p class="hub-panel-desc">Deep dive overview of the institutional specifications compiled into the AnalystOS engine:</p>
+          <div style="display:flex; flex-direction:column; gap:12px; margin-top:16px; font-family:'JetBrains Mono',monospace; font-size:12px;">
+            <div style="padding:10px; background:rgba(255,255,255,0.02); border-radius:6px; border:1px solid rgba(255,255,255,0.04);">
+              <strong style="color:var(--premium-accent)">[01] Financial Modeling</strong>: Full dynamic pro-forma forecasts, income statements, asset balances.
+            </div>
+            <div style="padding:10px; background:rgba(255,255,255,0.02); border-radius:6px; border:1px solid rgba(255,255,255,0.04);">
+              <strong style="color:var(--premium-accent)">[02] DCF Valuation Sensitivity</strong>: Sensitivity index tables (Growth rate vs WACC discount factors).
+            </div>
+            <div style="padding:10px; background:rgba(255,255,255,0.02); border-radius:6px; border:1px solid rgba(255,255,255,0.04);">
+              <strong style="color:var(--premium-accent)">[03] CFA Level 1 Concepts Hub</strong>: Mapped concepts covering DuPont equations, WACC, and Gordon Growth models.
+            </div>
+          </div>
+        </div>
+        
+        <!-- Panel 3: About -->
+        <div class="hub-view-panel" id="hub-panel-about">
+          <span class="hub-panel-badge">FOUNDERS_NOTE.METADATA</span>
+          <h2 class="hub-panel-title">Our Mission & Founders Story</h2>
+          <p class="hub-panel-desc">AnalystOS was conceived with a simple yet powerful mission: to democratize institutional-grade financial analysis tools. For too long, young professional analysts, candidates, and students have been priced out of professional Bloomberg, FactSet, or Capital IQ subscriptions (which cost ₹2.5 lakh/year).</p>
+          <blockquote style="border-left: 2px solid var(--premium-accent); padding-left: 16px; margin: 16px 0; color: #F9FAFB; font-style: italic; font-family: 'Inter', sans-serif; font-size: 14px;">
+            "We believe that high-quality equity research, company deep-dives, and financial modeling tools should be accessible to anyone with a willingness to learn. By providing institutional speed and clean data pipelines at a fraction of the cost, we empower the next generation of finance leaders."
+            <br><span style="display:block; margin-top:8px; font-family:'JetBrains Mono',monospace; font-size:11px; font-style:normal; color:#6B7280;">— Revanth Pemmaraju, Founder</span>
+          </blockquote>
+        </div>
+        
+        <!-- Panel 4: Contact -->
+        <div class="hub-view-panel" id="hub-panel-contact">
+          <span class="hub-panel-badge">CONNECT_DESK.PORTAL</span>
+          <h2 class="hub-panel-title">Technical Support & Sales Desk</h2>
+          <p class="hub-panel-desc">Reach out directly to our engineering or investment support teams. Enter your details below to open a ticket.</p>
+          
+          <form id="hub-contact-form" onsubmit="handleHubContactSubmit(event)" style="margin-top: 16px;">
+            <div class="hub-form-group">
+              <label for="contact-name">Full Name</label>
+              <input type="text" id="contact-name" class="hub-form-input" placeholder="Your name" required>
+            </div>
+            <div class="hub-form-group">
+              <label for="contact-email">Professional Email</label>
+              <input type="email" id="contact-email" class="hub-form-input" placeholder="you@firm.com" required>
+            </div>
+            <div class="hub-form-group">
+              <label for="contact-firm">Firm / Segment Type</label>
+              <select id="contact-firm" class="hub-form-select" required>
+                <option value="student">Student / CFA Candidate</option>
+                <option value="analyst">Buy-Side / Sell-Side Analyst</option>
+                <option value="hedgefund">Hedge Fund / Asset Management</option>
+                <option value="retail">Retail Investor</option>
+              </select>
+            </div>
+            <div class="hub-form-group">
+              <label for="contact-msg">Message Summary</label>
+              <textarea id="contact-msg" class="hub-form-textarea" rows="4" placeholder="Enter your inquiry details..." required></textarea>
+            </div>
+            <button type="submit" class="hub-submit-btn" id="btn-submit-hub-contact">Transmit Ticket →</button>
+          </form>
+          <div id="hub-contact-message" style="margin-top: 14px; font-family:'JetBrains Mono',monospace; font-size:12px;"></div>
+        </div>
+        
+        <!-- Panel 5: Changelog -->
+        <div class="hub-view-panel" id="hub-panel-changelog">
+          <span class="hub-panel-badge">VER_HISTORY.STREAM</span>
+          <h2 class="hub-panel-title">Terminal Changelog Updates</h2>
+          <p class="hub-panel-desc">Product releases logs and security hotfixes stream:</p>
+          <div style="display:flex; flex-direction:column; gap:16px; margin-top:16px; font-family:'JetBrains Mono',monospace; font-size:12px; text-align:left;">
+            <div style="border-left: 2px solid var(--premium-green); padding-left: 14px;">
+              <strong style="color:#F9FAFB">v1.0.4 (Active Launch)</strong> <span style="color:#6B7280; font-size:10px;">— 2026-05-31</span>
+              <p style="margin-top:6px; font-family:'Inter',sans-serif; font-size:12px; color:#9CA3AF;">Pivoted visual design to institutional FactSet/Bloomberg dense grids. Integrated the **Resources Locker Lead Magnet** and **dynamic fullscreen overlays**. Upgraded tagline layouts.</p>
+            </div>
+            <div style="border-left: 2px solid var(--premium-accent); padding-left: 14px;">
+              <strong style="color:#F9FAFB">v1.0.2 (Auth & Payments integration)</strong> <span style="color:#6B7280; font-size:10px;">— 2026-05-30</span>
+              <p style="margin-top:6px; font-family:'Inter',sans-serif; font-size:12px; color:#9CA3AF;">Integrated Supabase user signup/login and configured Razorpay checkout supports with secure SHA-256 HMAC digital signatures.</p>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Panel 6: Privacy Policy -->
+        <div class="hub-view-panel" id="hub-panel-privacy">
+          <span class="hub-panel-badge">DATA_SAFEGUARD.COMPLIANCE</span>
+          <h2 class="hub-panel-title">Privacy Policy</h2>
+          <div style="font-family:'Inter',sans-serif; font-size:13px; color:#9CA3AF; line-height:1.6; display:flex; flex-direction:column; gap:12px;">
+            <p>At AnalystOS, we prioritize the protection and security of your financial and personal data. We utilize enterprise-grade security structures through **Supabase PostgreSQL** and **Vercel** hosting platforms.</p>
+            <strong style="color:#F9FAFB">1. Information We Collect</strong>
+            <p>We collect your email, name, and billing details upon sign-up or download. Payment transactions are processed securely through **Razorpay** checkout systems; no credit card details are stored directly on our servers.</p>
+            <strong style="color:#F9FAFB">2. Cookies and Logs</strong>
+            <p>We use localized tokens to store active sessions and monitor terminal diagnostic heartbeats. All logs are securely archived and cleared regularly.</p>
+          </div>
+        </div>
+        
+        <!-- Panel 7: Terms of Service -->
+        <div class="hub-view-panel" id="hub-panel-terms">
+          <span class="hub-panel-badge">USER_LICENSE.LEGAL_FRAME</span>
+          <h2 class="hub-panel-title">Terms of Service</h2>
+          <div style="font-family:'Inter',sans-serif; font-size:13px; color:#9CA3AF; line-height:1.6; display:flex; flex-direction:column; gap:12px;">
+            <p>Please read these terms carefully before accessing the AnalystOS terminal workspace. By creating an account, you agree to comply with these terms.</p>
+            <strong style="color:#F9FAFB">1. Subscription Billing</strong>
+            <p>AnalystOS is billed on a recurring monthly cycle of **₹499/month** for the PRO plan. You may cancel your subscription at any time directly through the user navigation pill.</p>
+            <strong style="color:#F9FAFB">2. Acceptable Use</strong>
+            <p>The terminal features, DCF sandboxes, and financial models are provided for educational and research analysis purposes. We do not offer direct investment advisory or brokerage execution services.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Premium Authentication & Payment Modal -->
+  <div id="auth-overlay">
+    <div id="auth-modal">
+      <button id="auth-close" onclick="closeAuth()">✕</button>
+      <div class="modal-logo">AnalystOS Terminal</div>
+      <h2 id="auth-title">Create Account</h2>
+      <p id="auth-sub">Free forever plan available.</p>
+      <div class="auth-tabs">
+        <button class="auth-tab active" id="tab-signup" onclick="switchTab('signup')">SIGN UP</button>
+        <button class="auth-tab" id="tab-login" onclick="switchTab('login')">LOG IN</button>
+      </div>
+      <div id="name-field"><label>Full Name</label>
+        <input type="text" id="auth-name" placeholder="Your name"/></div>
+      <div class="auth-field"><label>Email</label>
+        <input type="email" id="auth-email" placeholder="you@example.com"/></div>
+      <div class="auth-field"><label>Password</label>
+        <input type="password" id="auth-password" placeholder="Min. 8 characters"/></div>
+      <div id="plan-selector">
+        <label>Choose Plan</label>
+        <div class="plan-options">
+          <div class="plan-opt selected" data-plan="free" onclick="selectPlan('free')">
+            <div class="opt-name">FREE</div><div class="opt-price">₹0/mo</div></div>
+          <div class="plan-opt" data-plan="pro" onclick="selectPlan('pro')">
+            <div class="opt-name">PRO</div><div class="opt-price">₹499/mo</div></div>
+          <div class="plan-opt" data-plan="analyst" onclick="selectPlan('analyst')">
+            <div class="opt-name">ANALYST</div><div class="opt-price">₹1,499/mo</div></div>
+        </div>
+      </div>
+      <button id="auth-submit" onclick="handleAuth()">CREATE ACCOUNT →</button>
+      <div class="auth-divider">── OR ──</div>
+      <button id="google-btn" onclick="signInWithGoogle()">Continue with Google</button>
+      <div id="auth-message"></div>
+      <div id="paid-plan-nudge" style="display:none">
+        Payment via Razorpay after sign up — <strong id="nudge-plan-label"></strong>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div class="toast" id="waitlist-toast" role="alert" aria-live="assertive">
+    <div class="toast-content">
+      <div class="toast-icon-wrapper">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" class="toast-check"><polyline points="20 6 9 17 4 12"></polyline></svg>
+      </div>
+      <div class="toast-text">
+        <h5 class="toast-title">You're on the list!</h5>
+        <p class="toast-desc">Verification code sent. Welcome to the elite tier.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Auth and Dynamic Launch Script -->
+  <script>
+    const SUPABASE_URL = 'https://sexcyknnyvaefgeeolcf.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNleGN5a25ueXZhZWZnZWVvbGNmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAxNTM1NTEsImV4cCI6MjA5NTcyOTU1MX0.3SksvCkcbXAY9dqevLmGIdMyRAkfNEVNpEqKGNzC_sY';
+    const RAZORPAY_KEY_ID = 'rzp_test_XXXXXXXXXXXXXXXX';
+    const LAUNCH_DATE = new Date('2026-06-14T09:00:00+05:30');
+    const _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    let currentTab = 'signup';
+    let selectedPlan = 'free';
+
+    function isLaunched() { return new Date() >= LAUNCH_DATE; }
+
+    /* Interactive Info Hub Navigation & Routing Logic */
+    function openInfoHub(tab = 'home') {
+      document.getElementById('info-hub-overlay').classList.add('active');
+      switchHubTab(tab);
+    }
+    
+    function closeInfoHub() {
+      document.getElementById('info-hub-overlay').classList.remove('active');
+      // Reset URL hash quietly to prevent scroll jumps
+      history.pushState("", document.title, window.location.pathname + window.location.search);
+    }
+    
+    function switchHubTab(tab) {
+      // Deactivate all hub tabs
+      document.querySelectorAll('.hub-menu-btn').forEach(btn => btn.classList.remove('active'));
+      document.querySelectorAll('.hub-view-panel').forEach(panel => panel.classList.remove('active'));
+      
+      // Activate target hub tab & content view
+      const targetBtn = document.getElementById(`hub-tab-${tab}`);
+      const targetPanel = document.getElementById(`hub-panel-${tab}`);
+      if (targetBtn) targetBtn.classList.add('active');
+      if (targetPanel) targetPanel.classList.add('active');
+    }
+
+    /* Clipboard Copy Utility */
+    function copyToClipboard(id) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      navigator.clipboard.writeText(el.textContent.trim()).then(() => {
+        showNotificationToast("Specs Copied!", "Locker specs loaded into clipboard buffer.");
+      });
+    }
+
+    /* Shared Toast Notification */
+    function showNotificationToast(title, desc) {
+      const toast = document.getElementById('waitlist-toast');
+      if (!toast) return;
+      toast.querySelector('.toast-title').textContent = title;
+      toast.querySelector('.toast-desc').textContent = desc;
+      toast.classList.add('active');
+      setTimeout(() => {
+        toast.classList.remove('active');
+      }, 3500);
+    }
+
+    /* Lead Log helper utilizing Supabase Waitlist */
+    async function logEmailToSupabase(email, segment = "lead_magnet") {
+      try {
+        const { data, error } = await _supabase.from('waitlist').insert([{ email, segment, created_at: new Date() }]);
+        if (error) console.warn("Supabase log warning:", error.message);
+      } catch (err) {
+        console.warn("Supabase integration bypassed / warning:", err);
+      }
+    }
+
+    /* Lead Magnet Vault Unlock State Handler */
+    async function handleUnlockVault(e) {
+      e.preventDefault();
+      const email = document.getElementById('vault-email').value.trim();
+      const btn = document.getElementById('btn-unlock-vault');
+      if (!email) return;
+      btn.disabled = true;
+      btn.textContent = 'CONNECTING...';
+      
+      // Save lead securely in Supabase
+      await logEmailToSupabase(email, "lead_magnet_vault");
+      
+      setTimeout(() => {
+        // Unlock items
+        for (let i = 1; i <= 5; i++) {
+          const statusEl = document.getElementById(`vault-status-${i}`);
+          if (statusEl) {
+            statusEl.textContent = 'UNLOCKED';
+            statusEl.className = 'vault-status-pill unlocked';
+          }
+        }
+        // Hide form & show cabinet
+        document.getElementById('vault-form-collector').style.display = 'none';
+        document.getElementById('vault-unlocked-drawer').style.display = 'flex';
+        
+        showNotificationToast("Vault Unlocked!", "Your 5 professional templates are available.");
+      }, 1000);
+    }
+
+    /* Hub Contact support form handler */
+    async function handleHubContactSubmit(e) {
+      e.preventDefault();
+      const name = document.getElementById('contact-name').value.trim();
+      const email = document.getElementById('contact-email').value.trim();
+      const firm = document.getElementById('contact-firm').value;
+      const msg = document.getElementById('contact-msg').value.trim();
+      const btn = document.getElementById('btn-submit-hub-contact');
+      const msgEl = document.getElementById('hub-contact-message');
+      
+      btn.disabled = true;
+      btn.textContent = 'TRANSMITTING...';
+      
+      await logEmailToSupabase(email, `contact_desk_${firm}`);
+      
+      setTimeout(() => {
+        btn.textContent = 'Transmit Ticket →';
+        btn.disabled = false;
+        msgEl.style.color = 'var(--premium-green)';
+        msgEl.innerHTML = `✓ TICKET_TRANSMITTED: LOGGED<br>REF_ID: ${Math.floor(Math.random()*900000+100000)}<br>Support desk will reach you at ${email}.`;
+        
+        document.getElementById('hub-contact-form').reset();
+      }, 1200);
+    }
+
+    /* URL Hash Change Router */
+    function handleHashNavigation() {
+      const hash = window.location.hash.substring(1);
+      const validTabs = ['home', 'features', 'about', 'contact', 'changelog', 'privacy', 'terms'];
+      if (validTabs.includes(hash)) {
+        openInfoHub(hash);
+      }
+    }
+    window.addEventListener('hashchange', handleHashNavigation);
+    window.addEventListener('DOMContentLoaded', handleHashNavigation);
+
+    function applyMode() {
+      const launched = isLaunched();
+      const show = (id, visible) => {
+        const el = document.getElementById(id);
+        if (el) el.style.display = visible ? '' : 'none';
+      };
+      show('nav-btn-cta-waitlist', !launched);
+      show('nav-btn-cta-signup', launched);
+      show('nav-btn-mobile-waitlist', !launched);
+      show('nav-btn-mobile-signup', launched);
+      show('btn-hero-primary-waitlist', !launched);
+      show('btn-hero-primary-launch', launched);
+      show('waitlist-mode-content', !launched);
+      show('launch-mode-content', launched);
+      document.querySelectorAll('.waitlist-btn').forEach(b => b.style.display = launched ? 'none' : '');
+      document.querySelectorAll('.launch-btn').forEach(b => b.style.display = launched ? '' : 'none');
+    }
+
+    applyMode();
+
+    // Sync the Hero Countdown Badge to June 14th without touching app.js
+    const badge = document.getElementById("hero-badge");
+    if (badge) {
+      const updateHeroBadge = () => {
+        const diff = LAUNCH_DATE - new Date();
+        if (diff <= 0) {
+          badge.innerHTML = '<span class="badge-pulse"></span> Live Access Active 🟢';
+        } else {
+          const d = Math.floor(diff / 86400000);
+          const h = Math.floor((diff % 86400000) / 3600000);
+          const m = Math.floor((diff % 3600000) / 60000);
+          const s = Math.floor((diff % 60000) / 1000);
+          badge.innerHTML = `<span class="badge-pulse"></span> Launching in: <span class="badge-countdown">${d}d ${String(h).padStart(2,'0')}h ${String(m).padStart(2,'0')}m ${String(s).padStart(2,'0')}s</span>`;
+        }
+      };
+      
+      const observer = new MutationObserver(() => {
+        observer.disconnect();
+        updateHeroBadge();
+        observer.observe(badge, { childList: true, characterData: true, subtree: true });
+      });
+      
+      observer.observe(badge, { childList: true, characterData: true, subtree: true });
+      // Run once initially
+      updateHeroBadge();
+    }
+
+    function openAuth(tab='signup', plan=null) {
+      document.getElementById('auth-overlay').classList.add('active');
+      switchTab(tab);
+      if (plan) selectPlan(plan);
+    }
+    function closeAuth() {
+      document.getElementById('auth-overlay').classList.remove('active');
+      clearMsg();
+    }
+    document.getElementById('auth-overlay').addEventListener('click', function(e) {
+      if (e.target === this) closeAuth();
+    });
+
+    function switchTab(tab) {
+      currentTab = tab;
+      const su = tab === 'signup';
+      document.getElementById('tab-signup').classList.toggle('active', su);
+      document.getElementById('tab-login').classList.toggle('active', !su);
+      document.getElementById('name-field').style.display = su ? '' : 'none';
+      document.getElementById('plan-selector').style.display = su ? '' : 'none';
+      document.getElementById('paid-plan-nudge').style.display = 'none';
+      document.getElementById('auth-title').textContent = su ? 'Create Account' : 'Welcome Back';
+      document.getElementById('auth-sub').textContent = su ? 'Free forever plan available.' : 'Log in to your terminal.';
+      document.getElementById('auth-submit').textContent = su ? 'CREATE ACCOUNT →' : 'LOG IN →';
+      clearMsg();
+    }
+
+    function selectPlan(plan) {
+      selectedPlan = plan;
+      document.querySelectorAll('.plan-opt').forEach(el => {
+        el.classList.toggle('selected', el.dataset.plan === plan);
+      });
+      const nudge = document.getElementById('paid-plan-nudge');
+      if (plan !== 'free') {
+        nudge.style.display = 'block';
+        document.getElementById('nudge-plan-label').textContent = plan.toUpperCase()+' — ₹'+(plan==='pro'?'499':'1,499')+'/mo';
+      } else { nudge.style.display = 'none'; }
+    }
+
+    async function handleAuth() {
+      const email = document.getElementById('auth-email').value.trim();
+      const password = document.getElementById('auth-password').value;
+      const name = document.getElementById('auth-name').value.trim();
+      const btn = document.getElementById('auth-submit');
+      if (!email || !password) return showMsg('Please fill in all fields.', 'error');
+      if (password.length < 8) return showMsg('Password must be at least 8 characters.', 'error');
+      btn.disabled = true;
+      btn.textContent = 'PROCESSING...';
+      try {
+        if (currentTab === 'signup') {
+          const { data, error } = await _supabase.auth.signUp({
+            email, password, options: { data: { full_name: name, plan: selectedPlan } }
+          });
+          if (error) throw error;
+          if (selectedPlan !== 'free') {
+            showMsg('✓ Account created! Opening payment...', 'success');
+            setTimeout(() => openRazorpay(data.user, selectedPlan), 1200);
+          } else {
+            showMsg('✓ Account created! Check your email to verify.', 'success');
+            setTimeout(closeAuth, 2000);
+          }
+        } else {
+          const { data, error } = await _supabase.auth.signInWithPassword({ email, password });
+          if (error) throw error;
+          showMsg('✓ Logged in!', 'success');
+          onAuthSuccess(data.user);
+          setTimeout(closeAuth, 1000);
+        }
+      } catch(err) {
+        showMsg(err.message || 'Something went wrong.', 'error');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = currentTab === 'signup' ? 'CREATE ACCOUNT →' : 'LOG IN →';
+      }
+    }
+
+    async function signInWithGoogle() {
+      const { error } = await _supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: { redirectTo: window.location.origin }
+      });
+      if (error) showMsg(error.message, 'error');
+    }
+
+    function openRazorpay(user, plan) {
+      const s = document.createElement('script');
+      s.src = 'https://checkout.razorpay.com/v1/checkout.js';
+      s.onload = () => {
+        new Razorpay({
+          key: RAZORPAY_KEY_ID,
+          amount: plan === 'pro' ? 49900 : 149900,
+          currency: 'INR',
+          name: 'AnalystOS',
+          description: plan.toUpperCase()+' Plan Monthly',
+          prefill: { email: user?.email || '' },
+          theme: { color: '#00d4ff' },
+          handler: (r) => saveUserPlan(user.id, plan, r.razorpay_payment_id)
+        }).open();
+      };
+      document.body.appendChild(s);
+    }
+
+    async function saveUserPlan(userId, plan, paymentId) {
+      await _supabase.from('user_plans').upsert({
+        user_id: userId, plan, payment_id: paymentId, updated_at: new Date()
+      });
+      showMsg('✓ '+plan.toUpperCase()+' plan activated!', 'success');
+      setTimeout(() => { closeAuth(); window.location.reload(); }, 1500);
+    }
+
+    _supabase.auth.onAuthStateChange((event, session) => {
+      if (session?.user) onAuthSuccess(session.user);
+      else onAuthSignedOut();
+    });
+
+    function onAuthSuccess(user) {
+      const nav = document.getElementById('user-nav');
+      const pill = document.getElementById('user-email-pill');
+      const signupBtn = document.getElementById('nav-btn-cta-signup');
+      if (nav) nav.style.display = 'flex';
+      if (pill) pill.textContent = user.email;
+      if (signupBtn) signupBtn.style.display = 'none';
+    }
+    function onAuthSignedOut() {
+      const nav = document.getElementById('user-nav');
+      if (nav) nav.style.display = 'none';
+    }
+    async function handleLogout() {
+      await _supabase.auth.signOut();
+      window.location.reload();
+    }
+    function showMsg(text, type) {
+      const el = document.getElementById('auth-message');
+      el.textContent = text; el.className = type;
+    }
+    function clearMsg() {
+      const el = document.getElementById('auth-message');
+      el.textContent = ''; el.className = '';
+    }
+  </script>
+
+  <!-- Premium Main Script -->
+</body>
+</html>

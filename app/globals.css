@@ -1,0 +1,129 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
+
+@import "tailwindcss";
+
+:root {
+  --background: #05070a;
+  --foreground: #f8fafc;
+  --card-bg: #0b0f19;
+  --card-border: rgba(0, 240, 255, 0.12);
+  --premium-accent: #00f0ff;
+  --premium-green: #00e676;
+  --premium-red: #ff3860;
+  
+  --font-sans: 'Inter', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  margin: 0;
+  overflow-x: hidden;
+}
+
+.terminal-font {
+  font-family: var(--font-mono);
+}
+
+/* Glassmorphic card styling overrides */
+.terminal-card {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  box-shadow: 0 4px 30px rgba(0, 240, 255, 0.03);
+  backdrop-filter: blur(8px);
+}
+
+.terminal-card:hover {
+  border-color: rgba(0, 240, 255, 0.25);
+  box-shadow: 0 4px 30px rgba(0, 240, 255, 0.08);
+}
+
+/* Bloomberg-style pulsing lights */
+@keyframes blink-green {
+  0%, 100% { opacity: 0.3; transform: scale(0.9); }
+  50% { opacity: 1; transform: scale(1.1); box-shadow: 0 0 8px #00e676; }
+}
+
+@keyframes blink-blue {
+  0%, 100% { opacity: 0.3; transform: scale(0.9); }
+  50% { opacity: 1; transform: scale(1.1); box-shadow: 0 0 8px #00f0ff; }
+}
+
+.pulse-green {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  background-color: var(--premium-green);
+  border-radius: 50%;
+  animation: blink-green 2s infinite ease-in-out;
+}
+
+.pulse-blue {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  background-color: var(--premium-accent);
+  border-radius: 50%;
+  animation: blink-blue 2s infinite ease-in-out;
+}
+
+/* Custom terminal inputs */
+.terminal-input {
+  background: rgba(5, 7, 10, 0.8);
+  border: 1px solid rgba(0, 240, 255, 0.15);
+  color: #fff;
+  font-family: var(--font-mono);
+}
+
+.terminal-input:focus {
+  outline: none;
+  border-color: var(--premium-accent);
+  box-shadow: 0 0 8px rgba(0, 240, 255, 0.15);
+}
+
+/* Custom Table high-density typography */
+.terminal-table {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  border-collapse: collapse;
+}
+
+.terminal-table th {
+  color: #64748b;
+  font-weight: 500;
+  border-bottom: 1px solid rgba(0, 240, 255, 0.1);
+  padding: 8px 12px;
+  text-align: left;
+}
+
+.terminal-table td {
+  padding: 8px 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.terminal-table tr:hover td {
+  background: rgba(0, 240, 255, 0.03);
+}
+
+/* Monospace command grid badges */
+.terminal-badge {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: 2px 6px;
+  border-radius: 3px;
+  background: rgba(0, 240, 255, 0.1);
+  color: var(--premium-accent);
+  border: 1px solid rgba(0, 240, 255, 0.2);
+}
+
+.terminal-badge-success {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: 2px 6px;
+  border-radius: 3px;
+  background: rgba(0, 230, 118, 0.1);
+  color: var(--premium-green);
+  border: 1px solid rgba(0, 230, 118, 0.2);
+}
