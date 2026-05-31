@@ -127,3 +127,152 @@ body {
   color: var(--premium-green);
   border: 1px solid rgba(0, 230, 118, 0.2);
 }
+
+/* Glow effects and cursor */
+.glow-text {
+  text-shadow: 0 0 15px rgba(0, 240, 255, 0.6);
+}
+
+@keyframes blinkingCursor {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+.blinking-cursor::after {
+  content: "█";
+  margin-left: 2px;
+  color: var(--premium-accent);
+  animation: blinkingCursor 1s infinite;
+}
+
+/* Floating Parallax Market Cards */
+.floating-market-card {
+  position: absolute;
+  background: rgba(11, 15, 23, 0.65);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 0.6rem 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-size: 0.8rem;
+  box-shadow: 
+    0 10px 30px rgba(0, 0, 0, 0.4),
+    0 0 1px 1px rgba(255, 255, 255, 0.05) inset;
+  z-index: 10;
+  cursor: default;
+  pointer-events: none;
+}
+
+.floating-market-card .card-arrow {
+  color: var(--premium-green);
+  font-size: 0.65rem;
+}
+
+.floating-market-card .card-ticker {
+  color: #fff;
+  letter-spacing: -0.01em;
+}
+
+.floating-market-card .card-pct {
+  color: var(--premium-green);
+  background: rgba(0, 230, 118, 0.08);
+  padding: 0.1rem 0.4rem;
+  border-radius: 4px;
+  font-size: 0.7rem;
+}
+
+/* Placements */
+.floating-market-card.aapl {
+  top: 22%;
+  left: 8%;
+}
+
+.floating-market-card.nvda {
+  top: 15%;
+  right: 10%;
+}
+
+.floating-market-card.reliance {
+  bottom: 18%;
+  left: 12%;
+}
+
+@media (max-width: 768px) {
+  .floating-market-card {
+    display: none !important;
+  }
+}
+
+/* DCF Sensitivity Grid Table */
+.sens-grid-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  margin-top: 8px;
+  background: #05070a;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.sens-grid-table th {
+  color: #94a3b8;
+  font-weight: 600;
+  text-align: right;
+  padding: 6px 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.sens-grid-table th:first-child {
+  text-align: left;
+}
+
+.sens-grid-table td {
+  text-align: right;
+  padding: 6px 10px;
+  color: #94a3b8;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+.sens-wacc-label {
+  color: #94a3b8 !important;
+  font-weight: 600;
+  text-align: left !important;
+  background: rgba(255, 255, 255, 0.01);
+}
+
+.sens-cell {
+  color: #94a3b8;
+}
+
+.sens-cell.active-cell {
+  background: rgba(0, 230, 118, 0.12) !important;
+  border: 1px solid rgba(0, 230, 118, 0.3) !important;
+  color: var(--premium-green) !important;
+  font-weight: 700;
+  box-shadow: inset 0 0 6px rgba(0, 230, 118, 0.1);
+}
+
+.sens-grid-table th.active-col {
+  color: var(--premium-accent);
+  font-weight: 700;
+}
+
+/* Shake input animation for error forms */
+@keyframes shakeInput {
+  0%, 100% { transform: translateX(0); }
+  15%, 45%, 75% { transform: translateX(-6px); }
+  30%, 60%, 90% { transform: translateX(6px); }
+}
+
+.input-error-shake {
+  animation: shakeInput 0.4s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+  border-color: var(--premium-red) !important;
+  box-shadow: 0 0 10px rgba(255, 56, 96, 0.3) !important;
+}
+
