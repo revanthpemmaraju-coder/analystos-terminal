@@ -667,9 +667,70 @@ export default function LandingPage() {
     }, 1000);
   };
 
+  // Reusable Framer Motion variants for cinematic reveals
+  const headingVariants: any = {
+    inactive: { y: "115%", opacity: 0, filter: "blur(4px)" },
+    active: (customDelay: number = 0) => ({ 
+      y: 0, 
+      opacity: 1, 
+      filter: "blur(0px)",
+      transition: { duration: 0.9, delay: customDelay, ease: [0.16, 1, 0.3, 1] } 
+    })
+  };
+
+  const textVariants: any = {
+    inactive: { y: 25, opacity: 0, filter: "blur(4px)" },
+    active: (customDelay: number = 0.15) => ({ 
+      y: 0, 
+      opacity: 1, 
+      filter: "blur(0px)",
+      transition: { duration: 0.8, delay: customDelay, ease: "easeOut" } 
+    })
+  };
+
+  const cardVariants: any = {
+    inactive: { y: 70, opacity: 0, filter: "blur(8px)" },
+    active: (customDelay: number = 0.3) => ({ 
+      y: 0, 
+      opacity: 1, 
+      filter: "blur(0px)",
+      transition: { duration: 0.9, delay: customDelay, ease: [0.16, 1, 0.3, 1] } 
+    })
+  };
+
   return (
     <div className="flex flex-col h-screen w-screen overflow-hidden bg-[#020010] text-slate-100 font-sans selection:bg-[#a78bfa]/30 selection:text-white relative">
       
+      {/* Parallax Layer 1: Ambient Glow Orbs (Deep Background - 0.25x Speed) */}
+      <div 
+        className="fixed inset-0 pointer-events-none z-0 overflow-hidden"
+        style={{ transform: `translateX(${-scrollLeft * 0.25}px)`, transition: "transform 0.1s ease-out" }}
+      >
+        <div className="absolute w-[400px] h-[400px] rounded-full bg-[#a78bfa] opacity-[0.12] blur-[120px]" style={{ left: "60vw", top: "20vh" }} />
+        <div className="absolute w-[500px] h-[500px] rounded-full bg-[#60a5fa] opacity-[0.09] blur-[150px]" style={{ left: "170vw", top: "60vh" }} />
+        <div className="absolute w-[450px] h-[450px] rounded-full bg-[#34d399] opacity-[0.08] blur-[130px]" style={{ left: "280vw", top: "15vh" }} />
+        <div className="absolute w-[500px] h-[500px] rounded-full bg-gradient-to-r from-[#a78bfa] to-[#60a5fa] opacity-[0.11] blur-[140px]" style={{ left: "390vw", top: "50vh" }} />
+      </div>
+
+      {/* Parallax Layer 2: Technical Grid Vector (Midground - 0.18x Speed) */}
+      <div 
+        className="fixed inset-0 pointer-events-none z-0 overflow-hidden"
+        style={{ transform: `translateX(${-scrollLeft * 0.18}px)`, transition: "transform 0.1s ease-out" }}
+      >
+        <div className="absolute inset-y-0 w-[500vw] opacity-[0.03]" style={{ backgroundImage: "radial-gradient(rgba(255,255,255,0.15) 1px, transparent 1px)", backgroundSize: "24px 24px" }} />
+      </div>
+
+      {/* Parallax Layer 3: Foreground Dust Particles (Floating Overlay - 0.05x Speed) */}
+      <div 
+        className="fixed inset-0 pointer-events-none z-20 overflow-hidden"
+        style={{ transform: `translateX(${-scrollLeft * 0.05}px)`, transition: "transform 0.1s ease-out" }}
+      >
+        <div className="absolute text-[#a78bfa]/20 font-mono text-sm" style={{ left: "110vw", top: "25vh" }}>+</div>
+        <div className="absolute text-[#60a5fa]/20 font-mono text-sm" style={{ left: "215vw", top: "75vh" }}>+</div>
+        <div className="absolute text-[#34d399]/20 font-mono text-sm" style={{ left: "320vw", top: "30vh" }}>+</div>
+        <div className="absolute text-[#a78bfa]/20 font-mono text-sm" style={{ left: "425vw", top: "80vh" }}>+</div>
+      </div>
+
       {/* 1. Spring Custom double-ring mouse cursor */}
       <div className="hidden md:block">
         <motion.div
@@ -789,15 +850,23 @@ export default function LandingPage() {
         {/* ==========================================
         * SECTION 1: HERO COCKPIT
         * ========================================== */}
-        <section className="w-screen h-screen flex-shrink-0 snap-start overflow-hidden relative flex flex-col items-center justify-center px-8 md:px-16 pt-16">
+        <section 
+          className="w-screen h-screen flex-shrink-0 snap-start overflow-hidden relative flex flex-col items-center justify-center px-8 md:px-16 pt-16 transition-all duration-1000"
+          style={{
+            transform: `scale(${activeSection === 0 ? 1 : 0.97})`,
+            filter: `blur(${activeSection === 0 ? 0 : 2}px)`,
+            opacity: activeSection === 0 ? 1 : 0.6,
+            transition: "transform 1.2s cubic-bezier(0.16, 1, 0.3, 1), filter 1.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 1.2s cubic-bezier(0.16, 1, 0.3, 1)"
+          }}
+        >
           <div className="relative z-10 w-full max-w-4xl flex flex-col items-center text-center">
             
             {/* Headline 1 (Masked Text Reveal) */}
             <div className="overflow-hidden mb-1">
               <motion.h1 
-                initial={{ y: "100%" }}
-                animate={{ y: 0 }}
-                transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+                variants={headingVariants}
+                custom={0}
+                animate={activeSection === 0 ? "active" : "inactive"}
                 className="text-5xl md:text-[85px] font-extrabold tracking-tight text-white font-display uppercase leading-none select-none"
               >
                 Analyze beyond
@@ -807,9 +876,9 @@ export default function LandingPage() {
             {/* Headline 2 (Masked Text Reveal) */}
             <div className="overflow-hidden mb-6">
               <motion.h1 
-                initial={{ y: "100%" }}
-                animate={{ y: 0 }}
-                transition={{ duration: 0.8, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
+                variants={headingVariants}
+                custom={0.1}
+                animate={activeSection === 0 ? "active" : "inactive"}
                 className="text-5xl md:text-[85px] font-extrabold tracking-tight figma-gradient-text font-display uppercase leading-none select-none mt-1"
               >
                 intelligence
@@ -818,9 +887,9 @@ export default function LandingPage() {
 
             {/* Subtext */}
             <motion.p 
-              initial={{ opacity: 0, y: 15 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.3 }}
+              variants={textVariants}
+              custom={0.2}
+              animate={activeSection === 0 ? "active" : "inactive"}
               className="text-white/45 text-sm md:text-base font-sans font-normal max-w-[420px] leading-[1.7] mb-8 mx-auto"
             >
               A 3D-first analyst operating system where data, motion, and intelligence merge into one living interface.
@@ -828,9 +897,9 @@ export default function LandingPage() {
 
             {/* CTAs */}
             <motion.div 
-              initial={{ opacity: 0, y: 15 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.5 }}
+              variants={cardVariants}
+              custom={0.35}
+              animate={activeSection === 0 ? "active" : "inactive"}
               className="flex flex-row items-center gap-4 justify-center mb-12 font-sans"
             >
               <Link 
@@ -850,9 +919,9 @@ export default function LandingPage() {
 
             {/* Pulsing Status Pill */}
             <motion.div 
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.7 }}
+              variants={cardVariants}
+              custom={0.5}
+              animate={activeSection === 0 ? "active" : "inactive"}
               className="bg-white/[0.05] border border-white/[0.1] rounded-full px-5 py-2.5 backdrop-blur-[10px] flex items-center justify-center space-x-2.5 mx-auto text-center pointer-events-none select-none"
             >
               <span className="w-1.5 h-1.5 rounded-full bg-[#34d399] figma-pulse-circle animate-pulse" />
@@ -862,9 +931,9 @@ export default function LandingPage() {
             </motion.div>
 
             <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.9 }}
+              variants={cardVariants}
+              custom={0.65}
+              animate={activeSection === 0 ? "active" : "inactive"}
               className="text-[10px] font-mono text-slate-500 flex items-center space-x-2 justify-center mt-4"
             >
               <span className="pulse-green"></span>
@@ -878,15 +947,22 @@ export default function LandingPage() {
         {/* ==========================================
         * SECTION 2: FEATURE GRID & STAT CARDS
         * ========================================== */}
-        <section className="w-screen h-screen flex-shrink-0 snap-start overflow-hidden relative flex items-center justify-center px-12 md:px-20 pt-16">
+        <section 
+          className="w-screen h-screen flex-shrink-0 snap-start overflow-hidden relative flex items-center justify-center px-12 md:px-20 pt-16 transition-all duration-1000"
+          style={{
+            transform: `scale(${activeSection === 1 ? 1 : 0.97})`,
+            filter: `blur(${activeSection === 1 ? 0 : 2}px)`,
+            opacity: activeSection === 1 ? 1 : 0.6,
+            transition: "transform 1.2s cubic-bezier(0.16, 1, 0.3, 1), filter 1.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 1.2s cubic-bezier(0.16, 1, 0.3, 1)"
+          }}
+        >
           <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
             
             {/* Left Panel: Description and Chat Terminal Cockpit */}
             <motion.div 
-              initial={{ opacity: 0, x: -30 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.8 }}
+              variants={cardVariants}
+              custom={0.15}
+              animate={activeSection === 1 ? "active" : "inactive"}
               className="lg:col-span-7 text-left space-y-4"
             >
               <span className="terminal-badge">02. FEATURES GRIDS</span>
@@ -943,38 +1019,43 @@ export default function LandingPage() {
             </motion.div>
 
             {/* Right Panel: The 4 Figma stat cards floating 2x2 grid */}
-            <div className="lg:col-span-5 flex justify-center">
+            <motion.div 
+              variants={cardVariants}
+              custom={0.35}
+              animate={activeSection === 1 ? "active" : "inactive"}
+              className="lg:col-span-5 flex justify-center"
+            >
               <div className="grid grid-cols-2 gap-4">
                 <FloatingStatCard 
                   label="Data Models" 
                   val="1,200+" 
                   sub="↑ Live pipelines" 
-                  delay={0.2}
+                  delay={0.1}
                   duration={14}
                 />
                 <FloatingStatCard 
                   label="Latency" 
                   val="12ms" 
                   sub="↑ Real-time" 
-                  delay={0.4}
+                  delay={0.2}
                   duration={18}
                 />
                 <FloatingStatCard 
                   label="Accuracy" 
                   val="99.4%" 
                   sub="↑ ML inference" 
-                  delay={0.6}
+                  delay={0.3}
                   duration={16}
                 />
                 <FloatingStatCard 
                   label="Dashboards" 
                   val="340+" 
                   sub="↑ Auto-generated" 
-                  delay={0.8}
+                  delay={0.4}
                   duration={20}
                 />
               </div>
-            </div>
+            </motion.div>
 
           </div>
         </section>
@@ -982,15 +1063,22 @@ export default function LandingPage() {
         {/* ==========================================
         * SECTION 3: METRICS 2×3 DCF SANDBOX
         * ========================================== */}
-        <section className="w-screen h-screen flex-shrink-0 snap-start overflow-hidden relative flex items-center justify-center px-12 md:px-20 pt-16">
+        <section 
+          className="w-screen h-screen flex-shrink-0 snap-start overflow-hidden relative flex items-center justify-center px-12 md:px-20 pt-16 transition-all duration-1000"
+          style={{
+            transform: `scale(${activeSection === 2 ? 1 : 0.97})`,
+            filter: `blur(${activeSection === 2 ? 0 : 2}px)`,
+            opacity: activeSection === 2 ? 1 : 0.6,
+            transition: "transform 1.2s cubic-bezier(0.16, 1, 0.3, 1), filter 1.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 1.2s cubic-bezier(0.16, 1, 0.3, 1)"
+          }}
+        >
           <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
             
             {/* Left Panel: The DCF assumptions sliders */}
             <motion.div 
-              initial={{ opacity: 0, x: -30 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.8 }}
+              variants={cardVariants}
+              custom={0.15}
+              animate={activeSection === 2 ? "active" : "inactive"}
               className="lg:col-span-5 text-left space-y-4"
             >
               <span className="terminal-badge">03. METRICS SANDBOX</span>
@@ -1068,10 +1156,9 @@ export default function LandingPage() {
 
             {/* Right Panel: Metrics 2x3 Grid */}
             <motion.div 
-              initial={{ opacity: 0, scale: 0.95 }}
-              whileInView={{ opacity: 1, scale: 1.0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.8 }}
+              variants={cardVariants}
+              custom={0.35}
+              animate={activeSection === 2 ? "active" : "inactive"}
               className="lg:col-span-7 w-full"
             >
               <div className="grid grid-cols-3 gap-3">
@@ -1127,15 +1214,22 @@ export default function LandingPage() {
         {/* ==========================================
         * SECTION 4: DESIGN STACK 2×2 GRID
         * ========================================== */}
-        <section className="w-screen h-screen flex-shrink-0 snap-start overflow-hidden relative flex items-center justify-center px-12 md:px-20 pt-16">
+        <section 
+          className="w-screen h-screen flex-shrink-0 snap-start overflow-hidden relative flex items-center justify-center px-12 md:px-20 pt-16 transition-all duration-1000"
+          style={{
+            transform: `scale(${activeSection === 3 ? 1 : 0.97})`,
+            filter: `blur(${activeSection === 3 ? 0 : 2}px)`,
+            opacity: activeSection === 3 ? 1 : 0.6,
+            transition: "transform 1.2s cubic-bezier(0.16, 1, 0.3, 1), filter 1.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 1.2s cubic-bezier(0.16, 1, 0.3, 1)"
+          }}
+        >
           <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
             
             {/* Left Panel: Description */}
             <motion.div 
-              initial={{ opacity: 0, x: -30 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.8 }}
+              variants={cardVariants}
+              custom={0.15}
+              animate={activeSection === 3 ? "active" : "inactive"}
               className="lg:col-span-5 text-left space-y-4"
             >
               <span className="terminal-badge">04. STACK SPECS</span>
@@ -1149,10 +1243,9 @@ export default function LandingPage() {
 
             {/* Right Panel: 2x2 Grid Stack Cards */}
             <motion.div 
-              initial={{ opacity: 0, scale: 0.95 }}
-              whileInView={{ opacity: 1, scale: 1.0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.8 }}
+              variants={cardVariants}
+              custom={0.35}
+              animate={activeSection === 3 ? "active" : "inactive"}
               className="lg:col-span-7 w-full"
             >
               <div className="grid grid-cols-2 gap-4">
@@ -1202,15 +1295,22 @@ export default function LandingPage() {
         {/* ==========================================
         * SECTION 5: FINAL CTA & LOCKED VALUATION VAULT
         * ========================================== */}
-        <section className="w-screen h-screen flex-shrink-0 snap-start overflow-hidden relative flex items-center justify-center px-12 md:px-20 pt-16">
+        <section 
+          className="w-screen h-screen flex-shrink-0 snap-start overflow-hidden relative flex items-center justify-center px-12 md:px-20 pt-16 transition-all duration-1000"
+          style={{
+            transform: `scale(${activeSection === 4 ? 1 : 0.97})`,
+            filter: `blur(${activeSection === 4 ? 0 : 2}px)`,
+            opacity: activeSection === 4 ? 1 : 0.6,
+            transition: "transform 1.2s cubic-bezier(0.16, 1, 0.3, 1), filter 1.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 1.2s cubic-bezier(0.16, 1, 0.3, 1)"
+          }}
+        >
           <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
             
             {/* Left Panel: Waitlist locker capture form */}
             <motion.div 
-              initial={{ opacity: 0, x: -30 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.8 }}
+              variants={cardVariants}
+              custom={0.15}
+              animate={activeSection === 4 ? "active" : "inactive"}
               className="lg:col-span-6 text-left space-y-4"
             >
               <span className="terminal-badge">05. SECURE LOCKER</span>
@@ -1261,10 +1361,9 @@ export default function LandingPage() {
 
             {/* Right Panel: Vault items copy scorecard links list */}
             <motion.div 
-              initial={{ opacity: 0, scale: 0.95 }}
-              whileInView={{ opacity: 1, scale: 1.0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.8 }}
+              variants={cardVariants}
+              custom={0.35}
+              animate={activeSection === 4 ? "active" : "inactive"}
               className="lg:col-span-6 w-full font-mono text-[11px] text-left bg-slate-950/60 border border-white/[0.05] p-5 rounded-2xl"
             >
               <div className="space-y-3">
