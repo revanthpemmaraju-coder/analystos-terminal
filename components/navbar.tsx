@@ -163,10 +163,6 @@ export default function Navbar() {
           </div>
         ) : (
           <div className="flex items-center space-x-3 text-xs">
-            <Link href="/dashboard?founder=true" className="text-[#00f0ff] hover:text-[#00f0ff]/80 font-bold transition-colors">
-              [FOUNDER_PORT]
-            </Link>
-            <span className="text-white/20">|</span>
             <Link href="/login" className="text-slate-400 hover:text-white transition-colors">
               [LOG_IN]
             </Link>
