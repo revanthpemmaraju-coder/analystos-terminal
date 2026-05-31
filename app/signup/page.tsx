@@ -22,6 +22,12 @@ function SignupForm() {
   const [errorMsg, setErrorMsg] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
 
+  // Restore native cursor (landing page hides it globally via cursor: none)
+  useEffect(() => {
+    document.body.classList.add("page-signup");
+    return () => document.body.classList.remove("page-signup");
+  }, []);
+
   // Sync plan upgrade request if routed with ?upgrade=true
   useEffect(() => {
     if (searchParams.get("upgrade") === "true") {

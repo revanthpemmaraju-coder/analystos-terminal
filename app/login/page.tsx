@@ -16,6 +16,12 @@ export default function LoginPage() {
   const [errorMsg, setErrorMsg] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
 
+  // Restore native cursor (landing page hides it globally via cursor: none)
+  useEffect(() => {
+    document.body.classList.add("page-login");
+    return () => document.body.classList.remove("page-login");
+  }, []);
+
   // Re-verify if session is already active and redirect
   useEffect(() => {
     async function checkSession() {

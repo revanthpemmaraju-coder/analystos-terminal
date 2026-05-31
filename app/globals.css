@@ -22,6 +22,27 @@ body {
   margin: 0;
   overflow-x: hidden;
   cursor: none;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeSpeed;
+}
+
+/* Restore default cursor on non-landing pages (dashboard, login, signup) */
+body.page-dashboard,
+body.page-login,
+body.page-signup,
+body.page-stocks,
+body.page-dcf,
+body.page-portfolio,
+body.page-analyst {
+  cursor: auto !important;
+}
+
+/* Restore cursor for all interactive elements on non-landing pages */
+body.page-dashboard *,
+body.page-login *,
+body.page-signup * {
+  cursor: auto !important;
 }
 
 .terminal-font {
@@ -127,6 +148,14 @@ body {
   background: rgba(0, 230, 118, 0.1);
   color: var(--premium-green);
   border: 1px solid rgba(0, 230, 118, 0.2);
+}
+
+/* Custom cursor GPU acceleration */
+.custom-cursor-dot,
+.custom-cursor-ring {
+  will-change: transform;
+  backface-visibility: hidden;
+  transform-style: flat;
 }
 
 /* Glow effects and cursor */

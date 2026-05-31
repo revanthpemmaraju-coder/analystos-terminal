@@ -387,8 +387,8 @@ export default function LandingPage() {
     const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 2000);
     camera.position.set(0, 0, 600);
 
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    const renderer = new THREE.WebGLRenderer({ antialias: window.devicePixelRatio <= 1, alpha: true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
     renderer.setSize(width, height);
     renderer.setClearColor(0x020010, 1);
     container.appendChild(renderer.domElement);
@@ -716,54 +716,59 @@ export default function LandingPage() {
     };
   }, []);
 
-  // Parallax mouse effect
-  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
-  useEffect(() => {
-    const handleMouseParallax = (e: MouseEvent) => {
-      const x = (e.clientX - window.innerWidth / 2) / (window.innerWidth / 2);
-      const y = (e.clientY - window.innerHeight / 2) / (window.innerHeight / 2);
-      setMousePos({ x, y });
-    };
-    window.addEventListener("mousemove", handleMouseParallax);
-    return () => window.removeEventListener("mousemove", handleMouseParallax);
-  }, []);
+  // Parallax mouse effect — use MotionValues to avoid React re-renders on every mousemove
+  const parallaxX = useMotionValue(0);
+  const parallaxY = useMotionValue(0);
+  // Smoothed parallax values for CSS transform
+  const smoothParX = useSpring(parallaxX, { stiffness: 40, damping: 20 });
+  const smoothParY = useSpring(parallaxY, { stiffness: 40, damping: 20 });
 
   // Premium Custom Spring Cursor coordinates
   const [isHovered, setIsHovered] = useState(false);
   const [isClicked, setIsClicked] = useState(false);
-  const mouseCursorX = useMotionValue(-100);
-  const mouseCursorY = useMotionValue(-100);
-  const cursorRingX = useSpring(mouseCursorX, { stiffness: 120, damping: 18 });
-  const cursorRingY = useSpring(mouseCursorY, { stiffness: 120, damping: 18 });
+  const mouseCursorX = useMotionValue(typeof window !== 'undefined' ? window.innerWidth / 2 : 0);
+  const mouseCursorY = useMotionValue(typeof window !== 'undefined' ? window.innerHeight / 2 : 0);
+  const cursorRingX = useSpring(mouseCursorX, { stiffness: 200, damping: 28 });
+  const cursorRingY = useSpring(mouseCursorY, { stiffness: 200, damping: 28 });
 
   useEffect(() => {
+    let rafId: number | null = null;
     const moveCursor = (e: MouseEvent) => {
+      // Direct set — MotionValue bypasses React scheduler, no re-render
       mouseCursorX.set(e.clientX);
       mouseCursorY.set(e.clientY);
+      // Parallax: throttle via RAF to avoid overloading
+      if (rafId !== null) return;
+      rafId = requestAnimationFrame(() => {
+        const x = (e.clientX - window.innerWidth / 2) / (window.innerWidth / 2);
+        const y = (e.clientY - window.innerHeight / 2) / (window.innerHeight / 2);
+        parallaxX.set(x);
+        parallaxY.set(y);
+        rafId = null;
+      });
     };
     const handleHoverTarget = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
       if (!target) return;
-      if (
+      const isInteractive = 
         target.tagName === "BUTTON" || 
         target.tagName === "A" || 
-        target.closest("button") || 
-        target.closest("a") || 
-        target.classList.contains("clickable")
-      ) {
-        setIsHovered(true);
-      } else {
-        setIsHovered(false);
-      }
+        target.tagName === "INPUT" || 
+        target.tagName === "SELECT" || 
+        !!target.closest("button") || 
+        !!target.closest("a") || 
+        target.classList.contains("clickable");
+      setIsHovered(isInteractive);
     };
     const handleMouseDown = () => setIsClicked(true);
     const handleMouseUp = () => setIsClicked(false);
 
-    window.addEventListener("mousemove", moveCursor);
-    window.addEventListener("mouseover", handleHoverTarget);
-    window.addEventListener("mousedown", handleMouseDown);
-    window.addEventListener("mouseup", handleMouseUp);
+    window.addEventListener("mousemove", moveCursor, { passive: true });
+    window.addEventListener("mouseover", handleHoverTarget, { passive: true });
+    window.addEventListener("mousedown", handleMouseDown, { passive: true });
+    window.addEventListener("mouseup", handleMouseUp, { passive: true });
     return () => {
+      if (rafId !== null) cancelAnimationFrame(rafId);
       window.removeEventListener("mousemove", moveCursor);
       window.removeEventListener("mouseover", handleHoverTarget);
       window.removeEventListener("mousedown", handleMouseDown);
@@ -1011,12 +1016,12 @@ export default function LandingPage() {
   return (
     <div className="flex flex-col h-screen w-screen overflow-hidden bg-[#020010] text-slate-100 font-sans selection:bg-[#a78bfa]/30 selection:text-white relative">
       
-      {/* Parallax Layer 1: Ambient Glow Orbs (Deep Background - 0.25x Speed + Mouse Parallax) */}
+      {/* Parallax Layer 1: Ambient Glow Orbs — section offset via CSS transition */}
       <div 
         className="fixed inset-0 pointer-events-none z-0 overflow-hidden"
         style={{ 
-          transform: `translate3d(calc(${-sectionCoordinates[activeSection].x * 0.25}vw + ${mousePos.x * 20}px), calc(${-sectionCoordinates[activeSection].y * 0.25}vh + ${mousePos.y * 20}px), 0)`,
-          transition: "transform 1.2s cubic-bezier(0.16, 1, 0.3, 1)" 
+          transform: `translate3d(${-sectionCoordinates[activeSection].x * 0.25}vw, ${-sectionCoordinates[activeSection].y * 0.25}vh, 0)`,
+          transition: "transform 1.2s cubic-bezier(0.16, 1, 0.3, 1)"
         }}
       >
         <div className="absolute w-[400px] h-[400px] rounded-full bg-[#a78bfa] opacity-[0.12] blur-[120px]" style={{ left: "60vw", top: "20vh" }} />
@@ -1025,22 +1030,22 @@ export default function LandingPage() {
         <div className="absolute w-[500px] h-[500px] rounded-full bg-gradient-to-r from-[#a78bfa] to-[#60a5fa] opacity-[0.11] blur-[140px]" style={{ left: "390vw", top: "50vh" }} />
       </div>
 
-      {/* Parallax Layer 2: Technical Grid Vector (Midground - 0.18x Speed + Mouse Parallax) */}
+      {/* Parallax Layer 2: Technical Grid Vector */}
       <div 
         className="fixed inset-0 pointer-events-none z-0 overflow-hidden"
         style={{ 
-          transform: `translate3d(calc(${-sectionCoordinates[activeSection].x * 0.18}vw + ${mousePos.x * 12}px), calc(${-sectionCoordinates[activeSection].y * 0.18}vh + ${mousePos.y * 12}px), 0)`,
+          transform: `translate3d(${-sectionCoordinates[activeSection].x * 0.18}vw, ${-sectionCoordinates[activeSection].y * 0.18}vh, 0)`,
           transition: "transform 1.2s cubic-bezier(0.16, 1, 0.3, 1)" 
         }}
       >
         <div className="absolute inset-y-0 w-[500vw] opacity-[0.03]" style={{ backgroundImage: "radial-gradient(rgba(255,255,255,0.15) 1px, transparent 1px)", backgroundSize: "24px 24px" }} />
       </div>
 
-      {/* Parallax Layer 3: Foreground Dust Particles (Floating Overlay - 0.05x Speed + Mouse Parallax) */}
+      {/* Parallax Layer 3: Foreground Dust Particles */}
       <div 
         className="fixed inset-0 pointer-events-none z-20 overflow-hidden"
         style={{ 
-          transform: `translate3d(calc(${-sectionCoordinates[activeSection].x * 0.05}vw + ${mousePos.x * 6}px), calc(${-sectionCoordinates[activeSection].y * 0.05}vh + ${mousePos.y * 6}px), 0)`,
+          transform: `translate3d(${-sectionCoordinates[activeSection].x * 0.05}vw, ${-sectionCoordinates[activeSection].y * 0.05}vh, 0)`,
           transition: "transform 1.2s cubic-bezier(0.16, 1, 0.3, 1)" 
         }}
       >
@@ -1050,13 +1055,13 @@ export default function LandingPage() {
         <div className="absolute text-[#a78bfa]/20 font-mono text-sm" style={{ left: "425vw", top: "80vh" }}>+</div>
       </div>
 
-      {/* 2. WebGL Three.js Scene container centered globally behind */}
+      {/* 2. WebGL Three.js Scene container */}
       <div 
         ref={canvasContainerRef} 
         id="hero-canvas-container" 
         className="fixed inset-0 z-0 pointer-events-none" 
         style={{
-          transform: `translate3d(calc(${-sectionCoordinates[activeSection].x * 0.12}vw + ${mousePos.x * 8}px), calc(${-sectionCoordinates[activeSection].y * 0.12}vh + ${mousePos.y * 8}px), 0)`,
+          transform: `translate3d(${-sectionCoordinates[activeSection].x * 0.12}vw, ${-sectionCoordinates[activeSection].y * 0.12}vh, 0)`,
           transition: "transform 1.2s cubic-bezier(0.16, 1, 0.3, 1)"
         }}
       />
@@ -1064,27 +1069,31 @@ export default function LandingPage() {
       {/* 1. Spring Custom double-ring mouse cursor */}
       <div className="hidden md:block">
         <motion.div
-          className="fixed top-0 left-0 w-3 h-3 bg-[#a78bfa] rounded-full pointer-events-none z-[9999]"
+          className="fixed top-0 left-0 pointer-events-none z-[9999]"
           style={{
             x: mouseCursorX,
             y: mouseCursorY,
             translateX: "-50%",
             translateY: "-50%",
-            scale: isClicked ? 0.5 : (isHovered ? 0.66 : 1),
+            width: isClicked ? "10px" : (isHovered ? "8px" : "12px"),
+            height: isClicked ? "10px" : (isHovered ? "8px" : "12px"),
+            borderRadius: "50%",
             backgroundColor: isClicked ? "#34d399" : "#a78bfa",
+            boxShadow: isClicked ? "0 0 12px #34d399" : "0 0 8px #a78bfa",
           }}
         />
         <motion.div
-          className="fixed top-0 left-0 w-10 h-10 border rounded-full pointer-events-none z-[9999]"
+          className="fixed top-0 left-0 pointer-events-none z-[9999] rounded-full border"
           style={{
             x: cursorRingX,
             y: cursorRingY,
             translateX: "-50%",
             translateY: "-50%",
-            scale: isClicked ? 0.8 : (isHovered ? 1.5 : 1),
-            borderColor: isClicked ? "#34d399" : "#a78bfa",
-            borderWidth: isClicked ? "2px" : "1px",
-            opacity: isClicked ? 0.8 : 0.4,
+            width: isHovered ? "48px" : "36px",
+            height: isHovered ? "48px" : "36px",
+            borderColor: isClicked ? "#34d399" : "rgba(167, 139, 250, 0.9)",
+            borderWidth: isClicked ? "2px" : "1.5px",
+            opacity: 0.9,
           }}
         />
       </div>

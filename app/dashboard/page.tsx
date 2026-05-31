@@ -158,6 +158,12 @@ export default function DashboardPage() {
   // Bloomberg Resizable Panel Width State (in percentage)
   const [panelWidth, setPanelWidth] = useState<number>(30); // 30% width
 
+  // Restore native cursor on dashboard (landing page uses cursor: none globally)
+  useEffect(() => {
+    document.body.classList.add("page-dashboard");
+    return () => document.body.classList.remove("page-dashboard");
+  }, []);
+
   // Protection & Session
   useEffect(() => {
     async function checkAuth() {
