@@ -23,6 +23,43 @@ const formatIndianCurrency = (num: number) => {
   return '₹' + num.toLocaleString('en-IN');
 };
 
+const TiltCard = ({ children, className, style }: { children: React.ReactNode; className?: string; style?: any }) => {
+  const rotateX = useSpring(useMotionValue(0), { stiffness: 150, damping: 22 });
+  const rotateY = useSpring(useMotionValue(0), { stiffness: 150, damping: 22 });
+
+  function handleMouseMove(event: React.MouseEvent<HTMLDivElement>) {
+    const rect = event.currentTarget.getBoundingClientRect();
+    const width = rect.width;
+    const height = rect.height;
+    const mouseX = event.clientX - rect.left - width / 2;
+    const mouseY = event.clientY - rect.top - height / 2;
+    rotateX.set(-(mouseY / (height / 2)) * 6);
+    rotateY.set((mouseX / (width / 2)) * 6);
+  }
+
+  function handleMouseLeave() {
+    rotateX.set(0);
+    rotateY.set(0);
+  }
+
+  return (
+    <motion.div
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
+      style={{
+        rotateX,
+        rotateY,
+        transformStyle: "preserve-3d",
+        perspective: "1000px",
+        ...style
+      }}
+      className={className}
+    >
+      {children}
+    </motion.div>
+  );
+};
+
 const FloatingStatCard = ({ 
   label, val, sub, className, delay, duration 
 }: { 
@@ -59,6 +96,123 @@ const FloatingStatCard = ({
   );
 };
 
+const MagneticButton = ({ 
+  children, 
+  className, 
+  onClick, 
+  href, 
+  type = "button", 
+  disabled = false 
+}: { 
+  children: React.ReactNode; 
+  className?: string; 
+  onClick?: () => void; 
+  href?: string; 
+  type?: "button" | "submit" | "reset"; 
+  disabled?: boolean; 
+}) => {
+  const x = useSpring(useMotionValue(0), { stiffness: 120, damping: 15 });
+  const y = useSpring(useMotionValue(0), { stiffness: 120, damping: 15 });
+
+  function handleMouseMove(e: React.MouseEvent<HTMLButtonElement | HTMLAnchorElement>) {
+    if (disabled) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const mouseX = e.clientX - rect.left - rect.width / 2;
+    const mouseY = e.clientY - rect.top - rect.height / 2;
+    x.set(mouseX * 0.35);
+    y.set(mouseY * 0.35);
+  }
+
+  function handleMouseLeave() {
+    x.set(0);
+    y.set(0);
+  }
+
+  if (href) {
+    return (
+      <motion.a
+        href={href}
+        onMouseMove={handleMouseMove}
+        onMouseLeave={handleMouseLeave}
+        style={{ x, y }}
+        className={className}
+      >
+        {children}
+      </motion.a>
+    );
+  }
+
+  return (
+    <motion.button
+      type={type}
+      disabled={disabled}
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
+      onClick={onClick}
+      style={{ x, y }}
+      className={className}
+    >
+      {children}
+    </motion.button>
+  );
+};
+
+const AnimatedTerminalPreview = () => {
+  const [lines, setLines] = useState<string[]>([]);
+  
+  useEffect(() => {
+    const scripts = [
+      ">> ANALYST.OS SYSTEMS CONNECTING SECURE CLIENT NODE...",
+      ">> CONNECTED DIRECTLY TO NSE MULTICAST INDEX SOCKETS",
+      ">> NSE_NODE LIVE STREAM CHANNEL ONLINE [12ms LATENCY]",
+      ">> CORE_VALUATION_ENGINE INITIALIZED IN WEBASSEMBLY",
+      ">> SYS_COMPILE: Scanning active Reliance assumptions...",
+      "   - EBITDA: ₹1,20,000 Lakhs | exit Multiple: 14.0x",
+      "   - Discount rate (WACC): 9.0% | Cash flow CAGR: 15.0%",
+      ">> COMPILING SENSITIVITY GRADIENT MODELS AT 60 FPS",
+      ">> INTRINSIC PROJECTION: Fair market share price: ₹2,580.40",
+      ">> TASK_STATUS: COMPLETED [SECURE VAULT ACCESS GRANTED]",
+      "----------------------------------------------------------"
+    ];
+
+    let currentIdx = 0;
+    setLines(scripts.slice(0, 3));
+    currentIdx = 3;
+
+    const interval = setInterval(() => {
+      setLines(prev => {
+        if (currentIdx < scripts.length) {
+          const nextLines = [...prev, scripts[currentIdx]];
+          currentIdx++;
+          return nextLines;
+        } else {
+          currentIdx = 0;
+          return [];
+        }
+      });
+    }, 1800);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <div className="w-full bg-[#05070a]/90 border border-white/10 rounded-xl p-5 font-mono text-[10px] text-slate-400 text-left h-[180px] overflow-y-auto select-none space-y-1.5 scrollbar-thin shadow-2xl relative">
+      <div className="flex items-center space-x-1.5 border-b border-white/5 pb-2 mb-3 text-[9px] text-slate-500 uppercase">
+        <span className="w-1.5 h-1.5 rounded-full bg-[#ff3860] animate-pulse" />
+        <span className="w-1.5 h-1.5 rounded-full bg-[#ffdd57]" />
+        <span className="w-1.5 h-1.5 rounded-full bg-[#34d399]" />
+        <span className="font-bold ml-2">SYSTEMS_MONITOR_COMPILER</span>
+      </div>
+      {lines.map((ln, i) => (
+        <div key={i} className={ln.startsWith(">>") ? "text-[#a78bfa]" : "text-slate-350"}>
+          {ln}
+        </div>
+      ))}
+      <span className="blinking-cursor" />
+    </div>
+  );
+};
+
 export default function LandingPage() {
   // Navigation countdown target date (June 14, 2026)
   const [countdown, setCountdown] = useState("");
@@ -85,45 +239,115 @@ export default function LandingPage() {
   // Three.js Ref
   const canvasContainerRef = useRef<HTMLDivElement>(null);
   
-  // Horizontal Scroll Snapping States
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const [scrollLeft, setScrollLeft] = useState(0);
-  const [scrollWidth, setScrollWidth] = useState(1);
-  const [clientWidth, setClientWidth] = useState(1);
+  // Custom 2D Grid Page Navigation
+  const [activeSection, setActiveSection] = useState(0);
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const [infoHubActive, setInfoHubActive] = useState(false);
+  const [pricingTableOpen, setPricingTableOpen] = useState(false);
 
-  const activeSection = Math.round(scrollLeft / (clientWidth || 1));
-  const scrollProgress = scrollLeft / (scrollWidth - clientWidth || 1);
+  const sectionCoordinates = [
+    { x: 0,   y: 0 },   // 01. HERO
+    { x: 100, y: 0 },   // 02. FEATURES (slides sideways right)
+    { x: 100, y: 100 }, // 03. METRICS (slides downward down)
+    { x: 200, y: 100 }, // 04. PRICING (slides sideways right)
+    { x: 200, y: 200 }, // 05. ROADMAP (slides downward down)
+    { x: 100, y: 200 }, // 06. SECURE VAULT (slides sideways left)
+  ];
 
-  const handleScrollEvent = () => {
-    if (scrollRef.current) {
-      setScrollLeft(scrollRef.current.scrollLeft);
-      setScrollWidth(scrollRef.current.scrollWidth);
-      setClientWidth(scrollRef.current.clientWidth);
-    }
-  };
+  const scrollLeft = typeof window !== "undefined" ? activeSection * window.innerWidth : 0;
+  const scrollProgress = activeSection / 5;
 
   const scrollToSection = (idx: number) => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTo({
-        left: idx * window.innerWidth,
-        behavior: "smooth"
-      });
-    }
+    if (isTransitioning) return;
+    setIsTransitioning(true);
+    setActiveSection(idx);
+    setTimeout(() => setIsTransitioning(false), 1000);
   };
 
+  // Track activeSection in a Ref for Three.js rendering
+  const activeSectionRef = useRef(0);
   useEffect(() => {
-    const el = scrollRef.current;
-    if (el) {
-      el.addEventListener("scroll", handleScrollEvent);
-      // Initialize dimensions
+    activeSectionRef.current = activeSection;
+  }, [activeSection]);
+
+  // Touch swipe states
+  const touchStartRef = useRef<{ x: number; y: number } | null>(null);
+
+  useEffect(() => {
+    const handleWheel = (e: WheelEvent) => {
+      if (pricingTableOpen || infoHubActive) return;
+      e.preventDefault();
+      if (isTransitioning) return;
+
+      const threshold = 35;
+      if (Math.abs(e.deltaY) < threshold && Math.abs(e.deltaX) < threshold) return;
+
+      setIsTransitioning(true);
+      if (e.deltaY > 0 || e.deltaX > 0) {
+        setActiveSection(prev => Math.min(5, prev + 1));
+      } else if (e.deltaY < 0 || e.deltaX < 0) {
+        setActiveSection(prev => Math.max(0, prev - 1));
+      }
+
       setTimeout(() => {
-        setScrollLeft(el.scrollLeft);
-        setScrollWidth(el.scrollWidth);
-        setClientWidth(el.clientWidth);
-      }, 500);
-    }
-    return () => el?.removeEventListener("scroll", handleScrollEvent);
-  }, []);
+        setIsTransitioning(false);
+      }, 1000);
+    };
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (pricingTableOpen || infoHubActive) return;
+      if (["ArrowDown", "ArrowRight", "Space"].includes(e.key)) {
+        e.preventDefault();
+        scrollToSection(Math.min(5, activeSection + 1));
+      } else if (["ArrowUp", "ArrowLeft"].includes(e.key)) {
+        e.preventDefault();
+        scrollToSection(Math.max(0, activeSection - 1));
+      }
+    };
+
+    const handleTouchStart = (e: TouchEvent) => {
+      if (pricingTableOpen || infoHubActive) return;
+      const t = e.touches[0];
+      touchStartRef.current = { x: t.clientX, y: t.clientY };
+    };
+
+    const handleTouchEnd = (e: TouchEvent) => {
+      if (pricingTableOpen || infoHubActive || !touchStartRef.current) return;
+      const t = e.changedTouches[0];
+      const dx = touchStartRef.current.x - t.clientX;
+      const dy = touchStartRef.current.y - t.clientY;
+      const swipeThreshold = 50;
+
+      if (Math.abs(dx) > swipeThreshold || Math.abs(dy) > swipeThreshold) {
+        if (Math.abs(dx) > Math.abs(dy)) {
+          if (dx > 0) {
+            scrollToSection(Math.min(5, activeSection + 1));
+          } else {
+            scrollToSection(Math.max(0, activeSection - 1));
+          }
+        } else {
+          if (dy > 0) {
+            scrollToSection(Math.min(5, activeSection + 1));
+          } else {
+            scrollToSection(Math.max(0, activeSection - 1));
+          }
+        }
+      }
+      touchStartRef.current = null;
+    };
+
+    window.addEventListener("wheel", handleWheel, { passive: false });
+    window.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("touchstart", handleTouchStart);
+    window.addEventListener("touchend", handleTouchEnd);
+
+    return () => {
+      window.removeEventListener("wheel", handleWheel);
+      window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("touchstart", handleTouchStart);
+      window.removeEventListener("touchend", handleTouchEnd);
+    };
+  }, [isTransitioning, activeSection, pricingTableOpen, infoHubActive]);
 
   // Three.js interactive background setup
   useEffect(() => {
@@ -379,14 +603,10 @@ export default function LandingPage() {
       const time = clock.getElapsedTime();
       const dt = Math.min(clock.getDelta(), 0.1);
 
-      // Scroll progress mapping (horizontally scrolls camera Z position from 600 down to 350)
-      const currentScrollLeft = scrollRef.current ? scrollRef.current.scrollLeft : 0;
-      const currentScrollWidth = scrollRef.current ? scrollRef.current.scrollWidth : 1;
-      const currentClientWidth = scrollRef.current ? scrollRef.current.clientWidth : 1;
-      const currProgress = currentScrollLeft / (currentScrollWidth - currentClientWidth || 1);
-      
-      // Update camera position Z over the horizontal snap coordinates
-      camera.position.z = 600 - currProgress * (600 - 350);
+      // Scroll progress mapping driven smoothly by activeSectionRef coordinate Z interpolation
+      const currProgress = activeSectionRef.current / 5;
+      const targetZ = 600 - currProgress * (600 - 350);
+      camera.position.z += (targetZ - camera.position.z) * 0.05;
 
       // Oscillations
       particles.forEach(p => {
@@ -522,7 +742,6 @@ export default function LandingPage() {
   }, []);
 
   // Sidebar commands hub panel
-  const [infoHubActive, setInfoHubActive] = useState(false);
   const [activeHubTab, setActiveHubTab] = useState<string>("home");
 
   const [contactName, setContactName] = useState("");
@@ -609,7 +828,6 @@ export default function LandingPage() {
   const [vaultUnlocked, setVaultUnlocked] = useState(false);
   const [vaultLoading, setVaultLoading] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
-  const [pricingTableOpen, setPricingTableOpen] = useState(false);
 
   const handleUnlockVault = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -729,6 +947,16 @@ export default function LandingPage() {
     })
   };
 
+  const downwardVariants: any = {
+    inactive: { y: -70, opacity: 0, filter: "blur(6px)" },
+    active: (customDelay: number = 0.2) => ({ 
+      y: 0, 
+      opacity: 1, 
+      filter: "blur(0px)",
+      transition: { duration: 0.8, delay: customDelay, ease: [0.16, 1, 0.3, 1] } 
+    })
+  };
+
   const pricingScaleVariants: any = {
     inactive: { y: 60, scale: 0.94, opacity: 0, filter: "blur(6px)" },
     active: (customDelay: number = 0.3) => ({ 
@@ -753,10 +981,13 @@ export default function LandingPage() {
   return (
     <div className="flex flex-col h-screen w-screen overflow-hidden bg-[#020010] text-slate-100 font-sans selection:bg-[#a78bfa]/30 selection:text-white relative">
       
-      {/* Parallax Layer 1: Ambient Glow Orbs (Deep Background - 0.25x Speed) */}
+      {/* Parallax Layer 1: Ambient Glow Orbs (Deep Background - 0.25x Speed + Mouse Parallax) */}
       <div 
         className="fixed inset-0 pointer-events-none z-0 overflow-hidden"
-        style={{ transform: `translateX(${-scrollLeft * 0.25}px)`, transition: "transform 0.1s ease-out" }}
+        style={{ 
+          transform: `translate3d(calc(${-sectionCoordinates[activeSection].x * 0.25}vw + ${mousePos.x * 20}px), calc(${-sectionCoordinates[activeSection].y * 0.25}vh + ${mousePos.y * 20}px), 0)`,
+          transition: "transform 1.2s cubic-bezier(0.16, 1, 0.3, 1)" 
+        }}
       >
         <div className="absolute w-[400px] h-[400px] rounded-full bg-[#a78bfa] opacity-[0.12] blur-[120px]" style={{ left: "60vw", top: "20vh" }} />
         <div className="absolute w-[500px] h-[500px] rounded-full bg-[#60a5fa] opacity-[0.09] blur-[150px]" style={{ left: "170vw", top: "60vh" }} />
@@ -764,24 +995,41 @@ export default function LandingPage() {
         <div className="absolute w-[500px] h-[500px] rounded-full bg-gradient-to-r from-[#a78bfa] to-[#60a5fa] opacity-[0.11] blur-[140px]" style={{ left: "390vw", top: "50vh" }} />
       </div>
 
-      {/* Parallax Layer 2: Technical Grid Vector (Midground - 0.18x Speed) */}
+      {/* Parallax Layer 2: Technical Grid Vector (Midground - 0.18x Speed + Mouse Parallax) */}
       <div 
         className="fixed inset-0 pointer-events-none z-0 overflow-hidden"
-        style={{ transform: `translateX(${-scrollLeft * 0.18}px)`, transition: "transform 0.1s ease-out" }}
+        style={{ 
+          transform: `translate3d(calc(${-sectionCoordinates[activeSection].x * 0.18}vw + ${mousePos.x * 12}px), calc(${-sectionCoordinates[activeSection].y * 0.18}vh + ${mousePos.y * 12}px), 0)`,
+          transition: "transform 1.2s cubic-bezier(0.16, 1, 0.3, 1)" 
+        }}
       >
         <div className="absolute inset-y-0 w-[500vw] opacity-[0.03]" style={{ backgroundImage: "radial-gradient(rgba(255,255,255,0.15) 1px, transparent 1px)", backgroundSize: "24px 24px" }} />
       </div>
 
-      {/* Parallax Layer 3: Foreground Dust Particles (Floating Overlay - 0.05x Speed) */}
+      {/* Parallax Layer 3: Foreground Dust Particles (Floating Overlay - 0.05x Speed + Mouse Parallax) */}
       <div 
         className="fixed inset-0 pointer-events-none z-20 overflow-hidden"
-        style={{ transform: `translateX(${-scrollLeft * 0.05}px)`, transition: "transform 0.1s ease-out" }}
+        style={{ 
+          transform: `translate3d(calc(${-sectionCoordinates[activeSection].x * 0.05}vw + ${mousePos.x * 6}px), calc(${-sectionCoordinates[activeSection].y * 0.05}vh + ${mousePos.y * 6}px), 0)`,
+          transition: "transform 1.2s cubic-bezier(0.16, 1, 0.3, 1)" 
+        }}
       >
         <div className="absolute text-[#a78bfa]/20 font-mono text-sm" style={{ left: "110vw", top: "25vh" }}>+</div>
         <div className="absolute text-[#60a5fa]/20 font-mono text-sm" style={{ left: "215vw", top: "75vh" }}>+</div>
         <div className="absolute text-[#34d399]/20 font-mono text-sm" style={{ left: "320vw", top: "30vh" }}>+</div>
         <div className="absolute text-[#a78bfa]/20 font-mono text-sm" style={{ left: "425vw", top: "80vh" }}>+</div>
       </div>
+
+      {/* 2. WebGL Three.js Scene container centered globally behind */}
+      <div 
+        ref={canvasContainerRef} 
+        id="hero-canvas-container" 
+        className="fixed inset-0 z-0 pointer-events-none" 
+        style={{
+          transform: `translate3d(calc(${-sectionCoordinates[activeSection].x * 0.12}vw + ${mousePos.x * 8}px), calc(${-sectionCoordinates[activeSection].y * 0.12}vh + ${mousePos.y * 8}px), 0)`,
+          transition: "transform 1.2s cubic-bezier(0.16, 1, 0.3, 1)"
+        }}
+      />
 
       {/* 1. Spring Custom double-ring mouse cursor */}
       <div className="hidden md:block">
@@ -806,16 +1054,6 @@ export default function LandingPage() {
           }}
         />
       </div>
-
-      {/* 2. WebGL Three.js Scene container centered globally behind */}
-      <div 
-        ref={canvasContainerRef} 
-        id="hero-canvas-container" 
-        className="fixed inset-0 z-0 pointer-events-none" 
-        style={{
-          transform: `translateX(${-scrollLeft * 0.12}px)` // Parallax horizontal offset
-        }}
-      />
 
       {/* 3. Global Top Navigation (Fixed, 72px transparent) */}
       <header className="w-full bg-transparent h-[72px] px-8 flex items-center justify-between font-sans fixed top-0 left-0 z-40 select-none">
@@ -894,56 +1132,67 @@ export default function LandingPage() {
         style={{ width: `${scrollProgress * 100}%` }}
       />
 
-      {/* 6. MAIN HORIZONTAL SNAP CONTAINER */}
-      <main 
-        ref={scrollRef}
-        className="flex-1 flex flex-row overflow-x-auto overflow-y-hidden snap-x snap-mandatory scroll-smooth w-full h-full scrollbar-none relative z-10"
-      >
-        
-        {/* ==========================================
-        * SECTION 1: HERO COCKPIT
-        * ========================================== */}
-        <section 
-          className="w-screen h-screen flex-shrink-0 snap-start overflow-hidden relative flex flex-col items-center justify-center px-8 md:px-16 pt-16 transition-all duration-1000"
-          style={{
-            transform: `scale(${activeSection === 0 ? 1 : 0.97})`,
-            filter: `blur(${activeSection === 0 ? 0 : 2}px)`,
-            opacity: activeSection === 0 ? 1 : 0.6,
-            transition: "transform 1.2s cubic-bezier(0.16, 1, 0.3, 1), filter 1.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 1.2s cubic-bezier(0.16, 1, 0.3, 1)"
+      {/* 6. MAIN 2D TRANSLATING VIEWPORT CONTAINER */}
+      <main className="flex-1 w-full h-full relative z-10 overflow-hidden">
+        <motion.div
+          animate={{
+            x: `-${sectionCoordinates[activeSection].x}vw`,
+            y: `-${sectionCoordinates[activeSection].y}vh`
           }}
+          transition={{
+            duration: 1.2,
+            ease: [0.16, 1, 0.3, 1] // Premium ultra-smooth bezier curve!
+          }}
+          className="absolute inset-0 w-[300vw] h-[300vh]"
         >
+        
+          {/* ==========================================
+          * SECTION 1: HERO COCKPIT
+          * ========================================== */}
+          <section 
+            className="absolute w-screen h-screen overflow-hidden flex flex-col items-center justify-center px-8 md:px-16 pt-16 transition-all duration-1000"
+            style={{
+              left: "0vw",
+              top: "0vh",
+              transform: `scale(${activeSection === 0 ? 1 : 0.92}) rotate(${activeSection === 0 ? 0 : -2}deg)`,
+              filter: `blur(${activeSection === 0 ? 0 : 2}px)`,
+              opacity: activeSection === 0 ? 1 : 0.6,
+              perspective: "1200px",
+              transition: "transform 1.2s cubic-bezier(0.16, 1, 0.3, 1), filter 1.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 1.2s cubic-bezier(0.16, 1, 0.3, 1)"
+            }}
+          >
           <div className="relative z-10 w-full max-w-4xl flex flex-col items-center text-center">
             
-            {/* Headline 1 (Masked Text Reveal) */}
-            <div className="overflow-hidden mb-1">
+            {/* Headline 1 (Masked Text Reveal - EXACTLY 64px) */}
+            <div className="overflow-hidden mb-2">
               <motion.h1 
                 variants={headingVariants}
                 custom={0}
                 animate={activeSection === 0 ? "active" : "inactive"}
-                className="text-5xl md:text-[85px] font-extrabold tracking-tight text-white font-display uppercase leading-none select-none"
+                className="text-4xl md:text-[64px] font-extrabold tracking-tight text-white font-display uppercase leading-none select-none"
               >
                 Analyze beyond
               </motion.h1>
             </div>
 
-            {/* Headline 2 (Masked Text Reveal) */}
-            <div className="overflow-hidden mb-6">
+            {/* Headline 2 (Masked Text Reveal - EXACTLY 64px) */}
+            <div className="overflow-hidden mb-10">
               <motion.h1 
                 variants={headingVariants}
                 custom={0.1}
                 animate={activeSection === 0 ? "active" : "inactive"}
-                className="text-5xl md:text-[85px] font-extrabold tracking-tight figma-gradient-text font-display uppercase leading-none select-none mt-1"
+                className="text-4xl md:text-[64px] font-extrabold tracking-tight figma-gradient-text font-display uppercase leading-none select-none mt-2"
               >
                 intelligence
               </motion.h1>
             </div>
 
-            {/* Subtext */}
+            {/* Subtext - EXACTLY 20px with spacious leading */}
             <motion.p 
               variants={textVariants}
               custom={0.2}
               animate={activeSection === 0 ? "active" : "inactive"}
-              className="text-white/45 text-sm md:text-base font-sans font-normal max-w-[420px] leading-[1.7] mb-8 mx-auto"
+              className="text-white/50 text-base md:text-[20px] font-sans font-normal max-w-[650px] leading-[1.8] mb-12 mx-auto"
             >
               A 3D-first analyst operating system where data, motion, and intelligence merge into one living interface.
             </motion.p>
@@ -955,19 +1204,19 @@ export default function LandingPage() {
               animate={activeSection === 0 ? "active" : "inactive"}
               className="flex flex-row items-center gap-4 justify-center mb-12 font-sans"
             >
-              <Link 
+              <MagneticButton 
                 href="/signup" 
                 className="bg-[#a78bfa] hover:bg-[#a78bfa]/80 text-[#020010] font-bold text-xs md:text-[14px] uppercase tracking-wider px-8 py-3.5 rounded-full transition-all shadow-[0_0_30px_rgba(167,139,250,0.3)] flex items-center justify-center space-x-2 cursor-none"
               >
                 <span>Launch AnalystOS</span>
                 <ArrowRight className="w-4 h-4" />
-              </Link>
-              <button 
+              </MagneticButton>
+              <MagneticButton 
                 onClick={() => scrollToSection(1)}
                 className="bg-transparent border border-white/20 hover:border-[#a78bfa] hover:text-white text-white/70 text-xs md:text-[14px] uppercase tracking-wider px-8 py-3.5 rounded-full transition-all cursor-none"
               >
                 View Features
-              </button>
+              </MagneticButton>
             </motion.div>
 
             {/* Pulsing Status Pill */}
@@ -994,21 +1243,34 @@ export default function LandingPage() {
               <span className="text-[#34d399] font-bold">{countdown}</span>
             </motion.div>
 
+            {/* Glowing 3D Hero Mock Cockpit Preview */}
+            <motion.div
+              variants={cardVariants}
+              custom={0.8}
+              animate={activeSection === 0 ? "active" : "inactive"}
+              className="mt-10 w-full max-w-lg select-none"
+            >
+              <AnimatedTerminalPreview />
+            </motion.div>
+
           </div>
         </section>
 
-        {/* ==========================================
-        * SECTION 2: FEATURE GRID & STAT CARDS
-        * ========================================== */}
-        <section 
-          className="w-screen h-screen flex-shrink-0 snap-start overflow-hidden relative flex items-center justify-center px-12 md:px-20 pt-16 transition-all duration-1000"
-          style={{
-            transform: `scale(${activeSection === 1 ? 1 : 0.97})`,
-            filter: `blur(${activeSection === 1 ? 0 : 2}px)`,
-            opacity: activeSection === 1 ? 1 : 0.6,
-            transition: "transform 1.2s cubic-bezier(0.16, 1, 0.3, 1), filter 1.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 1.2s cubic-bezier(0.16, 1, 0.3, 1)"
-          }}
-        >
+          {/* ==========================================
+          * SECTION 2: FEATURE GRID & STAT CARDS
+          * ========================================== */}
+          <section 
+            className="absolute w-screen h-screen overflow-hidden flex items-center justify-center px-12 md:px-20 pt-16 transition-all duration-1000"
+            style={{
+              left: "100vw",
+              top: "0vh",
+              transform: `scale(${activeSection === 1 ? 1 : 0.94}) rotateY(${activeSection === 1 ? 0 : 12}deg)`,
+              filter: `blur(${activeSection === 1 ? 0 : 2}px)`,
+              opacity: activeSection === 1 ? 1 : 0.6,
+              perspective: "1200px",
+              transition: "transform 1.2s cubic-bezier(0.16, 1, 0.3, 1), filter 1.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 1.2s cubic-bezier(0.16, 1, 0.3, 1)"
+            }}
+          >
           <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
             
             {/* Left Panel: Description and Chat Terminal Cockpit */}
@@ -1019,56 +1281,58 @@ export default function LandingPage() {
               className="lg:col-span-7 text-left space-y-4"
             >
               <span className="terminal-badge">02. FEATURES GRIDS</span>
-              <h2 className="text-2xl md:text-3xl font-bold font-display text-white uppercase tracking-tight leading-none mt-2">
+              <h2 className="text-3xl md:text-[48px] font-bold font-display text-white uppercase tracking-tight leading-none mt-4">
                 Unified Analytical Cockpit
               </h2>
-              <p className="text-white/45 text-xs max-w-md font-sans leading-relaxed">
+              <p className="text-white/50 text-base md:text-[20px] max-w-xl font-sans leading-relaxed mt-6">
                 Interact with high-performance dashboards, stock margin predictions, and secure databases. Our co-pilot chats directly with local NSE servers.
               </p>
-
+              
               {/* Chat terminal widget cockpit */}
-              <div className="w-full bg-[#0b0f19]/90 border border-white/10 rounded-xl overflow-hidden shadow-2xl font-mono text-xs mt-4">
-                <div className="flex items-center justify-between border-b border-white/10 px-4 py-2.5 bg-[#070b13] text-[10px] text-slate-500">
-                  <div className="flex items-center space-x-1.5">
-                    <span className="w-2 h-2 rounded-full bg-[#ff3860]" />
-                    <span className="w-2 h-2 rounded-full bg-[#ffdd57]" />
-                    <span className="w-2 h-2 rounded-full bg-[#34d399]" />
-                    <span className="font-bold ml-2 text-slate-400">CO-PILOT.ANALYST.OS</span>
-                  </div>
-                  <span className="text-[#34d399]">NSE NODE ONLINE</span>
-                </div>
-
-                {/* history list */}
-                <div className="p-4 h-[160px] overflow-y-auto space-y-2 text-left bg-slate-950/40 select-text scrollbar-thin">
-                  {aiChatHistory.map((item, idx) => (
-                    <div key={idx} className="space-y-0.5">
-                      <span className={`text-[10px] font-bold ${
-                        item.role === 'user' ? 'text-[#60a5fa]' : 'text-[#a78bfa]'
-                      }`}>
-                        {item.role === 'user' ? '>> COMMAND_INPUT' : '>> PIPELINE_REPLY'}
-                      </span>
-                      <pre className="text-slate-350 font-mono whitespace-pre-wrap leading-relaxed text-[11px]">{item.content}</pre>
+              <TiltCard className="w-full mt-4">
+                <div className="w-full bg-[#0b0f19]/90 border border-white/10 rounded-xl overflow-hidden shadow-2xl font-mono text-xs">
+                  <div className="flex items-center justify-between border-b border-white/10 px-4 py-2.5 bg-[#070b13] text-[10px] text-slate-500">
+                    <div className="flex items-center space-x-1.5">
+                      <span className="w-2 h-2 rounded-full bg-[#ff3860]" />
+                      <span className="w-2 h-2 rounded-full bg-[#ffdd57]" />
+                      <span className="w-2 h-2 rounded-full bg-[#34d399]" />
+                      <span className="font-bold ml-2 text-slate-400">CO-PILOT.ANALYST.OS</span>
                     </div>
-                  ))}
-                  {isAiTyping && (
-                    <div className="text-[#a78bfa] animate-pulse text-[11px]">{">>>"} PARSING PIPELINE ASSUMPTIONS...</div>
-                  )}
-                </div>
+                    <span className="text-[#34d399]">NSE NODE ONLINE</span>
+                  </div>
 
-                {/* Form console input */}
-                <form onSubmit={handleSendAiMessage} className="flex border-t border-white/10">
-                  <input
-                    type="text"
-                    placeholder="Ask co-pilot... (e.g. HELP, SYS_PING, LIST_STOCKS)"
-                    value={aiInput}
-                    onChange={(e) => setAiInput(e.target.value)}
-                    className="flex-1 bg-[#05070a] border-none outline-none text-white text-xs px-4 py-2.5 font-mono cursor-none"
-                  />
-                  <button type="submit" className="bg-[#a78bfa] hover:bg-[#a78bfa]/80 text-[#020010] font-bold px-4 py-2.5 transition-colors cursor-none">
-                    <Send className="w-3.5 h-3.5" />
-                  </button>
-                </form>
-              </div>
+                  {/* history list */}
+                  <div className="p-4 h-[160px] overflow-y-auto space-y-2 text-left bg-slate-950/40 select-text scrollbar-thin">
+                    {aiChatHistory.map((item, idx) => (
+                      <div key={idx} className="space-y-0.5">
+                        <span className={`text-[10px] font-bold ${
+                          item.role === 'user' ? 'text-[#60a5fa]' : 'text-[#a78bfa]'
+                        }`}>
+                          {item.role === 'user' ? '>> COMMAND_INPUT' : '>> PIPELINE_REPLY'}
+                        </span>
+                        <pre className="text-slate-350 font-mono whitespace-pre-wrap leading-relaxed text-[11px]">{item.content}</pre>
+                      </div>
+                    ))}
+                    {isAiTyping && (
+                      <div className="text-[#a78bfa] animate-pulse text-[11px]">{">>>>"} PARSING PIPELINE ASSUMPTIONS...</div>
+                    )}
+                  </div>
+
+                  {/* Form console input */}
+                  <form onSubmit={handleSendAiMessage} className="flex border-t border-white/10">
+                    <input
+                      type="text"
+                      placeholder="Ask co-pilot... (e.g. HELP, SYS_PING, LIST_STOCKS)"
+                      value={aiInput}
+                      onChange={(e) => setAiInput(e.target.value)}
+                      className="flex-1 bg-[#05070a] border-none outline-none text-white text-xs px-4 py-2.5 font-mono cursor-none"
+                    />
+                    <button type="submit" className="bg-[#a78bfa] hover:bg-[#a78bfa]/80 text-[#020010] font-bold px-4 py-2.5 transition-colors cursor-none">
+                      <Send className="w-3.5 h-3.5" />
+                    </button>
+                  </form>
+                </div>
+              </TiltCard>
             </motion.div>
 
             {/* Right Panel: The 4 Figma stat cards floating 2x2 grid */}
@@ -1113,98 +1377,144 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* ==========================================
-        * SECTION 3: METRICS 2×3 DCF SANDBOX
-        * ========================================== */}
-        <section 
-          className="w-screen h-screen flex-shrink-0 snap-start overflow-hidden relative flex items-center justify-center px-12 md:px-20 pt-16 transition-all duration-1000"
-          style={{
-            transform: `scale(${activeSection === 2 ? 1 : 0.97})`,
-            filter: `blur(${activeSection === 2 ? 0 : 2}px)`,
-            opacity: activeSection === 2 ? 1 : 0.6,
-            transition: "transform 1.2s cubic-bezier(0.16, 1, 0.3, 1), filter 1.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 1.2s cubic-bezier(0.16, 1, 0.3, 1)"
-          }}
-        >
+          {/* ==========================================
+          * SECTION 3: METRICS 2×3 DCF SANDBOX
+          * ========================================== */}
+          <section 
+            className="absolute w-screen h-screen overflow-hidden flex items-center justify-center px-12 md:px-20 pt-16 transition-all duration-1000"
+            style={{
+              left: "100vw",
+              top: "100vh",
+              transform: `scale(${activeSection === 2 ? 1 : 0.93}) rotateX(${activeSection === 2 ? 0 : -10}deg)`,
+              filter: `blur(${activeSection === 2 ? 0 : 2}px)`,
+              opacity: activeSection === 2 ? 1 : 0.6,
+              perspective: "1200px",
+              transition: "transform 1.2s cubic-bezier(0.16, 1, 0.3, 1), filter 1.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 1.2s cubic-bezier(0.16, 1, 0.3, 1)"
+            }}
+          >
           <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
             
             {/* Left Panel: The DCF assumptions sliders */}
             <motion.div 
-              variants={terminalBootVariants}
+              variants={downwardVariants}
               custom={0.15}
               animate={activeSection === 2 ? "active" : "inactive"}
               className="lg:col-span-5 text-left space-y-4"
             >
               <span className="terminal-badge">03. METRICS SANDBOX</span>
-              <h2 className="text-2xl md:text-3xl font-bold font-display text-white uppercase tracking-tight leading-none mt-2">
+              <h2 className="text-3xl md:text-[48px] font-bold font-display text-white uppercase tracking-tight leading-none mt-4">
                 Live DCF Model Recalculator
               </h2>
-              <p className="text-white/45 text-xs max-w-md font-sans leading-relaxed">
+              <p className="text-white/50 text-base md:text-[20px] max-w-xl font-sans leading-relaxed mt-6">
                 Recalculate implied valuations instantly. Drag assumptions sliders to update sensitivities and fair values.
               </p>
+              
+              {/* Scenario Selectors for Interactive Dashboard Transitions */}
+              <div className="flex items-center space-x-2 font-mono text-[9px] select-none">
+                <span className="text-slate-500 mr-1 uppercase">Scenarios:</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDcfEbitda(250);
+                    setDcfGrowth(25);
+                    setDcfWacc(8.0);
+                    setDcfMultiple(18);
+                  }}
+                  className="bg-transparent border border-[#34d399]/40 hover:bg-[#34d399]/15 text-[#34d399] px-2 py-0.5 rounded cursor-none transition-all hover:scale-105 active:scale-95"
+                >
+                  [BULL_CASE]
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDcfEbitda(120);
+                    setDcfGrowth(15);
+                    setDcfWacc(9.0);
+                    setDcfMultiple(14);
+                  }}
+                  className="bg-transparent border border-white/20 hover:bg-white/10 text-white px-2 py-0.5 rounded cursor-none transition-all hover:scale-105 active:scale-95"
+                >
+                  [BASE_CASE]
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDcfEbitda(70);
+                    setDcfGrowth(5);
+                    setDcfWacc(11.5);
+                    setDcfMultiple(10);
+                  }}
+                  className="bg-transparent border border-[#ff3860]/40 hover:bg-[#ff3860]/15 text-[#ff3860] px-2 py-0.5 rounded cursor-none transition-all hover:scale-105 active:scale-95"
+                >
+                  [BEAR_CASE]
+                </button>
+              </div>
 
               {/* Slider form cards */}
-              <div className="space-y-3 bg-[#0b0f19]/70 border border-white/5 p-4 rounded-xl font-mono text-[11px]">
-                <div className="space-y-1">
-                  <div className="flex justify-between text-slate-400">
-                    <span>Base Year EBITDA</span>
-                    <span className="text-white font-bold">₹{dcfEbitda} Lakhs</span>
+              <TiltCard className="w-full">
+                <div className="space-y-3 bg-[#0b0f19]/70 border border-white/5 p-4 rounded-xl font-mono text-[11px]">
+                  <div className="space-y-1">
+                    <div className="flex justify-between text-slate-400">
+                      <span>Base Year EBITDA</span>
+                      <span className="text-white font-bold">₹{dcfEbitda} Lakhs</span>
+                    </div>
+                    <input 
+                      type="range" 
+                      min="50" 
+                      max="500" 
+                      value={dcfEbitda} 
+                      onChange={e => setDcfEbitda(Number(e.target.value))}
+                      className="w-full h-1 bg-slate-950 rounded-lg appearance-none cursor-none accent-[#a78bfa]"
+                    />
                   </div>
-                  <input 
-                    type="range" 
-                    min="50" 
-                    max="500" 
-                    value={dcfEbitda} 
-                    onChange={e => setDcfEbitda(Number(e.target.value))}
-                    className="w-full h-1 bg-slate-950 rounded-lg appearance-none cursor-none accent-[#a78bfa]"
-                  />
-                </div>
 
-                <div className="space-y-1">
-                  <div className="flex justify-between text-slate-400">
-                    <span>5-Yr EBITDA Growth</span>
-                    <span className="text-[#60a5fa] font-bold">{dcfGrowth}%</span>
+                  <div className="space-y-1">
+                    <div className="flex justify-between text-slate-400">
+                      <span>5-Yr EBITDA Growth</span>
+                      <span className="text-[#60a5fa] font-bold">{dcfGrowth}%</span>
+                    </div>
+                    <input 
+                      type="range" 
+                      min="5" 
+                      max="40" 
+                      value={dcfGrowth} 
+                      onChange={e => setDcfGrowth(Number(e.target.value))}
+                      className="w-full h-1 bg-slate-950 rounded-lg appearance-none cursor-none accent-[#60a5fa]"
+                    />
                   </div>
-                  <input 
-                    type="range" 
-                    min="5" 
-                    max="40" 
-                    value={dcfGrowth} 
-                    onChange={e => setDcfGrowth(Number(e.target.value))}
-                    className="w-full h-1 bg-slate-950 rounded-lg appearance-none cursor-none accent-[#60a5fa]"
-                  />
-                </div>
 
-                <div className="space-y-1">
-                  <div className="flex justify-between text-slate-400">
-                    <span>WACC Discount Rate</span>
-                    <span className="text-[#34d399] font-bold">{dcfWacc.toFixed(1)}%</span>
+                  <div className="space-y-1">
+                    <div className="flex justify-between text-slate-400">
+                      <span>WACC Discount Rate</span>
+                      <span className="text-[#34d399] font-bold">{dcfWacc.toFixed(1)}%</span>
+                    </div>
+                    <input 
+                      type="range" 
+                      min="5.0" 
+                      max="15.0" 
+                      step="0.5"
+                      value={dcfWacc} 
+                      onChange={e => setDcfWacc(Number(e.target.value))}
+                      className="w-full h-1 bg-slate-950 rounded-lg appearance-none cursor-none accent-[#34d399]"
+                    />
                   </div>
-                  <input 
-                    type="range" 
-                    min="5.0" 
-                    max="15.0" 
-                    step="0.5"
-                    value={dcfWacc} 
-                    onChange={e => setDcfWacc(Number(e.target.value))}
-                    className="w-full h-1 bg-slate-950 rounded-lg appearance-none cursor-none accent-[#34d399]"
-                  />
-                </div>
 
-                <div className="space-y-1">
-                  <div className="flex justify-between text-slate-400">
-                    <span>Terminal EBITDA Multiple</span>
-                    <span className="text-[#ffdd57] font-bold">{dcfMultiple}x</span>
+                  <div className="space-y-1">
+                    <div className="flex justify-between text-slate-400">
+                      <span>Terminal EBITDA Multiple</span>
+                      <span className="text-[#ffdd57] font-bold">{dcfMultiple}x</span>
+                    </div>
+                    <input 
+                      type="range" 
+                      min="8" 
+                      max="22" 
+                      value={dcfMultiple} 
+                      onChange={e => setDcfMultiple(Number(e.target.value))}
+                      className="w-full h-1 bg-slate-950 rounded-lg appearance-none cursor-none accent-[#ffdd57]"
+                    />
                   </div>
-                  <input 
-                    type="range" 
-                    min="8" 
-                    max="22" 
-                    value={dcfMultiple} 
-                    onChange={e => setDcfMultiple(Number(e.target.value))}
-                    className="w-full h-1 bg-slate-950 rounded-lg appearance-none cursor-none accent-[#ffdd57]"
-                  />
                 </div>
-              </div>
+              </TiltCard>
             </motion.div>
 
             {/* Right Panel: Metrics 2x3 Grid */}
@@ -1213,62 +1523,97 @@ export default function LandingPage() {
                 
                 {/* 1. Implied Price Card */}
                 <motion.div 
-                  variants={terminalBootVariants}
+                  variants={downwardVariants}
                   custom={0.3}
                   animate={activeSection === 2 ? "active" : "inactive"}
-                  className="col-span-2 bg-white/[0.02] border border-white/[0.08] p-4 rounded-xl flex flex-col justify-between h-[95px] text-left hover:border-[#34d399]/20 transition-colors"
+                  className="col-span-2"
                 >
-                  <span className="text-[9px] uppercase tracking-wider text-slate-500 font-mono flex items-center justify-between">
-                    <span>DCF Intrinsic Fair Price</span>
-                    <span className="text-[#34d399] text-[8px] animate-pulse">[LOAD_OK]</span>
-                  </span>
-                  <span className="text-2xl font-bold font-display text-white">₹{impliedSharePrice.toFixed(2)}</span>
-                  <span className="text-[10px] text-[#34d399] font-mono font-medium">Implied Value per Share</span>
+                  <TiltCard className="bg-white/[0.02] border border-white/[0.08] p-4 rounded-xl flex flex-col justify-between h-[95px] text-left hover:border-[#34d399]/20 transition-colors">
+                    <span className="text-[9px] uppercase tracking-wider text-slate-500 font-mono flex items-center justify-between">
+                      <span>DCF Intrinsic Fair Price</span>
+                      <span className="text-[#34d399] text-[8px] animate-pulse">[LOAD_OK]</span>
+                    </span>
+                    <span className="text-2xl font-bold font-display text-white">₹{impliedSharePrice.toFixed(2)}</span>
+                    <span className="text-[10px] text-[#34d399] font-mono font-medium">Implied Value per Share</span>
+                  </TiltCard>
                 </motion.div>
 
                 {/* 2. NSE status node */}
                 <motion.div 
-                  variants={terminalBootVariants}
+                  variants={downwardVariants}
                   custom={0.45}
                   animate={activeSection === 2 ? "active" : "inactive"}
-                  className="col-span-1 bg-white/[0.02] border border-white/[0.08] p-4 rounded-xl flex flex-col justify-between h-[95px] text-left hover:border-[#a78bfa]/20 transition-colors"
+                  className="col-span-1"
                 >
-                  <span className="text-[9px] uppercase tracking-wider text-slate-500 font-mono">NSE NODE</span>
-                  <div className="flex items-center space-x-1.5">
-                    <span className="w-2 h-2 rounded-full bg-[#34d399] animate-pulse" />
-                    <span className="text-[11px] font-bold text-white font-mono">LIVE_200</span>
+                  <TiltCard className="bg-white/[0.02] border border-white/[0.08] p-4 rounded-xl flex flex-col justify-between h-[95px] text-left hover:border-[#a78bfa]/20 transition-colors">
+                    <span className="text-[9px] uppercase tracking-wider text-slate-500 font-mono">NSE NODE</span>
+                    <div className="flex items-center space-x-1.5 mt-2">
+                      <span className="w-2 h-2 rounded-full bg-[#34d399] animate-pulse" />
+                      <span className="text-[11px] font-bold text-white font-mono">LIVE_200</span>
+                    </div>
+                    <span className="text-[10px] text-slate-500 font-mono mt-2 block">Systems safe</span>
+                  </TiltCard>
+                </motion.div>
+
+                {/* Interactive Reactive Bar Chart */}
+                <motion.div
+                  variants={downwardVariants}
+                  custom={0.5}
+                  animate={activeSection === 2 ? "active" : "inactive"}
+                  className="col-span-3 bg-white/[0.01] border border-white/[0.05] p-4 rounded-xl text-left"
+                >
+                  <span className="text-[9px] uppercase tracking-wider text-[#a78bfa] font-mono block mb-2">PRO-FORMA EBITDA CASH FLOW GRAPH PROJECTION</span>
+                  <div className="flex items-end justify-between h-[65px] px-2 pt-2 border-b border-white/10 font-mono text-[8px] text-slate-500">
+                    {[1, 2, 3, 4, 5].map((yr) => {
+                      const yrFlow = ebitdaVal * Math.pow(1 + growthVal, yr);
+                      const maxFlow = ebitdaVal * Math.pow(1 + 0.40, 5); // max 40% growth
+                      const pctHeight = Math.max(15, Math.min(100, (yrFlow / maxFlow) * 100));
+                      return (
+                        <div key={yr} className="flex flex-col items-center flex-1 space-y-1 mx-1.5 h-full justify-end">
+                          <span className="text-[9px] text-[#a78bfa] font-bold mb-0.5">₹{(yrFlow / 100000).toFixed(0)}L</span>
+                          <motion.div 
+                            animate={{ height: `${pctHeight}%` }}
+                            transition={{ type: "spring", stiffness: 100, damping: 15 }}
+                            className="w-full bg-gradient-to-t from-[#a78bfa]/20 to-[#a78bfa] rounded-t border border-[#a78bfa]/40 hover:to-[#34d399] transition-colors"
+                            style={{ minHeight: "4px" }}
+                          />
+                          <span className="mt-1">YR0{yr}</span>
+                        </div>
+                      );
+                    })}
                   </div>
-                  <span className="text-[10px] text-slate-500 font-mono">Systems safe</span>
                 </motion.div>
 
                 {/* 3. WACC Table sensitivities */}
                 <motion.div 
-                  variants={terminalBootVariants}
+                  variants={downwardVariants}
                   custom={0.6}
                   animate={activeSection === 2 ? "active" : "inactive"}
-                  className="col-span-3 bg-slate-950/60 border border-white/[0.05] p-3 rounded-xl hover:border-[#60a5fa]/20 transition-colors"
+                  className="col-span-3"
                 >
-                  <span className="text-[9px] uppercase tracking-wider text-[#a78bfa] font-mono block text-left mb-1.5">EBITDA sensitivity score table</span>
-                  <table className="w-full font-mono text-[9px] border-collapse">
-                    <thead>
-                      <tr className="border-b border-white/10 text-slate-500">
-                        <th className="text-left pb-1 font-normal">WACC \ Mult</th>
-                        <th className="text-right pb-1 font-normal">{multiplesList[0]}x</th>
-                        <th className="text-right pb-1 font-normal font-bold text-slate-400">{multiplesList[1]}x</th>
-                        <th className="text-right pb-1 font-normal">{multiplesList[2]}x</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {waccList.map((w, idx) => (
-                        <tr key={idx} className="border-b border-white/5">
-                          <td className="text-left py-1 text-slate-400 font-bold">{w.toFixed(1)}%</td>
-                          <td className="text-right py-1 text-slate-350">₹{calculateCellPrice(w, multiplesList[0]).toFixed(1)}</td>
-                          <td className="text-right py-1 font-bold text-[#34d399]">₹{calculateCellPrice(w, multiplesList[1]).toFixed(1)}</td>
-                          <td className="text-right py-1 text-slate-350">₹{calculateCellPrice(w, multiplesList[2]).toFixed(1)}</td>
+                  <TiltCard className="bg-slate-950/60 border border-white/[0.05] p-3 rounded-xl hover:border-[#60a5fa]/20 transition-colors">
+                    <span className="text-[9px] uppercase tracking-wider text-[#a78bfa] font-mono block text-left mb-1.5">EBITDA sensitivity score table</span>
+                    <table className="w-full font-mono text-[9px] border-collapse">
+                      <thead>
+                        <tr className="border-b border-white/10 text-slate-500">
+                          <th className="text-left pb-1 font-normal">WACC \ Mult</th>
+                          <th className="text-right pb-1 font-normal">{multiplesList[0]}x</th>
+                          <th className="text-right pb-1 font-normal font-bold text-slate-400">{multiplesList[1]}x</th>
+                          <th className="text-right pb-1 font-normal">{multiplesList[2]}x</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody>
+                        {waccList.map((w, idx) => (
+                          <tr key={idx} className="border-b border-white/5">
+                            <td className="text-left py-1 text-slate-400 font-bold">{w.toFixed(1)}%</td>
+                            <td className="text-right py-1 text-slate-350">₹{calculateCellPrice(w, multiplesList[0]).toFixed(1)}</td>
+                            <td className="text-right py-1 font-bold text-[#34d399]">₹{calculateCellPrice(w, multiplesList[1]).toFixed(1)}</td>
+                            <td className="text-right py-1 text-slate-350">₹{calculateCellPrice(w, multiplesList[2]).toFixed(1)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </TiltCard>
                 </motion.div>
 
               </div>
@@ -1277,32 +1622,35 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* ==========================================
-        * SECTION 4: PRICING PLANS MATRIX
-        * ========================================== */}
-        <section 
-          className="w-screen h-screen flex-shrink-0 snap-start overflow-hidden relative flex items-center justify-center px-12 md:px-20 pt-16 transition-all duration-1000"
-          style={{
-            transform: `scale(${activeSection === 3 ? 1 : 0.97})`,
-            filter: `blur(${activeSection === 3 ? 0 : 2}px)`,
-            opacity: activeSection === 3 ? 1 : 0.6,
-            transition: "transform 1.2s cubic-bezier(0.16, 1, 0.3, 1), filter 1.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 1.2s cubic-bezier(0.16, 1, 0.3, 1)"
-          }}
-        >
+          {/* ==========================================
+          * SECTION 4: PRICING PLANS MATRIX
+          * ========================================== */}
+          <section 
+            className="absolute w-screen h-screen overflow-hidden flex items-center justify-center px-12 md:px-20 pt-16 transition-all duration-1000"
+            style={{
+              left: "200vw",
+              top: "100vh",
+              transform: `scale(${activeSection === 3 ? 1 : 0.92}) translateZ(${activeSection === 3 ? 0 : -80}px)`,
+              filter: `blur(${activeSection === 3 ? 0 : 2}px)`,
+              opacity: activeSection === 3 ? 1 : 0.6,
+              perspective: "1200px",
+              transition: "transform 1.2s cubic-bezier(0.16, 1, 0.3, 1), filter 1.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 1.2s cubic-bezier(0.16, 1, 0.3, 1)"
+            }}
+          >
           <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-12 gap-8 items-center relative">
             
             {/* Left Panel: Description */}
             <motion.div 
-              variants={pricingScaleVariants}
+              variants={alternatingLeftVariants}
               custom={0.1}
               animate={activeSection === 3 ? "active" : "inactive"}
               className="lg:col-span-4 text-left space-y-4"
             >
               <span className="terminal-badge">04. LICENSE DESK</span>
-              <h2 className="text-2xl md:text-3xl font-bold font-display text-white uppercase tracking-tight leading-none mt-2">
+              <h2 className="text-3xl md:text-[48px] font-bold font-display text-white uppercase tracking-tight leading-none mt-4">
                 Institutional Access Licensing
               </h2>
-              <p className="text-white/45 text-xs max-w-md font-sans leading-relaxed">
+              <p className="text-white/50 text-base md:text-[20px] max-w-xl font-sans leading-relaxed mt-6">
                 Unlock low-latency financial intelligence pipelines. Choose a tier matching your analytical bandwidth. All pricing models compile live NSE data.
               </p>
 
@@ -1319,74 +1667,80 @@ export default function LandingPage() {
               
               {/* Card 1: Core */}
               <motion.div 
-                variants={pricingScaleVariants}
+                variants={alternatingRightVariants}
                 custom={0.25}
                 animate={activeSection === 3 ? "active" : "inactive"}
-                className="bg-[#0b0f19]/40 border border-white/[0.06] p-5 rounded-2xl flex flex-col justify-between text-left hover:border-white/20 transition-all select-none"
+                className="flex"
               >
-                <div className="space-y-2">
-                  <span className="text-[9px] font-mono text-slate-500 uppercase tracking-widest">[CORE_LICENSE]</span>
-                  <h3 className="text-lg font-bold text-white font-display uppercase">STARTER NODE</h3>
-                  <div className="py-2">
-                    <span className="text-2xl font-bold text-white font-mono">₹2,500</span>
-                    <span className="text-[10px] text-slate-500 font-mono"> / mo</span>
+                <TiltCard className="bg-[#0b0f19]/40 border border-white/[0.06] p-5 rounded-2xl flex flex-col justify-between text-left hover:border-white/20 transition-all select-none w-full">
+                  <div className="space-y-2">
+                    <span className="text-[9px] font-mono text-slate-500 uppercase tracking-widest">[CORE_LICENSE]</span>
+                    <h3 className="text-lg font-bold text-white font-display uppercase">STARTER NODE</h3>
+                    <div className="py-2">
+                      <span className="text-2xl font-bold text-white font-mono">₹2,500</span>
+                      <span className="text-[10px] text-slate-500 font-mono"> / mo</span>
+                    </div>
+                    <p className="text-white/40 text-[10px] font-sans leading-relaxed">
+                      Designed for independent analysts. Live EBITDA recalculations, local client databases, and static NSE indexes.
+                    </p>
                   </div>
-                  <p className="text-white/40 text-[10px] font-sans leading-relaxed">
-                    Designed for independent analysts. Live EBITDA recalculations, local client databases, and static NSE indexes.
-                  </p>
-                </div>
-                <button onClick={() => scrollToSection(5)} className="w-full bg-white/[0.04] border border-white/10 hover:border-[#a78bfa] text-white hover:text-[#a78bfa] font-mono text-[10px] py-2 rounded mt-6 transition-all uppercase tracking-wider cursor-none">
-                  [SELECT_NODE]
-                </button>
+                  <button onClick={() => scrollToSection(5)} className="w-full bg-white/[0.04] border border-white/10 hover:border-[#a78bfa] text-white hover:text-[#a78bfa] font-mono text-[10px] py-2 rounded mt-6 transition-all uppercase tracking-wider cursor-none">
+                    [SELECT_NODE]
+                  </button>
+                </TiltCard>
               </motion.div>
 
               {/* Card 2: Pro (Recommended, Glowing Border, Highlighted) */}
               <motion.div 
-                variants={pricingScaleVariants}
+                variants={alternatingRightVariants}
                 custom={0.4}
                 animate={activeSection === 3 ? "active" : "inactive"}
-                className="bg-[#0e0f22]/85 border-2 border-[#a78bfa]/50 p-5 rounded-2xl flex flex-col justify-between text-left shadow-[0_0_30px_rgba(167,139,250,0.15)] relative scale-[1.03] select-none"
+                className="flex relative scale-[1.03]"
               >
-                <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-[#a78bfa] text-[#020010] text-[8px] font-bold px-2 py-0.5 rounded font-mono uppercase tracking-widest select-none">
-                  RECOMMENDED_NODE
-                </span>
-                <div className="space-y-2 mt-1">
-                  <span className="text-[9px] font-mono text-[#a78bfa] uppercase tracking-widest font-bold">[TERMINAL_PRO]</span>
-                  <h3 className="text-lg font-bold text-white font-display uppercase">ANALYST CO-PILOT</h3>
-                  <div className="py-2">
-                    <span className="text-2xl font-bold text-white font-mono">₹7,500</span>
-                    <span className="text-[10px] text-[#a78bfa] font-mono"> / mo</span>
+                <TiltCard className="bg-[#0e0f22]/85 border-2 border-[#a78bfa]/50 p-5 rounded-2xl flex flex-col justify-between text-left shadow-[0_0_30px_rgba(167,139,250,0.15)] select-none w-full relative">
+                  <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-[#a78bfa] text-[#020010] text-[8px] font-bold px-2 py-0.5 rounded font-mono uppercase tracking-widest select-none">
+                    RECOMMENDED_NODE
+                  </span>
+                  <div className="space-y-2 mt-1">
+                    <span className="text-[9px] font-mono text-[#a78bfa] uppercase tracking-widest font-bold">[TERMINAL_PRO]</span>
+                    <h3 className="text-lg font-bold text-white font-display uppercase">ANALYST CO-PILOT</h3>
+                    <div className="py-2">
+                      <span className="text-2xl font-bold text-white font-mono">₹7,500</span>
+                      <span className="text-[10px] text-[#a78bfa] font-mono"> / mo</span>
+                    </div>
+                    <p className="text-white/40 text-[10px] font-sans leading-relaxed">
+                      Our flagship terminal experience. 12ms WebSocket streams, real-time stock alerts, AI Chat Cockpit connection.
+                    </p>
                   </div>
-                  <p className="text-white/40 text-[10px] font-sans leading-relaxed">
-                    Our flagship terminal experience. 12ms WebSocket streams, real-time stock alerts, AI Chat Cockpit connection.
-                  </p>
-                </div>
-                <button onClick={() => scrollToSection(5)} className="w-full bg-[#a78bfa] hover:bg-[#a78bfa]/80 text-[#020010] font-bold font-sans text-[10px] py-2.5 rounded mt-6 transition-all uppercase tracking-wider cursor-none">
-                  [LAUNCH_PRO_NODE]
-                </button>
+                  <button onClick={() => scrollToSection(5)} className="w-full bg-[#a78bfa] hover:bg-[#a78bfa]/80 text-[#020010] font-bold font-sans text-[10px] py-2.5 rounded mt-6 transition-all uppercase tracking-wider cursor-none">
+                    [LAUNCH_PRO_NODE]
+                  </button>
+                </TiltCard>
               </motion.div>
 
               {/* Card 3: Enterprise */}
               <motion.div 
-                variants={pricingScaleVariants}
+                variants={alternatingRightVariants}
                 custom={0.55}
                 animate={activeSection === 3 ? "active" : "inactive"}
-                className="bg-[#0b0f19]/40 border border-white/[0.06] p-5 rounded-2xl flex flex-col justify-between text-left hover:border-white/20 transition-all select-none"
+                className="flex"
               >
-                <div className="space-y-2">
-                  <span className="text-[9px] font-mono text-slate-500 uppercase tracking-widest">[ENTERPRISE_SECURE]</span>
-                  <h3 className="text-lg font-bold text-white font-display uppercase">INSTITUTIONAL</h3>
-                  <div className="py-2">
-                    <span className="text-2xl font-bold text-white font-mono">CUSTOM</span>
-                    <span className="text-[10px] text-slate-500 font-mono"> / quote</span>
+                <TiltCard className="bg-[#0b0f19]/40 border border-white/[0.06] p-5 rounded-2xl flex flex-col justify-between text-left hover:border-white/20 transition-all select-none w-full">
+                  <div className="space-y-2">
+                    <span className="text-[9px] font-mono text-slate-500 uppercase tracking-widest">[ENTERPRISE_SECURE]</span>
+                    <h3 className="text-lg font-bold text-white font-display uppercase">INSTITUTIONAL</h3>
+                    <div className="py-2">
+                      <span className="text-2xl font-bold text-white font-mono">CUSTOM</span>
+                      <span className="text-[10px] text-slate-500 font-mono"> / quote</span>
+                    </div>
+                    <p className="text-white/40 text-[10px] font-sans leading-relaxed">
+                      Tailored for investment funds and banks. Dedicated multi-tenant servers, unlimited API calls, fully audited integrations.
+                    </p>
                   </div>
-                  <p className="text-white/40 text-[10px] font-sans leading-relaxed">
-                    Tailored for investment funds and banks. Dedicated multi-tenant servers, unlimited API calls, fully audited integrations.
-                  </p>
-                </div>
-                <button onClick={() => openHub("contact")} className="w-full bg-white/[0.04] border border-white/10 hover:border-[#a78bfa] text-white hover:text-[#a78bfa] font-mono text-[10px] py-2 rounded mt-6 transition-all uppercase tracking-wider cursor-none">
-                  [CONTACT_OFFICE]
-                </button>
+                  <button onClick={() => openHub("contact")} className="w-full bg-white/[0.04] border border-white/10 hover:border-[#a78bfa] text-white hover:text-[#a78bfa] font-mono text-[10px] py-2 rounded mt-6 transition-all uppercase tracking-wider cursor-none">
+                    [CONTACT_OFFICE]
+                  </button>
+                </TiltCard>
               </motion.div>
 
             </div>
@@ -1443,32 +1797,35 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* ==========================================
-        * SECTION 5: ABOUT ROADMAP TIMELINE
-        * ========================================== */}
-        <section 
-          className="w-screen h-screen flex-shrink-0 snap-start overflow-hidden relative flex items-center justify-center px-12 md:px-20 pt-16 transition-all duration-1000"
-          style={{
-            transform: `scale(${activeSection === 4 ? 1 : 0.97})`,
-            filter: `blur(${activeSection === 4 ? 0 : 2}px)`,
-            opacity: activeSection === 4 ? 1 : 0.6,
-            transition: "transform 1.2s cubic-bezier(0.16, 1, 0.3, 1), filter 1.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 1.2s cubic-bezier(0.16, 1, 0.3, 1)"
-          }}
-        >
+          {/* ==========================================
+          * SECTION 5: ABOUT ROADMAP TIMELINE
+          * ========================================== */}
+          <section 
+            className="absolute w-screen h-screen overflow-hidden flex items-center justify-center px-12 md:px-20 pt-16 transition-all duration-1000"
+            style={{
+              left: "200vw",
+              top: "200vh",
+              transform: `scale(${activeSection === 4 ? 1 : 0.94}) skewX(${activeSection === 4 ? 0 : 3}deg)`,
+              filter: `blur(${activeSection === 4 ? 0 : 2}px)`,
+              opacity: activeSection === 4 ? 1 : 0.6,
+              perspective: "1200px",
+              transition: "transform 1.2s cubic-bezier(0.16, 1, 0.3, 1), filter 1.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 1.2s cubic-bezier(0.16, 1, 0.3, 1)"
+            }}
+          >
           <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
             
             {/* Left Panel: Founders Note & Storytelling */}
             <motion.div 
-              variants={timelineStepVariants}
+              variants={downwardVariants}
               custom={0.15}
               animate={activeSection === 4 ? "active" : "inactive"}
               className="lg:col-span-5 text-left space-y-4"
             >
               <span className="terminal-badge">05. STAGES ROADMAP</span>
-              <h2 className="text-2xl md:text-3xl font-bold font-display text-white uppercase tracking-tight leading-none mt-2">
+              <h2 className="text-3xl md:text-[48px] font-bold font-display text-white uppercase tracking-tight leading-none mt-4">
                 Hedge-Fund Engineering Roadmap
               </h2>
-              <p className="text-white/45 text-xs max-w-md font-sans leading-relaxed">
+              <p className="text-white/50 text-base md:text-[20px] max-w-xl font-sans leading-relaxed mt-6">
                 AnalystOS is forged by institutional quantitative designers. Our stages ensure zero-latency execution pipelines and audited mathematical logic.
               </p>
               
@@ -1516,7 +1873,7 @@ export default function LandingPage() {
                 ].map((step, idx) => (
                   <motion.div
                     key={idx}
-                    variants={timelineStepVariants}
+                    variants={downwardVariants}
                     custom={step.delay}
                     animate={activeSection === 4 ? "active" : "inactive"}
                     className={`bg-[#0b0f19]/30 border ${step.border} p-4 rounded-xl text-left relative hover:bg-white/[0.03] transition-colors`}
@@ -1536,18 +1893,21 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* ==========================================
-        * SECTION 6: FINAL CTA & LOCKED VALUATION VAULT
-        * ========================================== */}
-        <section 
-          className="w-screen h-screen flex-shrink-0 snap-start overflow-hidden relative flex items-center justify-center px-12 md:px-20 pt-16 transition-all duration-1000"
-          style={{
-            transform: `scale(${activeSection === 5 ? 1 : 0.97})`,
-            filter: `blur(${activeSection === 5 ? 0 : 2}px)`,
-            opacity: activeSection === 5 ? 1 : 0.6,
-            transition: "transform 1.2s cubic-bezier(0.16, 1, 0.3, 1), filter 1.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 1.2s cubic-bezier(0.16, 1, 0.3, 1)"
-          }}
-        >
+          {/* ==========================================
+          * SECTION 6: FINAL CTA & LOCKED VALUATION VAULT
+          * ========================================== */}
+          <section 
+            className="absolute w-screen h-screen overflow-hidden flex items-center justify-center px-12 md:px-20 pt-16 transition-all duration-1000"
+            style={{
+              left: "100vw",
+              top: "200vh",
+              transform: `scale(${activeSection === 5 ? 1 : 0.91}) rotate(${activeSection === 5 ? 0 : 2}deg) translateY(${activeSection === 5 ? 0 : 30}px)`,
+              filter: `blur(${activeSection === 5 ? 0 : 2}px)`,
+              opacity: activeSection === 5 ? 1 : 0.6,
+              perspective: "1200px",
+              transition: "transform 1.2s cubic-bezier(0.16, 1, 0.3, 1), filter 1.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 1.2s cubic-bezier(0.16, 1, 0.3, 1)"
+            }}
+          >
           <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
             
             {/* Left Panel: Waitlist locker capture form */}
@@ -1557,50 +1917,65 @@ export default function LandingPage() {
               animate={activeSection === 5 ? "active" : "inactive"}
               className="lg:col-span-6 text-left space-y-4"
             >
+              {/* Interactive Padlock Vector */}
+              <div className="flex justify-start mb-1 select-none">
+                <motion.div
+                  animate={vaultUnlocked ? { rotate: 360, scale: [1, 1.15, 1] } : {}}
+                  transition={{ duration: 0.8, ease: "easeInOut" }}
+                  className={`w-12 h-12 rounded-full border flex items-center justify-center ${
+                    vaultUnlocked ? "border-[#34d399] bg-[#34d399]/10 text-[#34d399]" : "border-white/10 bg-white/[0.02] text-slate-400"
+                  }`}
+                >
+                  {vaultUnlocked ? <Unlock className="w-5 h-5" /> : <Lock className="w-5 h-5 animate-pulse text-[#a78bfa]" />}
+                </motion.div>
+              </div>
+
               <span className="terminal-badge">06. SECURE LOCKER</span>
-              <h2 className="text-2xl md:text-3xl font-bold font-display text-white uppercase tracking-tight leading-none mt-2">
+              <h2 className="text-3xl md:text-[48px] font-bold font-display text-white uppercase tracking-tight leading-none mt-4">
                 Unlock Free Valuation Vault
               </h2>
-              <p className="text-white/45 text-xs max-w-md font-sans leading-relaxed">
+              <p className="text-white/50 text-base md:text-[20px] max-w-xl font-sans leading-relaxed mt-6">
                 Enter your email to instantly activate your waitlist credentials and unlock 5 high-density pro-forma spreadsheets and reference handbooks.
               </p>
 
               {/* Locker Waitlist capture form */}
-              <div className="bg-white/[0.01] border border-white/[0.06] rounded-xl p-6 backdrop-blur-sm mt-4">
-                {vaultUnlocked ? (
-                  <div className="text-center py-4 space-y-2">
-                    <span className="inline-flex bg-[#34d399]/10 border border-[#34d399]/35 text-[#34d399] font-mono px-3 py-1 rounded text-xs animate-bounce font-bold">
-                      ACCESS_GRANTED: VALUATION VAULT UNLOCKED
-                    </span>
-                    <p className="text-slate-400 text-xs font-sans">You have unlocked the AnalystOS templates deck. Download templates inside the Lab panel on the right.</p>
-                  </div>
-                ) : (
-                  <form onSubmit={handleUnlockVault} className="space-y-3 font-sans">
-                    <input
-                      type="email"
-                      placeholder="Enter operational email address"
-                      value={vaultEmail}
-                      onChange={(e) => setVaultEmail(e.target.value)}
-                      required
-                      className="w-full bg-slate-950 border border-white/10 rounded-lg px-4 py-3 text-xs text-white placeholder-slate-650 outline-none focus:border-[#a78bfa] transition-colors cursor-none font-mono"
-                    />
-                    <button
-                      type="submit"
-                      disabled={vaultLoading}
-                      className="w-full bg-[#a78bfa] hover:bg-[#a78bfa]/90 disabled:bg-[#a78bfa]/40 text-[#020010] font-bold py-3 rounded-lg text-xs tracking-wider uppercase transition-all flex items-center justify-center space-x-2 cursor-none font-sans"
-                    >
-                      {vaultLoading ? (
-                        <span className="animate-spin rounded-full h-3.5 w-3.5 border-2 border-[#020010] border-t-transparent" />
-                      ) : (
-                        <>
-                          <Unlock className="w-3.5 h-3.5" />
-                          <span>Unlock Institutional Vault</span>
-                        </>
-                      )}
-                    </button>
-                  </form>
-                )}
-              </div>
+              <TiltCard className="w-full mt-4">
+                <div className="bg-white/[0.01] border border-white/[0.06] rounded-xl p-6 backdrop-blur-sm">
+                  {vaultUnlocked ? (
+                    <div className="text-center py-4 space-y-2">
+                      <span className="inline-flex bg-[#34d399]/10 border border-[#34d399]/35 text-[#34d399] font-mono px-3 py-1 rounded text-xs animate-bounce font-bold">
+                        ACCESS_GRANTED: VALUATION VAULT UNLOCKED
+                      </span>
+                      <p className="text-slate-400 text-xs font-sans">You have unlocked the AnalystOS templates deck. Download templates inside the Lab panel on the right.</p>
+                    </div>
+                  ) : (
+                    <form onSubmit={handleUnlockVault} className="space-y-3 font-sans">
+                      <input
+                        type="email"
+                        placeholder="Enter operational email address"
+                        value={vaultEmail}
+                        onChange={(e) => setVaultEmail(e.target.value)}
+                        required
+                        className="w-full bg-slate-950 border border-white/10 rounded-lg px-4 py-3 text-xs text-white placeholder-slate-650 outline-none focus:border-[#a78bfa] transition-colors cursor-none font-mono"
+                      />
+                      <MagneticButton
+                        type="submit"
+                        disabled={vaultLoading}
+                        className="w-full bg-[#a78bfa] hover:bg-[#a78bfa]/90 disabled:bg-[#a78bfa]/40 text-[#020010] font-bold py-3 rounded-lg text-xs tracking-wider uppercase transition-all flex items-center justify-center space-x-2 cursor-none font-sans"
+                      >
+                        {vaultLoading ? (
+                          <span className="animate-spin rounded-full h-3.5 w-3.5 border-2 border-[#020010] border-t-transparent" />
+                        ) : (
+                          <>
+                            <Unlock className="w-3.5 h-3.5" />
+                            <span>Unlock Institutional Vault</span>
+                          </>
+                        )}
+                      </MagneticButton>
+                    </form>
+                  )}
+                </div>
+              </TiltCard>
             </motion.div>
 
             {/* Right Panel: Vault items copy scorecard links list */}
@@ -1608,66 +1983,88 @@ export default function LandingPage() {
               variants={cardVariants}
               custom={0.35}
               animate={activeSection === 5 ? "active" : "inactive"}
-              className="lg:col-span-6 w-full font-mono text-[11px] text-left bg-slate-950/60 border border-white/[0.05] p-5 rounded-2xl"
+              className="lg:col-span-6 w-full"
             >
-              <div className="space-y-3">
-                {[
-                  {
-                    id: "dcf_temp",
-                    label: "01. Corporate DCF Model Template (.xlsx)",
-                    text: "[AnalystOS Corporate DCF Model Template v1.2]\nSheet 1: assumptions\nWACC = 9.0% | Exit EBITDA Multiple = 14.0x\nEBITDA Growth Rate = 15.0% (Yr 1-3), 8.0% (Yr 4-5)\nImplied Enterprise Value = ₹18.54 Cr\nDownload URL: https://analystos.com/resources/AnalystOS_DCF_Valuation_Model.xlsx"
-                  },
-                  {
-                    id: "excel_short",
-                    label: "02. Wall Street Excel Keyboard Shortcuts Guide (.pdf)",
-                    text: "[AnalystOS Excel Shortcuts Handbook]\n- Ctrl + [ : Trace precedents\n- F5 + Enter: Return to cell\n- Alt + E + S + V: Paste Special as Values\n- Alt + H + O + I: Autofit column widths"
-                  },
-                  {
-                    id: "ratios_cheat",
-                    label: "03. Financial Ratios & Valuation Cheat Sheet (.pdf)",
-                    text: "[AnalystOS Formula Cheat Sheet]\n1. EV = Market Cap + Debt - Cash\n2. WACC = (E/V * Ke) + (D/V * Kd * (1 - Tax))\n3. Ke = Rf + Beta * (Rm - Rf) [CAPM]\n4. FCFF = EBIT*(1-T) + D&A - Capex - dNWC"
-                  }
-                ].map((item, idx) => (
-                  <div key={idx} className="flex items-center justify-between border-b border-slate-900 pb-2.5">
-                    <span className="text-slate-350">{item.label}</span>
-                    {vaultUnlocked ? (
-                      <button
-                        onClick={() => copyToClipboard(item.id, item.text)}
-                        className="bg-transparent border border-white/10 text-slate-300 hover:border-[#34d399] hover:text-[#34d399] font-bold px-3 py-1 rounded transition-all flex items-center space-x-1 font-sans text-[10px] cursor-none"
-                      >
-                        {copiedId === item.id ? (
-                          <>
-                            <Check className="w-3 h-3" />
-                            <span>COPIED</span>
-                          </>
-                        ) : (
-                          <>
-                            <Copy className="w-3 h-3" />
-                            <span>COPY DATA</span>
-                          </>
-                        )}
-                      </button>
-                    ) : (
-                      <div className="flex items-center space-x-1 text-slate-500">
-                        <Lock className="w-3 h-3 text-[#ff3860]" />
-                        <span className="text-[9px] uppercase font-bold tracking-wider text-[#ff3860]/80">LOCKED</span>
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
+              <TiltCard className="w-full font-mono text-[11px] text-left bg-slate-950/60 border border-white/[0.05] p-5 rounded-2xl">
+                <div className="space-y-3">
+                  {[
+                    {
+                      id: "dcf_temp",
+                      label: "01. Corporate DCF Model Template (.xlsx)",
+                      text: "[AnalystOS Corporate DCF Model Template v1.2]\nSheet 1: assumptions\nWACC = 9.0% | Exit EBITDA Multiple = 14.0x\nEBITDA Growth Rate = 15.0% (Yr 1-3), 8.0% (Yr 4-5)\nImplied Enterprise Value = ₹18.54 Cr\nDownload URL: https://analystos.com/resources/AnalystOS_DCF_Valuation_Model.xlsx"
+                    },
+                    {
+                      id: "excel_short",
+                      label: "02. Wall Street Excel Keyboard Shortcuts Guide (.pdf)",
+                      text: "[AnalystOS Excel Shortcuts Handbook]\n- Ctrl + [ : Trace precedents\n- F5 + Enter: Return to cell\n- Alt + E + S + V: Paste Special as Values\n- Alt + H + O + I: Autofit column widths"
+                    },
+                    {
+                      id: "ratios_cheat",
+                      label: "03. Financial Ratios & Valuation Cheat Sheet (.pdf)",
+                      text: "[AnalystOS Formula Cheat Sheet]\n1. EV = Market Cap + Debt - Cash\n2. WACC = (E/V * Ke) + (D/V * Kd * (1 - Tax))\n3. Ke = Rf + Beta * (Rm - Rf) [CAPM]\n4. FCFF = EBIT*(1-T) + D&A - Capex - dNWC"
+                    }
+                  ].map((item, idx) => (
+                    <div key={idx} className="flex items-center justify-between border-b border-slate-900 pb-2.5">
+                      <span className="text-slate-350">{item.label}</span>
+                      {vaultUnlocked ? (
+                        <button
+                          onClick={() => copyToClipboard(item.id, item.text)}
+                          className="bg-transparent border border-white/10 text-slate-300 hover:border-[#34d399] hover:text-[#34d399] font-bold px-3 py-1 rounded transition-all flex items-center space-x-1 font-sans text-[10px] cursor-none"
+                        >
+                          {copiedId === item.id ? (
+                            <>
+                              <Check className="w-3 h-3" />
+                              <span>COPIED</span>
+                            </>
+                          ) : (
+                            <>
+                              <Copy className="w-3 h-3" />
+                              <span>COPY DATA</span>
+                            </>
+                          )}
+                        </button>
+                      ) : (
+                        <div className="flex items-center space-x-1 text-slate-500">
+                          <Lock className="w-3 h-3 text-[#ff3860]" />
+                          <span className="text-[9px] uppercase font-bold tracking-wider text-[#ff3860]/80">LOCKED</span>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
 
-              {/* connection partner nodes ticket support */}
-              <div className="mt-4 pt-4 border-t border-slate-900 flex justify-between items-center text-[10px] text-slate-500">
-                <button onClick={() => openHub("contact")} className="hover:text-[#a78bfa] cursor-none bg-transparent border-none uppercase tracking-wider">[Open Support connection Desk]</button>
-                <span>SYS_PING: 28ms</span>
-              </div>
+                {/* connection partner nodes ticket support */}
+                <div className="mt-4 pt-4 border-t border-slate-900 flex justify-between items-center text-[10px] text-slate-500">
+                  <button onClick={() => openHub("contact")} className="hover:text-[#a78bfa] cursor-none bg-transparent border-none uppercase tracking-wider">[Open Support connection Desk]</button>
+                  <span>SYS_PING: 28ms</span>
+                </div>
+              </TiltCard>
             </motion.div>
 
           </div>
+
+          {/* Premium Smooth Fade-in Footer Reveal */}
+          <motion.footer 
+            initial={{ opacity: 0, y: 15 }}
+            animate={activeSection === 5 ? { opacity: 1, y: 0 } : { opacity: 0, y: 15 }}
+            transition={{ duration: 0.8, delay: 0.5, ease: "easeOut" }}
+            className="absolute bottom-6 left-0 right-0 px-12 md:px-20 flex flex-col md:flex-row items-center justify-between text-[11px] font-mono text-slate-500 select-none pointer-events-auto border-t border-white/[0.03] pt-4"
+          >
+            <div className="flex items-center space-x-4 mb-2 md:mb-0">
+              <span>© 2026 ANALYST.OS INC. ALL RIGHTS RESERVED.</span>
+              <span className="text-white/10">|</span>
+              <span className="text-[#34d399] tracking-wider uppercase font-bold">[SECURE FINANCIAL NODE SEC-17A]</span>
+            </div>
+            <div className="flex items-center space-x-6">
+              <button type="button" onClick={() => openHub("terms")} className="hover:text-white transition-colors cursor-none bg-transparent border-none uppercase">[TERMS_OF_SERVICE]</button>
+              <button type="button" onClick={() => openHub("privacy")} className="hover:text-white transition-colors cursor-none bg-transparent border-none uppercase">[PRIVACY_SAFEGUARDS]</button>
+              <button type="button" onClick={() => openHub("about")} className="hover:text-white transition-colors cursor-none bg-transparent border-none uppercase">[FOUNDERS_NOTE]</button>
+            </div>
+          </motion.footer>
         </section>
 
-      </main>
+      </motion.div>
+    </main>
 
       {/* 7. Fullscreen sidebar hub overlay overlay */}
       <AnimatePresence>
