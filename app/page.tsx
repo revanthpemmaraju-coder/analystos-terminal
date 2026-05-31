@@ -609,6 +609,7 @@ export default function LandingPage() {
   const [vaultUnlocked, setVaultUnlocked] = useState(false);
   const [vaultLoading, setVaultLoading] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [pricingTableOpen, setPricingTableOpen] = useState(false);
 
   const handleUnlockVault = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -698,6 +699,57 @@ export default function LandingPage() {
     })
   };
 
+  const alternatingLeftVariants: any = {
+    inactive: { x: -80, opacity: 0, filter: "blur(6px)" },
+    active: (customDelay: number = 0.1) => ({ 
+      x: 0, 
+      opacity: 1, 
+      filter: "blur(0px)",
+      transition: { duration: 0.9, delay: customDelay, ease: [0.16, 1, 0.3, 1] } 
+    })
+  };
+
+  const alternatingRightVariants: any = {
+    inactive: { x: 80, opacity: 0, filter: "blur(6px)" },
+    active: (customDelay: number = 0.1) => ({ 
+      x: 0, 
+      opacity: 1, 
+      filter: "blur(0px)",
+      transition: { duration: 0.9, delay: customDelay, ease: [0.16, 1, 0.3, 1] } 
+    })
+  };
+
+  const terminalBootVariants: any = {
+    inactive: { opacity: 0, scale: 0.98, filter: "blur(4px)" },
+    active: (customDelay: number = 0.2) => ({ 
+      opacity: 1, 
+      scale: 1, 
+      filter: "blur(0px)",
+      transition: { duration: 0.7, delay: customDelay, ease: "easeOut" } 
+    })
+  };
+
+  const pricingScaleVariants: any = {
+    inactive: { y: 60, scale: 0.94, opacity: 0, filter: "blur(6px)" },
+    active: (customDelay: number = 0.3) => ({ 
+      y: 0, 
+      scale: 1, 
+      opacity: 1, 
+      filter: "blur(0px)",
+      transition: { duration: 0.9, delay: customDelay, ease: [0.16, 1, 0.3, 1] } 
+    })
+  };
+
+  const timelineStepVariants: any = {
+    inactive: { y: 30, opacity: 0, filter: "blur(4px)" },
+    active: (customDelay: number = 0.2) => ({ 
+      y: 0, 
+      opacity: 1, 
+      filter: "blur(0px)",
+      transition: { duration: 0.8, delay: customDelay, ease: "easeOut" } 
+    })
+  };
+
   return (
     <div className="flex flex-col h-screen w-screen overflow-hidden bg-[#020010] text-slate-100 font-sans selection:bg-[#a78bfa]/30 selection:text-white relative">
       
@@ -780,16 +832,16 @@ export default function LandingPage() {
 
         <nav className="hidden md:flex items-center space-x-8">
           {[
-            { label: "Work", index: 1 },
-            { label: "Studio", index: 2 },
-            { label: "Lab", index: 3 },
-            { label: "Contact", index: 4 }
+            { label: "Features", index: 1 },
+            { label: "Metrics", index: 2 },
+            { label: "Pricing", index: 3 },
+            { label: "Roadmap", index: 4 },
+            { label: "Vault", index: 5 }
           ].map(link => (
             <button
               key={link.label}
               onClick={() => {
-                if (link.label === "Contact") openHub("contact");
-                else scrollToSection(link.index);
+                scrollToSection(link.index);
               }}
               className="text-[13px] uppercase tracking-[0.08em] text-white/55 hover:text-[#a78bfa] transition-colors font-sans font-normal cursor-none bg-transparent border-none"
             >
@@ -811,7 +863,7 @@ export default function LandingPage() {
 
       {/* 4. Right side dot navigation indicators */}
       <div className="fixed right-8 top-1/2 -translate-y-1/2 flex flex-col space-y-4 z-40 select-none">
-        {[0, 1, 2, 3, 4].map((idx) => {
+        {[0, 1, 2, 3, 4, 5].map((idx) => {
           const isActive = activeSection === idx;
           return (
             <button
@@ -826,9 +878,10 @@ export default function LandingPage() {
               <span className="absolute right-6 top-1/2 -translate-y-1/2 bg-black/90 border border-white/10 px-2 py-0.5 rounded text-[10px] font-mono opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap text-slate-400">
                 {idx === 0 && "01. HERO COCKPIT"}
                 {idx === 1 && "02. FEATURE GRID"}
-                {idx === 2 && "03. DCF RECALCULATOR"}
-                {idx === 3 && "04. DESIGN STACK"}
-                {idx === 4 && "05. ASSETS LOCKER"}
+                {idx === 2 && "03. DCF SANDBOX"}
+                {idx === 3 && "04. PRICING PLANS"}
+                {idx === 4 && "05. ABOUT TIMELINE"}
+                {idx === 5 && "06. SECURE VAULT"}
               </span>
             </button>
           );
@@ -960,7 +1013,7 @@ export default function LandingPage() {
             
             {/* Left Panel: Description and Chat Terminal Cockpit */}
             <motion.div 
-              variants={cardVariants}
+              variants={alternatingLeftVariants}
               custom={0.15}
               animate={activeSection === 1 ? "active" : "inactive"}
               className="lg:col-span-7 text-left space-y-4"
@@ -1020,7 +1073,7 @@ export default function LandingPage() {
 
             {/* Right Panel: The 4 Figma stat cards floating 2x2 grid */}
             <motion.div 
-              variants={cardVariants}
+              variants={alternatingRightVariants}
               custom={0.35}
               animate={activeSection === 1 ? "active" : "inactive"}
               className="lg:col-span-5 flex justify-center"
@@ -1076,7 +1129,7 @@ export default function LandingPage() {
             
             {/* Left Panel: The DCF assumptions sliders */}
             <motion.div 
-              variants={cardVariants}
+              variants={terminalBootVariants}
               custom={0.15}
               animate={activeSection === 2 ? "active" : "inactive"}
               className="lg:col-span-5 text-left space-y-4"
@@ -1155,33 +1208,46 @@ export default function LandingPage() {
             </motion.div>
 
             {/* Right Panel: Metrics 2x3 Grid */}
-            <motion.div 
-              variants={cardVariants}
-              custom={0.35}
-              animate={activeSection === 2 ? "active" : "inactive"}
-              className="lg:col-span-7 w-full"
-            >
+            <div className="lg:col-span-7 w-full">
               <div className="grid grid-cols-3 gap-3">
                 
                 {/* 1. Implied Price Card */}
-                <div className="col-span-2 bg-white/[0.02] border border-white/[0.08] p-4 rounded-xl flex flex-col justify-between h-[95px] text-left">
-                  <span className="text-[9px] uppercase tracking-wider text-slate-500 font-mono">DCF Intrinsic Fair Price</span>
+                <motion.div 
+                  variants={terminalBootVariants}
+                  custom={0.3}
+                  animate={activeSection === 2 ? "active" : "inactive"}
+                  className="col-span-2 bg-white/[0.02] border border-white/[0.08] p-4 rounded-xl flex flex-col justify-between h-[95px] text-left hover:border-[#34d399]/20 transition-colors"
+                >
+                  <span className="text-[9px] uppercase tracking-wider text-slate-500 font-mono flex items-center justify-between">
+                    <span>DCF Intrinsic Fair Price</span>
+                    <span className="text-[#34d399] text-[8px] animate-pulse">[LOAD_OK]</span>
+                  </span>
                   <span className="text-2xl font-bold font-display text-white">₹{impliedSharePrice.toFixed(2)}</span>
                   <span className="text-[10px] text-[#34d399] font-mono font-medium">Implied Value per Share</span>
-                </div>
+                </motion.div>
 
                 {/* 2. NSE status node */}
-                <div className="col-span-1 bg-white/[0.02] border border-white/[0.08] p-4 rounded-xl flex flex-col justify-between h-[95px] text-left">
+                <motion.div 
+                  variants={terminalBootVariants}
+                  custom={0.45}
+                  animate={activeSection === 2 ? "active" : "inactive"}
+                  className="col-span-1 bg-white/[0.02] border border-white/[0.08] p-4 rounded-xl flex flex-col justify-between h-[95px] text-left hover:border-[#a78bfa]/20 transition-colors"
+                >
                   <span className="text-[9px] uppercase tracking-wider text-slate-500 font-mono">NSE NODE</span>
                   <div className="flex items-center space-x-1.5">
                     <span className="w-2 h-2 rounded-full bg-[#34d399] animate-pulse" />
                     <span className="text-[11px] font-bold text-white font-mono">LIVE_200</span>
                   </div>
                   <span className="text-[10px] text-slate-500 font-mono">Systems safe</span>
-                </div>
+                </motion.div>
 
                 {/* 3. WACC Table sensitivities */}
-                <div className="col-span-3 bg-slate-950/60 border border-white/[0.05] p-3 rounded-xl">
+                <motion.div 
+                  variants={terminalBootVariants}
+                  custom={0.6}
+                  animate={activeSection === 2 ? "active" : "inactive"}
+                  className="col-span-3 bg-slate-950/60 border border-white/[0.05] p-3 rounded-xl hover:border-[#60a5fa]/20 transition-colors"
+                >
                   <span className="text-[9px] uppercase tracking-wider text-[#a78bfa] font-mono block text-left mb-1.5">EBITDA sensitivity score table</span>
                   <table className="w-full font-mono text-[9px] border-collapse">
                     <thead>
@@ -1203,16 +1269,16 @@ export default function LandingPage() {
                       ))}
                     </tbody>
                   </table>
-                </div>
+                </motion.div>
 
               </div>
-            </motion.div>
+            </div>
 
           </div>
         </section>
 
         {/* ==========================================
-        * SECTION 4: DESIGN STACK 2×2 GRID
+        * SECTION 4: PRICING PLANS MATRIX
         * ========================================== */}
         <section 
           className="w-screen h-screen flex-shrink-0 snap-start overflow-hidden relative flex items-center justify-center px-12 md:px-20 pt-16 transition-all duration-1000"
@@ -1223,77 +1289,162 @@ export default function LandingPage() {
             transition: "transform 1.2s cubic-bezier(0.16, 1, 0.3, 1), filter 1.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 1.2s cubic-bezier(0.16, 1, 0.3, 1)"
           }}
         >
-          <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+          <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-12 gap-8 items-center relative">
             
             {/* Left Panel: Description */}
             <motion.div 
-              variants={cardVariants}
-              custom={0.15}
+              variants={pricingScaleVariants}
+              custom={0.1}
               animate={activeSection === 3 ? "active" : "inactive"}
-              className="lg:col-span-5 text-left space-y-4"
+              className="lg:col-span-4 text-left space-y-4"
             >
-              <span className="terminal-badge">04. STACK SPECS</span>
+              <span className="terminal-badge">04. LICENSE DESK</span>
               <h2 className="text-2xl md:text-3xl font-bold font-display text-white uppercase tracking-tight leading-none mt-2">
-                High-Fidelity Technology Stack
+                Institutional Access Licensing
               </h2>
               <p className="text-white/45 text-xs max-w-md font-sans leading-relaxed">
-                The visual frameworks that compile our 3D-first terminal workspace, engineered for zero-latency graphics and fluid responsive layouts.
+                Unlock low-latency financial intelligence pipelines. Choose a tier matching your analytical bandwidth. All pricing models compile live NSE data.
               </p>
+
+              <button
+                onClick={() => setPricingTableOpen(!pricingTableOpen)}
+                className="bg-transparent border border-[#a78bfa]/35 hover:border-[#a78bfa] text-[#a78bfa] hover:text-white transition-all font-mono text-[10px] uppercase tracking-wider px-5 py-2.5 rounded cursor-none"
+              >
+                {pricingTableOpen ? "[CLOSE COMPARE]" : "[COMPARE LICENSE FEATURES]"}
+              </button>
             </motion.div>
 
-            {/* Right Panel: 2x2 Grid Stack Cards */}
-            <motion.div 
-              variants={cardVariants}
-              custom={0.35}
-              animate={activeSection === 3 ? "active" : "inactive"}
-              className="lg:col-span-7 w-full"
-            >
-              <div className="grid grid-cols-2 gap-4">
-                
-                {/* 1. Figma Card */}
-                <div className="bg-white/[0.02] border border-white/[0.08] p-5 rounded-2xl text-left hover:border-[#a78bfa]/25 transition-all">
-                  <span className="text-[10px] font-mono text-[#a78bfa] uppercase">Figma · Design System</span>
-                  <h4 className="text-lg font-bold font-display text-white uppercase mt-2">AnalystOS</h4>
-                  <p className="text-white/40 text-[11px] font-sans mt-1 leading-relaxed">
-                    Auto Layout grid grids, rich near-black `#020010` backdrops, violet, electric blue, and emerald accents.
+            {/* Right Panel: 3 Pricing Plan Cards */}
+            <div className="lg:col-span-8 w-full grid grid-cols-3 gap-4 items-stretch relative">
+              
+              {/* Card 1: Core */}
+              <motion.div 
+                variants={pricingScaleVariants}
+                custom={0.25}
+                animate={activeSection === 3 ? "active" : "inactive"}
+                className="bg-[#0b0f19]/40 border border-white/[0.06] p-5 rounded-2xl flex flex-col justify-between text-left hover:border-white/20 transition-all select-none"
+              >
+                <div className="space-y-2">
+                  <span className="text-[9px] font-mono text-slate-500 uppercase tracking-widest">[CORE_LICENSE]</span>
+                  <h3 className="text-lg font-bold text-white font-display uppercase">STARTER NODE</h3>
+                  <div className="py-2">
+                    <span className="text-2xl font-bold text-white font-mono">₹2,500</span>
+                    <span className="text-[10px] text-slate-500 font-mono"> / mo</span>
+                  </div>
+                  <p className="text-white/40 text-[10px] font-sans leading-relaxed">
+                    Designed for independent analysts. Live EBITDA recalculations, local client databases, and static NSE indexes.
                   </p>
                 </div>
+                <button onClick={() => scrollToSection(5)} className="w-full bg-white/[0.04] border border-white/10 hover:border-[#a78bfa] text-white hover:text-[#a78bfa] font-mono text-[10px] py-2 rounded mt-6 transition-all uppercase tracking-wider cursor-none">
+                  [SELECT_NODE]
+                </button>
+              </motion.div>
 
-                {/* 2. Framer Card */}
-                <div className="bg-white/[0.02] border border-white/[0.08] p-5 rounded-2xl text-left hover:border-[#60a5fa]/25 transition-all">
-                  <span className="text-[10px] font-mono text-[#60a5fa] uppercase">Framer · Snap Motion</span>
-                  <h4 className="text-lg font-bold font-display text-white uppercase mt-2">Spring Physics</h4>
-                  <p className="text-white/40 text-[11px] font-sans mt-1 leading-relaxed">
-                    Smooth horizontal snapping curves (stiffness 80, damping 18), scroll progress tracking, and spring coordinates cursor.
+              {/* Card 2: Pro (Recommended, Glowing Border, Highlighted) */}
+              <motion.div 
+                variants={pricingScaleVariants}
+                custom={0.4}
+                animate={activeSection === 3 ? "active" : "inactive"}
+                className="bg-[#0e0f22]/85 border-2 border-[#a78bfa]/50 p-5 rounded-2xl flex flex-col justify-between text-left shadow-[0_0_30px_rgba(167,139,250,0.15)] relative scale-[1.03] select-none"
+              >
+                <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-[#a78bfa] text-[#020010] text-[8px] font-bold px-2 py-0.5 rounded font-mono uppercase tracking-widest select-none">
+                  RECOMMENDED_NODE
+                </span>
+                <div className="space-y-2 mt-1">
+                  <span className="text-[9px] font-mono text-[#a78bfa] uppercase tracking-widest font-bold">[TERMINAL_PRO]</span>
+                  <h3 className="text-lg font-bold text-white font-display uppercase">ANALYST CO-PILOT</h3>
+                  <div className="py-2">
+                    <span className="text-2xl font-bold text-white font-mono">₹7,500</span>
+                    <span className="text-[10px] text-[#a78bfa] font-mono"> / mo</span>
+                  </div>
+                  <p className="text-white/40 text-[10px] font-sans leading-relaxed">
+                    Our flagship terminal experience. 12ms WebSocket streams, real-time stock alerts, AI Chat Cockpit connection.
                   </p>
                 </div>
+                <button onClick={() => scrollToSection(5)} className="w-full bg-[#a78bfa] hover:bg-[#a78bfa]/80 text-[#020010] font-bold font-sans text-[10px] py-2.5 rounded mt-6 transition-all uppercase tracking-wider cursor-none">
+                  [LAUNCH_PRO_NODE]
+                </button>
+              </motion.div>
 
-                {/* 3. Spline Card */}
-                <div className="bg-white/[0.02] border border-white/[0.08] p-5 rounded-2xl text-left hover:border-[#34d399]/25 transition-all">
-                  <span className="text-[10px] font-mono text-[#34d399] uppercase">Spline · WebGL Scene</span>
-                  <h4 className="text-lg font-bold font-display text-white uppercase mt-2">3D Depth Parallax</h4>
-                  <p className="text-white/40 text-[11px] font-sans mt-1 leading-relaxed">
-                    120 oscillating colored spheres, fog at 1200, 60 real-time cylinder connections, camera mouse springs tilts and Z zoom.
+              {/* Card 3: Enterprise */}
+              <motion.div 
+                variants={pricingScaleVariants}
+                custom={0.55}
+                animate={activeSection === 3 ? "active" : "inactive"}
+                className="bg-[#0b0f19]/40 border border-white/[0.06] p-5 rounded-2xl flex flex-col justify-between text-left hover:border-white/20 transition-all select-none"
+              >
+                <div className="space-y-2">
+                  <span className="text-[9px] font-mono text-slate-500 uppercase tracking-widest">[ENTERPRISE_SECURE]</span>
+                  <h3 className="text-lg font-bold text-white font-display uppercase">INSTITUTIONAL</h3>
+                  <div className="py-2">
+                    <span className="text-2xl font-bold text-white font-mono">CUSTOM</span>
+                    <span className="text-[10px] text-slate-500 font-mono"> / quote</span>
+                  </div>
+                  <p className="text-white/40 text-[10px] font-sans leading-relaxed">
+                    Tailored for investment funds and banks. Dedicated multi-tenant servers, unlimited API calls, fully audited integrations.
                   </p>
                 </div>
+                <button onClick={() => openHub("contact")} className="w-full bg-white/[0.04] border border-white/10 hover:border-[#a78bfa] text-white hover:text-[#a78bfa] font-mono text-[10px] py-2 rounded mt-6 transition-all uppercase tracking-wider cursor-none">
+                  [CONTACT_OFFICE]
+                </button>
+              </motion.div>
 
-                {/* 4. Jitter Card */}
-                <div className="bg-white/[0.02] border border-white/[0.08] p-5 rounded-2xl text-left hover:border-[#ffdd57]/25 transition-all">
-                  <span className="text-[10px] font-mono text-[#ffdd57] uppercase">Jitter · Opening sequences</span>
-                  <h4 className="text-lg font-bold font-display text-white uppercase mt-2">CRT Scanlines</h4>
-                  <p className="text-white/40 text-[11px] font-sans mt-1 leading-relaxed">
-                    Masked letter-by-letter header reveals, motion blurred suffix enterings, and linear CRT scan sweeps.
-                  </p>
-                </div>
+            </div>
 
-              </div>
-            </motion.div>
+            {/* Detailed comparison table reveal popup */}
+            <AnimatePresence>
+              {pricingTableOpen && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                  transition={{ duration: 0.4, ease: "easeOut" }}
+                  className="absolute inset-x-0 inset-y-4 bg-slate-950/95 border border-white/10 rounded-2xl p-6 z-50 overflow-y-auto backdrop-blur-xl font-mono text-[10px] text-left select-text"
+                >
+                  <div className="flex justify-between items-center border-b border-white/10 pb-3 mb-4">
+                    <span className="text-[12px] font-bold text-white tracking-widest uppercase">Institutional License comparison table [SYS_COMPARE]</span>
+                    <button 
+                      onClick={() => setPricingTableOpen(false)}
+                      className="text-slate-400 hover:text-white font-mono bg-transparent border-none text-[11px] cursor-none"
+                    >
+                      [CLOSE_X]
+                    </button>
+                  </div>
+                  <table className="w-full border-collapse">
+                    <thead>
+                      <tr className="border-b border-white/10 text-slate-500">
+                        <th className="pb-2 text-left font-normal">CAPABILITY</th>
+                        <th className="pb-2 text-center font-normal">CORE</th>
+                        <th className="pb-2 text-center font-normal text-[#a78bfa] font-bold">PRO_NODE</th>
+                        <th className="pb-2 text-center font-normal">ENTERPRISE</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {[
+                        { name: "Live DCF recals", core: "Yes", pro: "Yes", ent: "Yes" },
+                        { name: "NSE Websocket data", core: "Static", pro: "12ms Live", ent: "Dedicated 8ms" },
+                        { name: "AI Co-pilot chats", core: "Limited", pro: "Unlimited", ent: "Unlimited + Fine-tuned" },
+                        { name: "Spreadsheet exports", core: "No", pro: "Yes", ent: "Yes (Audited)" },
+                        { name: "Dedicated host node", core: "No", pro: "No", ent: "Yes" }
+                      ].map((row, rIdx) => (
+                        <tr key={rIdx} className="border-b border-white/5 py-2">
+                          <td className="py-2.5 text-slate-400 font-bold">{row.name}</td>
+                          <td className="py-2.5 text-center text-slate-300">{row.core}</td>
+                          <td className="py-2.5 text-center text-[#34d399] font-bold">{row.pro}</td>
+                          <td className="py-2.5 text-center text-slate-300">{row.ent}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
           </div>
         </section>
 
         {/* ==========================================
-        * SECTION 5: FINAL CTA & LOCKED VALUATION VAULT
+        * SECTION 5: ABOUT ROADMAP TIMELINE
         * ========================================== */}
         <section 
           className="w-screen h-screen flex-shrink-0 snap-start overflow-hidden relative flex items-center justify-center px-12 md:px-20 pt-16 transition-all duration-1000"
@@ -1306,14 +1457,107 @@ export default function LandingPage() {
         >
           <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
             
+            {/* Left Panel: Founders Note & Storytelling */}
+            <motion.div 
+              variants={timelineStepVariants}
+              custom={0.15}
+              animate={activeSection === 4 ? "active" : "inactive"}
+              className="lg:col-span-5 text-left space-y-4"
+            >
+              <span className="terminal-badge">05. STAGES ROADMAP</span>
+              <h2 className="text-2xl md:text-3xl font-bold font-display text-white uppercase tracking-tight leading-none mt-2">
+                Hedge-Fund Engineering Roadmap
+              </h2>
+              <p className="text-white/45 text-xs max-w-md font-sans leading-relaxed">
+                AnalystOS is forged by institutional quantitative designers. Our stages ensure zero-latency execution pipelines and audited mathematical logic.
+              </p>
+              
+              <div className="border border-white/10 rounded-xl p-4 bg-[#0b0f19]/35 max-w-sm font-mono text-[10px] text-slate-400">
+                <span className="text-white font-bold block mb-1">FOUNDER_LOG: v1.0.4</span>
+                "We set out to replace cluttered terminal tools with a unified 3D workspace. AnalystOS bridges raw sockets and pro-forma DCF formulas in one seamless interface."
+              </div>
+            </motion.div>
+
+            {/* Right Panel: Story Timeline Progressive Roadmap */}
+            <div className="lg:col-span-7 w-full relative pl-8 select-none">
+              
+              {/* Vertical timeline vector bar */}
+              <div className="absolute left-3 top-2 bottom-2 w-0.5 bg-gradient-to-b from-[#a78bfa] via-[#60a5fa] to-[#34d399]/40 opacity-30" />
+
+              <div className="space-y-4">
+                {[
+                  {
+                    stage: "STAGE_01",
+                    title: "Live NSE Socket Gateways",
+                    desc: "Establishing direct multicast TCP connections to the National Stock Exchange for sub-12ms raw market data delivery.",
+                    accent: "text-[#a78bfa]",
+                    border: "border-[#a78bfa]/20",
+                    bullet: "bg-[#a78bfa]",
+                    delay: 0.3
+                  },
+                  {
+                    stage: "STAGE_02",
+                    title: "EBITDA DCF Sensitivity Engine",
+                    desc: "Compiling real-time pro-forma forecast metrics in WebAssembly. Instantly mapping multiples grids at 60 FPS.",
+                    accent: "text-[#60a5fa]",
+                    border: "border-[#60a5fa]/20",
+                    bullet: "bg-[#60a5fa]",
+                    delay: 0.45
+                  },
+                  {
+                    stage: "STAGE_03",
+                    title: "Hedge Fund REST/GraphQL APIs",
+                    desc: "Deploying secure audited endpoints with built-in sandbox locks and fully compliant JWT authorization models.",
+                    accent: "text-[#34d399]",
+                    border: "border-[#34d399]/20",
+                    bullet: "bg-[#34d399]",
+                    delay: 0.6
+                  }
+                ].map((step, idx) => (
+                  <motion.div
+                    key={idx}
+                    variants={timelineStepVariants}
+                    custom={step.delay}
+                    animate={activeSection === 4 ? "active" : "inactive"}
+                    className={`bg-[#0b0f19]/30 border ${step.border} p-4 rounded-xl text-left relative hover:bg-white/[0.03] transition-colors`}
+                  >
+                    {/* Timeline bullet node */}
+                    <div className={`absolute -left-[25px] top-[18px] w-2.5 h-2.5 rounded-full ${step.bullet} border border-slate-950 shadow-[0_0_10px_rgba(255,255,255,0.2)]`} />
+                    
+                    <span className={`text-[9px] font-mono ${step.accent} font-bold uppercase`}>{step.stage}</span>
+                    <h4 className="text-[13px] font-bold font-display text-white mt-1 uppercase">{step.title}</h4>
+                    <p className="text-white/45 text-[10px] font-sans mt-1.5 leading-relaxed">{step.desc}</p>
+                  </motion.div>
+                ))}
+              </div>
+
+            </div>
+
+          </div>
+        </section>
+
+        {/* ==========================================
+        * SECTION 6: FINAL CTA & LOCKED VALUATION VAULT
+        * ========================================== */}
+        <section 
+          className="w-screen h-screen flex-shrink-0 snap-start overflow-hidden relative flex items-center justify-center px-12 md:px-20 pt-16 transition-all duration-1000"
+          style={{
+            transform: `scale(${activeSection === 5 ? 1 : 0.97})`,
+            filter: `blur(${activeSection === 5 ? 0 : 2}px)`,
+            opacity: activeSection === 5 ? 1 : 0.6,
+            transition: "transform 1.2s cubic-bezier(0.16, 1, 0.3, 1), filter 1.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 1.2s cubic-bezier(0.16, 1, 0.3, 1)"
+          }}
+        >
+          <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+            
             {/* Left Panel: Waitlist locker capture form */}
             <motion.div 
               variants={cardVariants}
               custom={0.15}
-              animate={activeSection === 4 ? "active" : "inactive"}
+              animate={activeSection === 5 ? "active" : "inactive"}
               className="lg:col-span-6 text-left space-y-4"
             >
-              <span className="terminal-badge">05. SECURE LOCKER</span>
+              <span className="terminal-badge">06. SECURE LOCKER</span>
               <h2 className="text-2xl md:text-3xl font-bold font-display text-white uppercase tracking-tight leading-none mt-2">
                 Unlock Free Valuation Vault
               </h2>
@@ -1363,7 +1607,7 @@ export default function LandingPage() {
             <motion.div 
               variants={cardVariants}
               custom={0.35}
-              animate={activeSection === 4 ? "active" : "inactive"}
+              animate={activeSection === 5 ? "active" : "inactive"}
               className="lg:col-span-6 w-full font-mono text-[11px] text-left bg-slate-950/60 border border-white/[0.05] p-5 rounded-2xl"
             >
               <div className="space-y-3">
