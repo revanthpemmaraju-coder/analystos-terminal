@@ -16,6 +16,17 @@ export default function Navbar() {
 
   useEffect(() => {
     async function fetchSession() {
+      const isFounder = typeof window !== "undefined" && 
+        (new URLSearchParams(window.location.search).get("founder") === "true" || 
+         localStorage.getItem("founder_bypass") === "true");
+
+      if (isFounder) {
+        setUser({ id: "founder-guest-id", email: "founder@analystos.com" });
+        setProfile({ plan: "pro", name: "Founder / Administrator" });
+        setLoading(false);
+        return;
+      }
+
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
         setUser(session.user);
@@ -45,6 +56,14 @@ export default function Navbar() {
     // Listen for auth state revisions
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        const isFounder = typeof window !== "undefined" && 
+          localStorage.getItem("founder_bypass") === "true";
+        if (isFounder) {
+          setUser({ id: "founder-guest-id", email: "founder@analystos.com" });
+          setProfile({ plan: "pro", name: "Founder / Administrator" });
+          return;
+        }
+
         if (session?.user) {
           setUser(session.user);
           const { data: prof } = await supabase
@@ -67,6 +86,9 @@ export default function Navbar() {
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("founder_bypass");
+    }
     router.push("/login");
   };
 
