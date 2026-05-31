@@ -174,14 +174,25 @@ export default function DashboardPage() {
         .eq("id", session.user.id)
         .single();
       
-      if (prof) {
-        setProfile(prof);
-      } else {
-        setProfile({ plan: "free", name: "User" });
+      let finalProfile = prof || { plan: "free", name: "User" };
+      
+      // Founder Whitelisting Hook (Grants lifetime PRO credentials to the founder)
+      if (
+        session.user.email?.toLowerCase().includes("abhin") || 
+        session.user.email?.toLowerCase().includes("founder") || 
+        session.user.email?.toLowerCase().includes("admin")
+      ) {
+        finalProfile = { 
+          ...finalProfile, 
+          plan: "pro", 
+          name: "Founder / Administrator" 
+        };
       }
+      
+      setProfile(finalProfile);
       setLoading(false);
 
-      if (prof && prof.plan !== "free") {
+      if (finalProfile.plan !== "free") {
         fetchSavedMemos(session.user.id);
       }
     }
