@@ -1,17 +1,17 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
-
 @import "tailwindcss";
 
 :root {
-  --background: #05070a;
+  --background: #020010;
   --foreground: #f8fafc;
-  --card-bg: #0b0f19;
-  --card-border: rgba(0, 240, 255, 0.12);
-  --premium-accent: #00f0ff;
-  --premium-green: #00e676;
+  --card-bg: rgba(255, 255, 255, 0.03);
+  --card-border: rgba(255, 255, 255, 0.08);
+  --premium-accent: #a78bfa;
+  --premium-blue: #60a5fa;
+  --premium-green: #34d399;
   --premium-red: #ff3860;
   
-  --font-sans: 'Inter', sans-serif;
+  --font-sans: var(--font-space-grotesk), sans-serif;
+  --font-display: var(--font-syne), sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
 }
 
@@ -21,6 +21,7 @@ body {
   font-family: var(--font-sans);
   margin: 0;
   overflow-x: hidden;
+  cursor: none;
 }
 
 .terminal-font {
@@ -275,4 +276,26 @@ body {
   border-color: var(--premium-red) !important;
   box-shadow: 0 0 10px rgba(255, 56, 96, 0.3) !important;
 }
+
+/* Custom Figma Design System Classes */
+.figma-gradient-text {
+  background: linear-gradient(90deg, #a78bfa, #60a5fa, #34d399);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.font-display {
+  font-family: var(--font-display), sans-serif;
+}
+
+@keyframes figmaPulse {
+  0%, 100% { opacity: 0.5; transform: scale(0.9); }
+  50% { opacity: 1; transform: scale(1.2); box-shadow: 0 0 8px #34d399; }
+}
+
+.figma-pulse-circle {
+  animation: figmaPulse 2s infinite ease-in-out;
+}
+
 

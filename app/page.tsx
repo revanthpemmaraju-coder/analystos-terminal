@@ -12,6 +12,52 @@ import {
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import TickerBar from "@/components/ticker-bar";
+import { motion, AnimatePresence, useMotionValue, useSpring } from "framer-motion";
+
+const formatIndianCurrency = (num: number) => {
+  if (num >= 10000000) {
+    return '₹' + (num / 10000000).toFixed(2) + ' Cr';
+  } else if (num >= 100000) {
+    return '₹' + (num / 100000).toFixed(2) + ' Lakh';
+  }
+  return '₹' + num.toLocaleString('en-IN');
+};
+
+const FloatingStatCard = ({ 
+  label, val, sub, className, delay, duration 
+}: { 
+  label: string; 
+  val: string; 
+  sub: string; 
+  className?: string; 
+  delay: number;
+  duration: number;
+}) => {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 30 }}
+      whileInView={{ 
+        opacity: 1,
+        y: [0, -15, 0],
+        rotateX: [-2, 2, -2],
+        rotateY: [2, -2, 2]
+      }}
+      viewport={{ once: true }}
+      transition={{
+        opacity: { delay: delay, duration: 0.8 },
+        y: { repeat: Infinity, duration: duration, ease: "easeInOut" },
+        rotateX: { repeat: Infinity, duration: duration, ease: "easeInOut" },
+        rotateY: { repeat: Infinity, duration: duration, ease: "easeInOut" }
+      }}
+      style={{ transformStyle: "preserve-3d", perspective: "1000px" }}
+      className={`w-[160px] bg-white/[0.03] border border-white/[0.08] rounded-2xl flex flex-col justify-between p-4 backdrop-blur-[4px] text-left hover:border-[#a78bfa]/35 hover:bg-white/[0.06] transition-all select-none ${className}`}
+    >
+      <span className="text-[9px] uppercase tracking-[0.15em] text-white/30 font-sans">{label}</span>
+      <span className="text-[22px] font-bold text-white font-display mt-1 leading-none">{val}</span>
+      <span className="text-[10px] text-[#a78bfa] font-sans font-normal mt-2">{sub}</span>
+    </motion.div>
+  );
+};
 
 export default function LandingPage() {
   // Navigation countdown target date (June 14, 2026)
@@ -36,9 +82,50 @@ export default function LandingPage() {
     return () => clearInterval(interval);
   }, []);
 
-  // Three.js 3D Globe Ref
+  // Three.js Ref
   const canvasContainerRef = useRef<HTMLDivElement>(null);
+  
+  // Horizontal Scroll Snapping States
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [scrollLeft, setScrollLeft] = useState(0);
+  const [scrollWidth, setScrollWidth] = useState(1);
+  const [clientWidth, setClientWidth] = useState(1);
 
+  const activeSection = Math.round(scrollLeft / (clientWidth || 1));
+  const scrollProgress = scrollLeft / (scrollWidth - clientWidth || 1);
+
+  const handleScrollEvent = () => {
+    if (scrollRef.current) {
+      setScrollLeft(scrollRef.current.scrollLeft);
+      setScrollWidth(scrollRef.current.scrollWidth);
+      setClientWidth(scrollRef.current.clientWidth);
+    }
+  };
+
+  const scrollToSection = (idx: number) => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTo({
+        left: idx * window.innerWidth,
+        behavior: "smooth"
+      });
+    }
+  };
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (el) {
+      el.addEventListener("scroll", handleScrollEvent);
+      // Initialize dimensions
+      setTimeout(() => {
+        setScrollLeft(el.scrollLeft);
+        setScrollWidth(el.scrollWidth);
+        setClientWidth(el.clientWidth);
+      }, 500);
+    }
+    return () => el?.removeEventListener("scroll", handleScrollEvent);
+  }, []);
+
+  // Three.js interactive background setup
   useEffect(() => {
     const container = canvasContainerRef.current;
     if (!container) return;
@@ -46,31 +133,101 @@ export default function LandingPage() {
     let width = container.clientWidth;
     let height = container.clientHeight;
 
-    // Scene
     const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x020010);
+    scene.fog = new THREE.Fog(0x020010, 1, 1200);
 
     // Camera
-    const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 100);
-    camera.position.z = 8;
+    const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 2000);
+    camera.position.set(0, 0, 600);
 
-    // Renderer
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.setSize(width, height);
+    renderer.setClearColor(0x020010, 1);
     container.appendChild(renderer.domElement);
 
-    // Group containers
-    const sceneGroup = new THREE.Group();
-    scene.add(sceneGroup);
+    const particleGroup = new THREE.Group();
+    scene.add(particleGroup);
 
+    // Lights
+    const pLight1 = new THREE.PointLight(0xa78bfa, 4.0, 2000);
+    pLight1.position.set(300, 150, 200);
+    scene.add(pLight1);
+
+    const pLight2 = new THREE.PointLight(0x60a5fa, 3.0, 2000);
+    pLight2.position.set(-300, -150, 100);
+    scene.add(pLight2);
+
+    const pLight3 = new THREE.PointLight(0x34d399, 2.5, 2000);
+    pLight3.position.set(0, 300, -200);
+    scene.add(pLight3);
+
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.15);
+    scene.add(ambientLight);
+
+    // 120 Sphere Particles distributed in 900x700x500 space
+    const colors = [0xa78bfa, 0x60a5fa, 0x34d399];
+    const sphereGeometry = new THREE.SphereGeometry(1.5, 12, 12);
+    const particles: Array<{
+      mesh: THREE.Mesh;
+      baseY: number;
+      amplitude: number;
+      duration: number;
+      timeOffset: number;
+    }> = [];
+
+    for (let i = 0; i < 120; i++) {
+      const colorHex = colors[i % 3];
+      const mat = new THREE.MeshStandardMaterial({
+        color: colorHex,
+        roughness: 0,
+        metalness: 0.3,
+        emissive: colorHex,
+        emissiveIntensity: 0.3
+      });
+
+      const sphereMesh = new THREE.Mesh(sphereGeometry, mat);
+      const posX = (Math.random() - 0.5) * 900;
+      const posY = (Math.random() - 0.5) * 700;
+      const posZ = (Math.random() - 0.5) * 500;
+      sphereMesh.position.set(posX, posY, posZ);
+      particleGroup.add(sphereMesh);
+
+      const amplitude = Math.random() * (24 - 8) + 8;
+      const duration = Math.random() * (22 - 6) + 6;
+      const timeOffset = Math.random() * 100;
+
+      particles.push({
+        mesh: sphereMesh,
+        baseY: posY,
+        amplitude,
+        duration,
+        timeOffset
+      });
+    }
+
+    // Grid Plane Y = -280, 2000x2000
+    const gridGeometry = new THREE.PlaneGeometry(2000, 2000, 40, 40);
+    const gridMaterial = new THREE.MeshBasicMaterial({
+      color: 0xa78bfa,
+      wireframe: true,
+      transparent: true,
+      opacity: 0.05
+    });
+    const gridMesh = new THREE.Mesh(gridGeometry, gridMaterial);
+    gridMesh.rotation.x = -Math.PI / 2;
+    gridMesh.position.y = -280;
+    scene.add(gridMesh);
+
+    // Restored 3D Wireframe Globe centerpiece scaled up by 100
     const globeGroup = new THREE.Group();
-    sceneGroup.add(globeGroup);
+    scene.add(globeGroup);
 
-    // 1. Globe Wireframe Sphere
-    const globeRadius = 1.6;
+    const globeRadius = 160;
     const sphereGeo = new THREE.SphereGeometry(globeRadius, 24, 24);
     const wireMat = new THREE.MeshBasicMaterial({
-      color: 0x2D7EF8,
+      color: 0xa78bfa,
       wireframe: true,
       transparent: true,
       opacity: 0.08
@@ -78,36 +235,29 @@ export default function LandingPage() {
     const globeWireMesh = new THREE.Mesh(sphereGeo, wireMat);
     globeGroup.add(globeWireMesh);
 
-    // 2. Dot Matrix Point Globe
     const dotsCount = 400;
     const dotGeo = new THREE.BufferGeometry();
     const positions = new Float32Array(dotsCount * 3);
-
     for (let i = 0; i < dotsCount; i++) {
       const u = Math.random();
       const v = Math.random();
       const theta = u * 2.0 * Math.PI;
       const phi = Math.acos(2.0 * v - 1.0);
-      
       positions[i * 3] = globeRadius * Math.sin(phi) * Math.cos(theta);
       positions[i * 3 + 1] = globeRadius * Math.sin(phi) * Math.sin(theta);
       positions[i * 3 + 2] = globeRadius * Math.cos(phi);
     }
-
     dotGeo.setAttribute("position", new THREE.BufferAttribute(positions, 3));
     const dotMat = new THREE.PointsMaterial({
       color: 0xffffff,
-      size: 0.025,
+      size: 2.5,
       transparent: true,
       opacity: 0.35
     });
     const globeDots = new THREE.Points(dotGeo, dotMat);
     globeGroup.add(globeDots);
 
-    // 3. Geographic bezier connection lines
-    const routeGroup = new THREE.Group();
-    globeGroup.add(routeGroup);
-
+    // routes
     const connectionHubs = [
       { from: [1.2, 0.8, 0.7], to: [-0.8, -0.6, -1.1] },
       { from: [-1.4, 0.4, 0.6], to: [0.5, -1.2, 0.9] },
@@ -119,46 +269,39 @@ export default function LandingPage() {
     connectionHubs.forEach(hub => {
       const p1 = new THREE.Vector3(hub.from[0], hub.from[1], hub.from[2]).normalize().multiplyScalar(globeRadius);
       const p2 = new THREE.Vector3(hub.to[0], hub.to[1], hub.to[2]).normalize().multiplyScalar(globeRadius);
-      
       const midPoint = new THREE.Vector3().addVectors(p1, p2).multiplyScalar(0.7);
       midPoint.add(new THREE.Vector3(
-        (Math.random() - 0.5) * 0.4,
-        (Math.random() - 0.5) * 0.4,
-        (Math.random() - 0.5) * 0.4
+        (Math.random() - 0.5) * 40,
+        (Math.random() - 0.5) * 40,
+        (Math.random() - 0.5) * 40
       ));
-
       const curve = new THREE.QuadraticBezierCurve3(p1, midPoint, p2);
       const points = curve.getPoints(20);
       const curveGeo = new THREE.BufferGeometry().setFromPoints(points);
-
       const curveMat = new THREE.LineBasicMaterial({
-        color: 0x2D7EF8,
+        color: 0x60a5fa,
         transparent: true,
         opacity: 0.15
       });
-
       const routeLine = new THREE.Line(curveGeo, curveMat);
-      routeGroup.add(routeLine);
+      globeGroup.add(routeLine);
     });
 
-    // 4. Pulsing inner core emerald particles
+    // Pulse core
     const particleCount = 700;
     const particleGeo = new THREE.BufferGeometry();
     const particlePositions = new Float32Array(particleCount * 3);
     const particleSpeeds: { freq: number; phase: number }[] = [];
-
-    const coreRadius = 0.85;
+    const coreRadius = 85;
 
     for (let i = 0; i < particleCount; i++) {
       const u = Math.random();
       const v = Math.random();
       const theta = u * 2.0 * Math.PI;
       const phi = Math.acos(2.0 * v - 1.0);
-      
       particlePositions[i * 3] = coreRadius * Math.sin(phi) * Math.cos(theta);
       particlePositions[i * 3 + 1] = coreRadius * Math.sin(phi) * Math.sin(theta);
       particlePositions[i * 3 + 2] = coreRadius * Math.cos(phi);
-
       particleSpeeds.push({
         freq: Math.random() * 2 + 1,
         phase: Math.random() * Math.PI * 2
@@ -167,101 +310,155 @@ export default function LandingPage() {
 
     particleGeo.setAttribute("position", new THREE.BufferAttribute(particlePositions, 3));
     const particleMat = new THREE.PointsMaterial({
-      color: 0x10B981, // Emerald pulsing core
-      size: 0.03,
+      color: 0x34d399,
+      size: 3.0,
       transparent: true,
       opacity: 0.7,
       blending: THREE.AdditiveBlending
     });
-
     const aiSphereParticles = new THREE.Points(particleGeo, particleMat);
-    sceneGroup.add(aiSphereParticles);
+    scene.add(aiSphereParticles);
 
-    // 5. Lighting Environment
-    const ambientLight = new THREE.AmbientLight(0x060609, 0.8);
-    scene.add(ambientLight);
+    // 60 connecting lines
+    const connections: Array<{
+      p1: typeof particles[0];
+      p2: typeof particles[0];
+      mesh: THREE.Mesh;
+    }> = [];
+    const cylinderGeometry = new THREE.CylinderGeometry(0.3, 0.3, 1, 4);
+    const connectionMaterial = new THREE.MeshBasicMaterial({
+      color: 0xa78bfa,
+      transparent: true,
+      opacity: 0.2
+    });
 
-    const pointLight = new THREE.PointLight(0x2D7EF8, 3, 15);
-    pointLight.position.set(0, 0, 0);
-    scene.add(pointLight);
+    let attempts = 0;
+    while (connections.length < 60 && attempts < 3000) {
+      attempts++;
+      const idx1 = Math.floor(Math.random() * particles.length);
+      const idx2 = Math.floor(Math.random() * particles.length);
+      if (idx1 === idx2) continue;
 
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 1.2);
-    directionalLight.position.set(5, 5, 4);
-    scene.add(directionalLight);
+      const duplicate = connections.some(c => 
+        (c.p1 === particles[idx1] && c.p2 === particles[idx2]) || 
+        (c.p1 === particles[idx2] && c.p2 === particles[idx1])
+      );
+      if (duplicate) continue;
 
-    // Mouse movement coordinate tilts
+      const p1 = particles[idx1];
+      const p2 = particles[idx2];
+      const dist = p1.mesh.position.distanceTo(p2.mesh.position);
+      if (dist < 120) {
+        const cylinderMesh = new THREE.Mesh(cylinderGeometry, connectionMaterial);
+        scene.add(cylinderMesh);
+        connections.push({ p1, p2, mesh: cylinderMesh });
+      }
+    }
+
     let mouseX = 0;
     let mouseY = 0;
-    let targetX = 0;
-    let targetY = 0;
+    let targetRotX = 0;
+    let targetRotY = 0;
+    const camRot = { x: 0, y: 0 };
+    const camVel = { x: 0, y: 0 };
 
     const handleMouseMove = (event: MouseEvent) => {
       mouseX = (event.clientX - window.innerWidth / 2) / (window.innerWidth / 2);
       mouseY = (event.clientY - window.innerHeight / 2) / (window.innerHeight / 2);
+      targetRotX = -mouseY * (10 * Math.PI / 180);
+      targetRotY = -mouseX * (12 * Math.PI / 180);
     };
 
     window.addEventListener("mousemove", handleMouseMove);
 
-    // Animation render loop
     const clock = new THREE.Clock();
     let animationFrameId: number;
 
     const animate = () => {
       animationFrameId = requestAnimationFrame(animate);
-
       const time = clock.getElapsedTime();
+      const dt = Math.min(clock.getDelta(), 0.1);
 
+      // Scroll progress mapping (horizontally scrolls camera Z position from 600 down to 350)
+      const currentScrollLeft = scrollRef.current ? scrollRef.current.scrollLeft : 0;
+      const currentScrollWidth = scrollRef.current ? scrollRef.current.scrollWidth : 1;
+      const currentClientWidth = scrollRef.current ? scrollRef.current.clientWidth : 1;
+      const currProgress = currentScrollLeft / (currentScrollWidth - currentClientWidth || 1);
+      
+      // Update camera position Z over the horizontal snap coordinates
+      camera.position.z = 600 - currProgress * (600 - 350);
+
+      // Oscillations
+      particles.forEach(p => {
+        const theta = (time + p.timeOffset) * (Math.PI * 2 / p.duration);
+        p.mesh.position.y = p.baseY + Math.sin(theta) * p.amplitude;
+      });
+
+      // Connections
+      connections.forEach(c => {
+        const posA = c.p1.mesh.position;
+        const posB = c.p2.mesh.position;
+        const dir = new THREE.Vector3().subVectors(posB, posA);
+        const len = dir.length();
+        c.mesh.scale.set(1, len, 1);
+        const mid = new THREE.Vector3().addVectors(posA, posB).multiplyScalar(0.5);
+        c.mesh.position.copy(mid);
+        dir.normalize();
+        const align = new THREE.Vector3(0, 1, 0);
+        const quat = new THREE.Quaternion().setFromUnitVectors(align, dir);
+        c.mesh.quaternion.copy(quat);
+      });
+
+      gridMesh.rotation.z += 0.000349;
+
+      // Tilts
+      const forceX = -80 * (camRot.x - targetRotX) - 20 * camVel.x;
+      camVel.x += forceX * dt;
+      camRot.x += camVel.x * dt;
+
+      const forceY = -80 * (camRot.y - targetRotY) - 20 * camVel.y;
+      camVel.y += forceY * dt;
+      camRot.y += camVel.y * dt;
+
+      camera.rotation.x = camRot.x;
+      camera.rotation.y = camRot.y;
+
+      // Globe centerpiece
       globeGroup.rotation.y = time * 0.05;
       globeGroup.rotation.x = time * 0.02;
 
-      // Pulse core particles organic size and shape
       const positionsArr = aiSphereParticles.geometry.attributes.position.array as Float32Array;
       for (let i = 0; i < particleCount; i++) {
         const x = positionsArr[i * 3];
         const y = positionsArr[i * 3 + 1];
         const z = positionsArr[i * 3 + 2];
-
         const length = Math.sqrt(x*x + y*y + z*z);
         if (length === 0) continue;
-
         const nx = x / length;
         const ny = y / length;
         const nz = z / length;
-
         const speed = particleSpeeds[i];
-        const pulseFactor = coreRadius + Math.sin(time * speed.freq + speed.phase) * 0.045;
-
+        const pulseFactor = 85 + Math.sin(time * speed.freq + speed.phase) * 4.5;
         positionsArr[i * 3] = nx * pulseFactor;
         positionsArr[i * 3 + 1] = ny * pulseFactor;
         positionsArr[i * 3 + 2] = nz * pulseFactor;
       }
       aiSphereParticles.geometry.attributes.position.needsUpdate = true;
-
       aiSphereParticles.rotation.y = -time * 0.03;
       aiSphereParticles.rotation.z = time * 0.01;
-
-      targetX += (mouseX - targetX) * 0.05;
-      targetY += (mouseY - targetY) * 0.05;
-
-      sceneGroup.rotation.y = targetX * 0.25;
-      sceneGroup.rotation.x = targetY * 0.2;
 
       renderer.render(scene, camera);
     };
 
     animate();
 
-    // Resize
     const handleResize = () => {
       if (!container) return;
       width = container.clientWidth;
       height = container.clientHeight;
-
       camera.aspect = width / height;
       camera.updateProjectionMatrix();
-
       renderer.setSize(width, height);
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     };
 
     window.addEventListener("resize", handleResize);
@@ -270,7 +467,6 @@ export default function LandingPage() {
       window.removeEventListener("mousemove", handleMouseMove);
       window.removeEventListener("resize", handleResize);
       cancelAnimationFrame(animationFrameId);
-      
       if (container && renderer.domElement) {
         container.removeChild(renderer.domElement);
       }
@@ -278,9 +474,8 @@ export default function LandingPage() {
     };
   }, []);
 
-  // Parallax Float Cards Mouse Tracker State
+  // Parallax mouse effect
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
-
   useEffect(() => {
     const handleMouseParallax = (e: MouseEvent) => {
       const x = (e.clientX - window.innerWidth / 2) / (window.innerWidth / 2);
@@ -291,241 +486,91 @@ export default function LandingPage() {
     return () => window.removeEventListener("mousemove", handleMouseParallax);
   }, []);
 
-  // -----------------------------------------------------------
-  // INTERACTIVE TERMINAL METRICS & SANDBOX
-  // -----------------------------------------------------------
-  const [activePreviewTab, setActivePreviewTab] = useState<"charts" | "ai" | "dcf" | "reports">("charts");
-  
-  // Custom Canvas Chart
-  const chartCanvasRef = useRef<HTMLCanvasElement>(null);
-  const [hoveredDataPoint, setHoveredDataPoint] = useState<any>(null);
-  const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
-
-  const stockQuotes = [150.2, 155.8, 148.4, 160.1, 168.5, 162.0, 172.4, 169.5, 178.2, 185.0, 179.3, 182.52];
-  const quarters = ["Q1-25", "Feb", "Mar", "Q2-25", "May", "Jun", "Q3-25", "Aug", "Sep", "Q4-25", "Nov", "Dec"];
-
-  const drawChart = (hoverX?: number) => {
-    const canvas = chartCanvasRef.current;
-    if (!canvas) return;
-
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-
-    const rect = canvas.getBoundingClientRect();
-    const dpr = typeof window !== "undefined" ? window.devicePixelRatio || 1 : 1;
-    canvas.width = rect.width * dpr;
-    canvas.height = rect.height * dpr;
-    ctx.scale(dpr, dpr);
-
-    const w = rect.width;
-    const h = rect.height;
-    const padding = 30;
-    const chartWidth = w - padding * 2;
-    const chartHeight = h - padding * 2;
-
-    const minVal = 140;
-    const maxVal = 190;
-    const valRange = maxVal - minVal;
-
-    const points = stockQuotes.map((val, index) => {
-      const x = padding + (index / (stockQuotes.length - 1)) * chartWidth;
-      const y = padding + chartHeight - ((val - minVal) / valRange) * chartHeight;
-      return { x, y, price: val, date: quarters[index] };
-    });
-
-    ctx.clearRect(0, 0, w, h);
-
-    // 1. Grid lines
-    ctx.strokeStyle = "rgba(255, 255, 255, 0.04)";
-    ctx.lineWidth = 1;
-    const gridCols = 8;
-    for (let i = 0; i <= gridCols; i++) {
-      const x = padding + (i / gridCols) * chartWidth;
-      ctx.beginPath();
-      ctx.moveTo(x, 15);
-      ctx.lineTo(x, h - 25);
-      ctx.stroke();
-    }
-
-    const gridRows = 5;
-    for (let i = 0; i <= gridRows; i++) {
-      const y = padding + (i / gridRows) * chartHeight;
-      ctx.beginPath();
-      ctx.moveTo(25, y);
-      ctx.lineTo(w - 25, y);
-      ctx.stroke();
-    }
-
-    // 2. Axes labels
-    ctx.fillStyle = "#4D4E5B";
-    ctx.font = "10px 'JetBrains Mono', monospace";
-    ctx.textAlign = "right";
-    ctx.fillText("$190", 25, 33);
-    ctx.fillText("$175", 25, (h - 40) * 0.35 + 15);
-    ctx.fillText("$160", 25, (h - 40) * 0.7 + 5);
-    ctx.fillText("$140", 25, h - 22);
-
-    ctx.textAlign = "center";
-    ctx.fillText("JAN", 30, h - 8);
-    ctx.fillText("MAR", 30 + (w - 60) * 0.22, h - 8);
-    ctx.fillText("JUN", 30 + (w - 60) * 0.48, h - 8);
-    ctx.fillText("SEP", 30 + (w - 60) * 0.74, h - 8);
-    ctx.fillText("DEC", w - 30, h - 8);
-
-    // 3. Simulated Volume Columns
-    points.forEach(pt => {
-      const volHeight = Math.abs(Math.sin(pt.x) * 45) + 15;
-      ctx.fillStyle = "rgba(16, 185, 129, 0.08)";
-      ctx.fillRect(pt.x - 6, h - 25 - volHeight, 12, volHeight);
-    });
-
-    // 4. Primary Chart Line
-    ctx.beginPath();
-    ctx.strokeStyle = "#00f0ff"; // Electric blue premium accent
-    ctx.lineWidth = 2.5;
-    ctx.lineCap = "round";
-    ctx.lineJoin = "round";
-    points.forEach((pt, idx) => {
-      if (idx === 0) ctx.moveTo(pt.x, pt.y);
-      else ctx.lineTo(pt.x, pt.y);
-    });
-    ctx.stroke();
-
-    // 5. Gradient fill
-    const fillGrad = ctx.createLinearGradient(0, 30, 0, h - 25);
-    fillGrad.addColorStop(0, "rgba(0, 240, 255, 0.12)");
-    fillGrad.addColorStop(1, "rgba(0, 240, 255, 0.00)");
-    ctx.beginPath();
-    points.forEach((pt, idx) => {
-      if (idx === 0) ctx.moveTo(pt.x, pt.y);
-      else ctx.lineTo(pt.x, pt.y);
-    });
-    ctx.lineTo(points[points.length - 1].x, h - 25);
-    ctx.lineTo(points[0].x, h - 25);
-    ctx.closePath();
-    ctx.fillStyle = fillGrad;
-    ctx.fill();
-
-    // 6. Snapping to cursor hover
-    if (hoverX !== undefined) {
-      let closestPt = points[0];
-      let minDist = Math.abs(hoverX - closestPt.x);
-      points.forEach(pt => {
-        const dist = Math.abs(hoverX - pt.x);
-        if (dist < minDist) {
-          minDist = dist;
-          closestPt = pt;
-        }
-      });
-
-      // Draw dashed crosshairs
-      ctx.strokeStyle = "rgba(0, 240, 255, 0.3)";
-      ctx.lineWidth = 1;
-      ctx.setLineDash([4, 4]);
-
-      ctx.beginPath();
-      ctx.moveTo(25, closestPt.y);
-      ctx.lineTo(w - 25, closestPt.y);
-      ctx.stroke();
-
-      ctx.beginPath();
-      ctx.moveTo(closestPt.x, 15);
-      ctx.lineTo(closestPt.x, h - 25);
-      ctx.stroke();
-
-      ctx.setLineDash([]);
-
-      // Draw Snapped Data Point Hover Ring
-      ctx.fillStyle = "#00f0ff";
-      ctx.strokeStyle = "#FFFFFF";
-      ctx.lineWidth = 1.5;
-      ctx.beginPath();
-      ctx.arc(closestPt.x, closestPt.y, 4, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.stroke();
-
-      setHoveredDataPoint(closestPt);
-      setTooltipPos({ x: closestPt.x + 10, y: closestPt.y - 45 });
-    } else {
-      // Glow point at terminal last quote price
-      const activePt = points[points.length - 1];
-      ctx.fillStyle = "#00e676"; // Emerald green
-      ctx.strokeStyle = "#FFFFFF";
-      ctx.lineWidth = 1.5;
-      ctx.beginPath();
-      ctx.arc(activePt.x, activePt.y, 5, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.stroke();
-
-      setHoveredDataPoint(null);
-    }
-  };
+  // Premium Custom Spring Cursor coordinates
+  const [isHovered, setIsHovered] = useState(false);
+  const mouseCursorX = useMotionValue(-100);
+  const mouseCursorY = useMotionValue(-100);
+  const cursorRingX = useSpring(mouseCursorX, { stiffness: 120, damping: 18 });
+  const cursorRingY = useSpring(mouseCursorY, { stiffness: 120, damping: 18 });
 
   useEffect(() => {
-    if (activePreviewTab === "charts") {
-      drawChart();
-    }
-  }, [activePreviewTab]);
-
-  const handleCanvasMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    const canvas = chartCanvasRef.current;
-    if (!canvas) return;
-    const rect = canvas.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    drawChart(x);
-  };
-
-  const handleCanvasMouseLeave = () => {
-    drawChart();
-  };
-
-  // AI Co-Pilot Panel
-  const [aiChatHistory, setAiChatHistory] = useState<any[]>([
-    { role: "user", content: "Analyse Reliance Industries Q3 earnings" },
-    { role: "system", content: "Loading Reliance Q3 analysis...\nExecuting: Reliance Industries (RELIANCE) Q3 Analysis Engine v4.0\n----------------------------------------------------------------\nRevenue: ₹2.48 Lakh Cr (+3.2% YoY) | EBITDA Margin: 17.5% (Strong)\nNet Profit: ₹17,200 Cr vs ₹16,800 Cr estimated (Beat of 2.4%)\nKey Drivers: Retail revenue grows 10.4% YoY. Oil-to-Chemicals steady.\nDCF Implications: Growth projection updated to 11.5% for FY26.\nValuation Verdict: Solid EBITDA support; implied trading gap suggests 6.5% upside.\n\nReady for next financial query. Type command below." }
-  ]);
-  const [aiInput, setAiInput] = useState("");
-  const [isAiTyping, setIsAiTyping] = useState(false);
-
-  const handleAiSend = (textToSend?: string) => {
-    const msg = (textToSend || aiInput).trim();
-    if (!msg) return;
-
-    setAiChatHistory(prev => [...prev, { role: "user", content: msg }]);
-    setAiInput("");
-    setIsAiTyping(true);
-
-    setTimeout(() => {
-      let reply = "";
-      const cmd = msg.toUpperCase();
-      if (cmd.includes("HELP")) {
-        reply = "AVAILABLE COMMANDS: HELP | SYS_PING | LIST_STOCKS | RUN_VALUATION [TICKER]";
-      } else if (cmd.includes("SYS_PING")) {
-        reply = "SYS_STATUS: PING 28ms - NSE_NODE ALIVE - CORE_SYSTEMS OPERATIONAL [v1.0.4]";
-      } else if (cmd.includes("LIST_STOCKS")) {
-        reply = "TICKERS: RELIANCE, TCS, HDFCBANK, INFY, ICICIBANK, KOTAKBANK";
-      } else if (cmd.includes("RUN_VALUATION") || cmd.includes("RELIANCE")) {
-        reply = "DCF_COMPILING: RELIANCE INDUSTRIES INTRINSIC ESTIMATE ₹2,650 (UP-SIDE +6.5% OVER RECENT ₹2,480 MARGIN QUOTES)";
+    const moveCursor = (e: MouseEvent) => {
+      mouseCursorX.set(e.clientX);
+      mouseCursorY.set(e.clientY);
+    };
+    const handleHoverTarget = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target) return;
+      if (
+        target.tagName === "BUTTON" || 
+        target.tagName === "A" || 
+        target.closest("button") || 
+        target.closest("a") || 
+        target.classList.contains("clickable")
+      ) {
+        setIsHovered(true);
       } else {
-        reply = `CONNECTING TO LOCAL FINANCIAL INDEX NODES...\nUNABLE TO RESOLVE CO-PILOT PIPELINES DIRECTLY FOR '${msg}'.\nTRY SUGGESTIONS LISTED BELOW OR ENTER HELP.`;
+        setIsHovered(false);
       }
-      setAiChatHistory(prev => [...prev, { role: "system", content: reply }]);
-      setIsAiTyping(false);
-    }, 1000);
+    };
+    window.addEventListener("mousemove", moveCursor);
+    window.addEventListener("mouseover", handleHoverTarget);
+    return () => {
+      window.removeEventListener("mousemove", moveCursor);
+      window.removeEventListener("mouseover", handleHoverTarget);
+    };
+  }, []);
+
+  // Sidebar commands hub panel
+  const [infoHubActive, setInfoHubActive] = useState(false);
+  const [activeHubTab, setActiveHubTab] = useState<string>("home");
+
+  const [contactName, setContactName] = useState("");
+  const [contactEmail, setContactEmail] = useState("");
+  const [contactFirm, setContactFirm] = useState("student");
+  const [contactMsg, setContactMsg] = useState("");
+  const [contactRef, setContactRef] = useState<string | null>(null);
+  const [contactLoading, setContactLoading] = useState(false);
+
+  const handleContactSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setContactLoading(true);
+    try {
+      await supabase.from("waitlist").insert([
+        { 
+          email: contactEmail, 
+          segment: `contact_${contactFirm}`, 
+          metadata: { name: contactName, message: contactMsg } 
+        }
+      ]);
+    } catch (err) {
+      console.warn("Bypassed support ticket Supabase logging: ", err);
+    }
+    setTimeout(() => {
+      setContactLoading(false);
+      setContactRef(`REF_${Math.floor(Math.random() * 900000 + 100000)}`);
+      setContactName("");
+      setContactEmail("");
+      setContactMsg("");
+    }, 1500);
   };
 
-  // DCF Valuation recalculator states
-  const [dcfEbitda, setDcfEbitda] = useState(120);     // ₹ Lakhs
-  const [dcfGrowth, setDcfGrowth] = useState(15);      // %
-  const [dcfWacc, setDcfWacc] = useState(9.0);         // %
-  const [dcfMultiple, setDcfMultiple] = useState(14);   // EV/EBITDA
+  const openHub = (tab: string) => {
+    setActiveHubTab(tab);
+    setInfoHubActive(true);
+  };
 
-  const sharesOutstanding = 10000000; // 1 Crore shares
+  // DCF recalcs sandbox
+  const [dcfEbitda, setDcfEbitda] = useState(120); 
+  const [dcfGrowth, setDcfGrowth] = useState(15); 
+  const [dcfWacc, setDcfWacc] = useState(9.0); 
+  const [dcfMultiple, setDcfMultiple] = useState(14); 
+  const sharesOutstanding = 10000000;
+
   const ebitdaVal = dcfEbitda * 100000;
   const growthVal = dcfGrowth / 100;
   const waccVal = dcfWacc / 100;
 
-  // Year 1 to 5 Cash Flow and EV projections
   let currentCashFlow = ebitdaVal;
   let sumPV = 0;
   for (let yr = 1; yr <= 5; yr++) {
@@ -537,18 +582,6 @@ export default function LandingPage() {
   const pvOfTerminalVal = terminalVal / Math.pow(1 + waccVal, 5);
   const enterpriseValue = sumPV + pvOfTerminalVal;
   const impliedSharePrice = enterpriseValue / sharesOutstanding;
-
-  const formatIndianCurrency = (num: number) => {
-    if (num >= 10000000) {
-      const crVal = num / 10000000;
-      return "₹" + crVal.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " Cr";
-    } else if (num >= 100000) {
-      const lVal = num / 100000;
-      return "₹" + lVal.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " L";
-    } else {
-      return "₹" + num.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    }
-  };
 
   const multiplesList = [dcfMultiple - 2, dcfMultiple, dcfMultiple + 2];
   const waccList = [dcfWacc - 1.0, dcfWacc, dcfWacc + 1.0];
@@ -571,9 +604,7 @@ export default function LandingPage() {
   const pvPercent = Math.max(5, Math.min(95, (sumPV / enterpriseValue) * 100)) || 40;
   const tvPercent = 100 - pvPercent;
 
-  // -----------------------------------------------------------
-  // waitlist & resources locker vault actions
-  // -----------------------------------------------------------
+  // waitlist & templates
   const [vaultEmail, setVaultEmail] = useState("");
   const [vaultUnlocked, setVaultUnlocked] = useState(false);
   const [vaultLoading, setVaultLoading] = useState(false);
@@ -583,14 +614,11 @@ export default function LandingPage() {
     e.preventDefault();
     if (!vaultEmail) return;
     setVaultLoading(true);
-
     try {
-      // Log waitlist to Supabase waitlist table
       await supabase.from("waitlist").insert([{ email: vaultEmail, segment: "lead_magnet_locker" }]);
     } catch (err) {
       console.warn("Bypassed database waitlist insert: ", err);
     }
-
     setTimeout(() => {
       setVaultLoading(false);
       setVaultUnlocked(true);
@@ -603,1147 +631,895 @@ export default function LandingPage() {
     setTimeout(() => setCopiedId(null), 2000);
   };
 
-  // -----------------------------------------------------------
-  // FULLSCREEN FACTSET INFO HUB COMMANDS
-  // -----------------------------------------------------------
-  const [infoHubActive, setInfoHubActive] = useState(false);
-  const [activeHubTab, setActiveHubTab] = useState<string>("home");
+  // AI chat cockpit sequences
+  const [aiChatHistory, setAiChatHistory] = useState<Array<{ role: string; content: string }>>([
+    { role: "system", content: "ANALYST.OS RESEARCH PIPELINE INITIALIZED [CONNECTED NSE NODE]" },
+    { role: "user", content: "Compile valuation report on RELIANCE for Q3 FY26 assumptions." },
+    { role: "system", content: "COMPILING VALUATION METRICS...\nRELIANCE assumptions EBITDA ₹120L, WACC 9.0%, Exit Multiple 14.0x. Implied intrinsic share price calculated: ₹1,854. EV of ₹18.54 Cr is mathematically consistent under pro-forma forecasts." }
+  ]);
+  const [aiInput, setAiInput] = useState("");
+  const [isAiTyping, setIsAiTyping] = useState(false);
 
-  const [contactName, setContactName] = useState("");
-  const [contactEmail, setContactEmail] = useState("");
-  const [contactFirm, setContactFirm] = useState("student");
-  const [contactMsg, setContactMsg] = useState("");
-  const [contactRef, setContactRef] = useState<string | null>(null);
-  const [contactLoading, setContactLoading] = useState(false);
-
-  const handleContactSubmit = async (e: React.FormEvent) => {
+  const handleSendAiMessage = (e: React.FormEvent) => {
     e.preventDefault();
-    setContactLoading(true);
-
-    try {
-      await supabase.from("waitlist").insert([
-        { 
-          email: contactEmail, 
-          segment: `contact_${contactFirm}`, 
-          metadata: { name: contactName, message: contactMsg } 
-        }
-      ]);
-    } catch (err) {
-      console.warn("Bypassed contact db logs: ", err);
-    }
+    if (!aiInput.trim()) return;
+    const msg = aiInput;
+    setAiChatHistory(prev => [...prev, { role: "user", content: msg }]);
+    setAiInput("");
+    setIsAiTyping(true);
 
     setTimeout(() => {
-      setContactLoading(false);
-      setContactRef(`REF_${Math.floor(Math.random() * 900000 + 100000)}`);
-      setContactName("");
-      setContactEmail("");
-      setContactMsg("");
-    }, 1500);
-  };
-
-  const openHub = (tab: string) => {
-    setActiveHubTab(tab);
-    setInfoHubActive(true);
+      let reply = "";
+      const cmd = msg.toUpperCase();
+      if (cmd.includes("HELP")) {
+        reply = "AVAILABLE COMMANDS: HELP | SYS_PING | LIST_STOCKS | RUN_VALUATION [TICKER]";
+      } else if (cmd.includes("SYS_PING")) {
+        reply = "SYS_STATUS: PING 28ms - NSE_NODE ALIVE - CORE_SYSTEMS OPERATIONAL [v1.0.4]";
+      } else if (cmd.includes("LIST_STOCKS")) {
+        reply = "TICKERS: RELIANCE, TCS, HDFCBANK, INFY, ICICIBANK, KOTAKBANK";
+      } else if (cmd.includes("RUN_VALUATION") || cmd.includes("RELIANCE")) {
+        reply = "DCF_COMPILING: Intrinsic valuation model running. EV implies ₹18.54 Cr. Target fair value is positive over active margins.";
+      } else {
+        reply = `CONNECTING TO LOCAL FINANCIAL INDEX NODES...\nUNABLE TO RESOLVE CO-PILOT PIPELINES DIRECTLY FOR '${msg}'.\nENTER HELP FOR OPTIONS.`;
+      }
+      setAiChatHistory(prev => [...prev, { role: "system", content: reply }]);
+      setIsAiTyping(false);
+    }, 1000);
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-[#05070a] text-slate-100 font-sans selection:bg-[#00f0ff]/30 selection:text-white">
-      {/* Ticker marquee */}
-      <TickerBar />
+    <div className="flex flex-col h-screen w-screen overflow-hidden bg-[#020010] text-slate-100 font-sans selection:bg-[#a78bfa]/30 selection:text-white relative">
+      
+      {/* 1. Spring Custom double-ring mouse cursor */}
+      <div className="hidden md:block">
+        <motion.div
+          className="fixed top-0 left-0 w-3 h-3 bg-[#a78bfa] rounded-full pointer-events-none z-[9999]"
+          style={{
+            x: mouseCursorX,
+            y: mouseCursorY,
+            translateX: "-50%",
+            translateY: "-50%",
+            scale: isHovered ? 0.66 : 1,
+          }}
+        />
+        <motion.div
+          className="fixed top-0 left-0 w-10 h-10 border border-[#a78bfa] border-opacity-40 rounded-full pointer-events-none z-[9999]"
+          style={{
+            x: cursorRingX,
+            y: cursorRingY,
+            translateX: "-50%",
+            translateY: "-50%",
+            scale: isHovered ? 1.5 : 1,
+          }}
+        />
+      </div>
 
-      {/* Header */}
-      <header className="w-full bg-[#0b0f19]/80 backdrop-blur border-b border-[#00f0ff]/12 px-8 py-4 flex items-center justify-between font-mono z-20 sticky top-0">
+      {/* 2. WebGL Three.js Scene container centered globally behind */}
+      <div 
+        ref={canvasContainerRef} 
+        id="hero-canvas-container" 
+        className="fixed inset-0 z-0 pointer-events-none" 
+        style={{
+          transform: `translateX(${-scrollLeft * 0.12}px)` // Parallax horizontal offset
+        }}
+      />
+
+      {/* 3. Global Top Navigation (Fixed, 72px transparent) */}
+      <header className="w-full bg-transparent h-[72px] px-8 flex items-center justify-between font-sans fixed top-0 left-0 z-40 select-none">
         <div className="flex items-center space-x-6">
-          <Link href="/" className="text-lg font-bold text-white tracking-tight flex items-center space-x-1.5">
-            <span>AnalystOS</span>
-            <span className="pulse-blue"></span>
-          </Link>
-          <span className="hidden md:inline-flex bg-[#0b0f19] border border-[#00e676]/20 px-2.5 py-1 text-[#00e676] rounded text-[10px] items-center space-x-1.5">
-            <span className="w-1.5 h-1.5 bg-[#00e676] rounded-full animate-ping"></span>
+          <button onClick={() => scrollToSection(0)} className="text-[18px] font-extrabold tracking-[0.12em] font-display flex items-center cursor-none bg-transparent border-none outline-none">
+            <span className="text-white">ANALYST</span>
+            <span className="text-[#a78bfa] ml-0.5">OS</span>
+          </button>
+          <span className="hidden md:inline-flex bg-white/[0.04] border border-[#34d399]/20 px-2.5 py-1 text-[#34d399] rounded text-[10px] items-center space-x-1.5 font-mono">
+            <span className="w-1.5 h-1.5 bg-[#34d399] rounded-full animate-ping"></span>
             <span>SYSTEMS ONLINE</span>
           </span>
         </div>
 
-        <div className="flex items-center space-x-6 text-xs">
-          <Link href="/login" className="text-slate-400 hover:text-white transition-colors">
+        <nav className="hidden md:flex items-center space-x-8">
+          {[
+            { label: "Work", index: 1 },
+            { label: "Studio", index: 2 },
+            { label: "Lab", index: 3 },
+            { label: "Contact", index: 4 }
+          ].map(link => (
+            <button
+              key={link.label}
+              onClick={() => {
+                if (link.label === "Contact") openHub("contact");
+                else scrollToSection(link.index);
+              }}
+              className="text-[13px] uppercase tracking-[0.08em] text-white/55 hover:text-[#a78bfa] transition-colors font-sans font-normal cursor-none bg-transparent border-none"
+            >
+              {link.label}
+            </button>
+          ))}
+          <span className="text-white/20">|</span>
+          <Link href="/login" className="text-[13px] uppercase tracking-[0.08em] text-white/55 hover:text-white transition-colors font-sans font-normal cursor-none">
             [LOG_IN]
           </Link>
           <Link
             href="/signup"
-            className="bg-[#00f0ff] hover:bg-[#00f0ff]/80 text-[#05070a] font-bold px-4 py-2 rounded transition-colors"
+            className="bg-[#a78bfa] hover:bg-[#a78bfa]/80 text-[#020010] font-bold text-[11px] px-4 py-1.5 rounded transition-all font-sans uppercase tracking-[0.05em] cursor-none"
           >
             [SIGN_UP]
           </Link>
-        </div>
+        </nav>
       </header>
 
-      {/* Main hero & Graphics */}
-      <main className="flex-1 flex flex-col items-center">
+      {/* 4. Right side dot navigation indicators */}
+      <div className="fixed right-8 top-1/2 -translate-y-1/2 flex flex-col space-y-4 z-40 select-none">
+        {[0, 1, 2, 3, 4].map((idx) => {
+          const isActive = activeSection === idx;
+          return (
+            <button
+              key={idx}
+              onClick={() => scrollToSection(idx)}
+              className={`w-3 h-3 rounded-full border transition-all duration-300 relative group cursor-none bg-transparent`}
+              style={{
+                borderColor: isActive ? "#a78bfa" : "rgba(255,255,255,0.2)",
+                backgroundColor: isActive ? "#a78bfa" : "transparent",
+              }}
+            >
+              <span className="absolute right-6 top-1/2 -translate-y-1/2 bg-black/90 border border-white/10 px-2 py-0.5 rounded text-[10px] font-mono opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap text-slate-400">
+                {idx === 0 && "01. HERO COCKPIT"}
+                {idx === 1 && "02. FEATURE GRID"}
+                {idx === 2 && "03. DCF RECALCULATOR"}
+                {idx === 3 && "04. DESIGN STACK"}
+                {idx === 4 && "05. ASSETS LOCKER"}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* 5. Bottom Scroll Progress Bar */}
+      <div 
+        className="fixed bottom-0 left-0 h-1 bg-gradient-to-r from-[#a78bfa] via-[#60a5fa] to-[#34d399] z-50 transition-all duration-75 ease-out select-none"
+        style={{ width: `${scrollProgress * 100}%` }}
+      />
+
+      {/* 6. MAIN HORIZONTAL SNAP CONTAINER */}
+      <main 
+        ref={scrollRef}
+        className="flex-1 flex flex-row overflow-x-auto overflow-y-hidden snap-x snap-mandatory scroll-smooth w-full h-full scrollbar-none relative z-10"
+      >
         
-        {/* HERO CONTAINER */}
-        <section className="relative w-full overflow-hidden flex flex-col items-center justify-center pt-20 pb-16 px-6 border-b border-[#00f0ff]/12">
-          
-          {/* THREE.JS graphic canvas container */}
-          <div ref={canvasContainerRef} id="hero-canvas-container" className="absolute inset-0 z-0 pointer-events-auto" />
-          
-          {/* Ambient radial overlay background */}
-          <div className="absolute inset-0 bg-radial-[circle_at_center,_transparent_40%,_#05070a_95%] z-0 pointer-events-none" />
-
-          {/* Floating Parallax cards */}
-          <div 
-            className="floating-market-card aapl transition-transform duration-100 ease-out" 
-            style={{ transform: `translate3d(${mousePos.x * 25}px, ${mousePos.y * 25}px, 0)` }}
-          >
-            <span className="card-arrow">▲</span>
-            <span className="card-ticker">AAPL</span>
-            <span className="card-pct">+4.2%</span>
-          </div>
-
-          <div 
-            className="floating-market-card nvda transition-transform duration-100 ease-out" 
-            style={{ transform: `translate3d(${mousePos.x * -35}px, ${mousePos.y * -35}px, 0)` }}
-          >
-            <span className="card-arrow">▲</span>
-            <span className="card-ticker">NVDA</span>
-            <span className="card-pct">+7.1%</span>
-          </div>
-
-          <div 
-            className="floating-market-card reliance transition-transform duration-100 ease-out" 
-            style={{ transform: `translate3d(${mousePos.x * 15}px, ${mousePos.y * 15}px, 0)` }}
-          >
-            <span className="card-arrow">▲</span>
-            <span className="card-ticker">RELIANCE</span>
-            <span className="card-pct">+2.8%</span>
-          </div>
-
-          {/* Content panel */}
-          <div className="relative z-10 w-full max-w-6xl flex flex-col items-center text-center space-y-6">
+        {/* ==========================================
+        * SECTION 1: HERO COCKPIT
+        * ========================================== */}
+        <section className="w-screen h-screen flex-shrink-0 snap-start overflow-hidden relative flex flex-col items-center justify-center px-8 md:px-16 pt-16">
+          <div className="relative z-10 w-full max-w-4xl flex flex-col items-center text-center">
             
-            <div className="inline-flex bg-[#0b0f19]/90 border border-[#00f0ff]/20 px-3 py-1.5 rounded-full text-xs font-mono text-[#00f0ff] items-center space-x-2 shadow-[0_0_20px_rgba(0,240,255,0.06)]">
-              <span className="pulse-blue"></span>
-              <span>Bloomberg Alternative for Next-Gen Analysts</span>
+            {/* Headline 1 (Masked Text Reveal) */}
+            <div className="overflow-hidden mb-1">
+              <motion.h1 
+                initial={{ y: "100%" }}
+                animate={{ y: 0 }}
+                transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+                className="text-5xl md:text-[85px] font-extrabold tracking-tight text-white font-display uppercase leading-none select-none"
+              >
+                Analyze beyond
+              </motion.h1>
             </div>
 
-            <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight text-white font-mono uppercase leading-none max-w-3xl">
-              Research. Analyze. <br/>
-              <span className="text-[#00f0ff] glow-text">Execute.</span>
-            </h1>
-
-            <p className="text-slate-400 text-sm md:text-base max-w-lg leading-relaxed">
-              The Institutional Finance Terminal for Hedge Fund & Investment Research. Analyze statements, compute DCFs, and compile theses faster.
-            </p>
-
-            <div className="text-[10px] font-mono text-slate-500 flex items-center space-x-3 justify-center pb-4">
-              <span>SYS_FEED: ACTIVE</span>
-              <span>•</span>
-              <span>PORTAL_LATENCY: 12ms</span>
-              <span>•</span>
-              <span>DATABASE_SYNC: ONLINE</span>
+            {/* Headline 2 (Masked Text Reveal) */}
+            <div className="overflow-hidden mb-6">
+              <motion.h1 
+                initial={{ y: "100%" }}
+                animate={{ y: 0 }}
+                transition={{ duration: 0.8, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
+                className="text-5xl md:text-[85px] font-extrabold tracking-tight figma-gradient-text font-display uppercase leading-none select-none mt-1"
+              >
+                intelligence
+              </motion.h1>
             </div>
 
-            <div className="flex flex-col sm:flex-row items-center gap-4 text-xs font-mono">
+            {/* Subtext */}
+            <motion.p 
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.3 }}
+              className="text-white/45 text-sm md:text-base font-sans font-normal max-w-[420px] leading-[1.7] mb-8 mx-auto"
+            >
+              A 3D-first analyst operating system where data, motion, and intelligence merge into one living interface.
+            </motion.p>
+
+            {/* CTAs */}
+            <motion.div 
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.5 }}
+              className="flex flex-row items-center gap-4 justify-center mb-12 font-sans"
+            >
               <Link 
                 href="/signup" 
-                className="w-full sm:w-auto text-center bg-[#00f0ff] hover:bg-[#00f0ff]/80 text-[#05070a] font-bold px-6 py-3 rounded transition-all shadow-[0_0_25px_rgba(0,240,255,0.25)] flex items-center justify-center space-x-2"
+                className="bg-[#a78bfa] hover:bg-[#a78bfa]/80 text-[#020010] font-bold text-xs md:text-[14px] uppercase tracking-wider px-8 py-3.5 rounded-full transition-all shadow-[0_0_30px_rgba(167,139,250,0.3)] flex items-center justify-center space-x-2 cursor-none"
               >
-                <span>OPEN FREE TERMINAL</span>
+                <span>Launch AnalystOS</span>
                 <ArrowRight className="w-4 h-4" />
               </Link>
-              
               <button 
-                onClick={() => openHub("about")}
-                className="w-full sm:w-auto text-center border border-slate-700 hover:border-[#00f0ff] hover:text-[#00f0ff] text-slate-300 px-6 py-3 rounded transition-all bg-[#0b0f19]/30"
+                onClick={() => scrollToSection(1)}
+                className="bg-transparent border border-white/20 hover:border-[#a78bfa] hover:text-white text-white/70 text-xs md:text-[14px] uppercase tracking-wider px-8 py-3.5 rounded-full transition-all cursor-none"
               >
-                [FOUNDERS_NOTE.LOG]
+                View Features
               </button>
-            </div>
+            </motion.div>
 
-            <div className="text-xs font-mono text-slate-500 flex items-center space-x-2 justify-center pt-2">
+            {/* Pulsing Status Pill */}
+            <motion.div 
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.7 }}
+              className="bg-white/[0.05] border border-white/[0.1] rounded-full px-5 py-2.5 backdrop-blur-[10px] flex items-center justify-center space-x-2.5 mx-auto text-center pointer-events-none select-none"
+            >
+              <span className="w-1.5 h-1.5 rounded-full bg-[#34d399] figma-pulse-circle animate-pulse" />
+              <span className="text-[11px] font-sans uppercase tracking-[0.08em] text-white/45 font-bold">
+                Live intelligence engine · Swipe horizontally to navigate
+              </span>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.9 }}
+              className="text-[10px] font-mono text-slate-500 flex items-center space-x-2 justify-center mt-4"
+            >
               <span className="pulse-green"></span>
-              <span>PRO_TIER FREE LAUNCH COUNTDOWN:</span>
-              <span className="text-[#00e676] font-bold">{countdown}</span>
-            </div>
-
-            {/* INTERACTIVE TERMINAL WIDGET */}
-            <div className="w-full max-w-4xl mt-12 bg-[#0b0f19]/90 border border-[#00f0ff]/15 rounded-xl overflow-hidden shadow-2xl font-mono text-left">
-              {/* Terminal topbar */}
-              <div className="flex items-center justify-between border-b border-[#00f0ff]/12 px-4 py-3 bg-[#070b13] text-xs">
-                <div className="flex items-center space-x-2">
-                  <div className="flex space-x-1.5">
-                    <span className="w-2.5 h-2.5 rounded-full bg-[#ff3860]"></span>
-                    <span className="w-2.5 h-2.5 rounded-full bg-[#fbc02d]"></span>
-                    <span className="w-2.5 h-2.5 rounded-full bg-[#00e676]"></span>
-                  </div>
-                  <span className="text-slate-400 font-bold ml-2">AnalystOS Terminal v1.0.4 — Localhost Connection</span>
-                </div>
-                <span className="text-slate-500 text-[10px] flex items-center space-x-1.5">
-                  <span className="w-1.5 h-1.5 bg-[#00e676] rounded-full animate-ping"></span>
-                  <span>LIVE</span>
-                </span>
-              </div>
-
-              {/* Terminal interior structure */}
-              <div className="flex flex-col md:flex-row min-h-[350px]">
-                {/* Monospace Sidebar Tabs */}
-                <div className="w-full md:w-56 border-r border-[#00f0ff]/12 bg-[#05070a]/80 flex flex-col p-3 gap-1">
-                  {[
-                    { id: "charts", label: "[1] AAPL.CHARTS" },
-                    { id: "ai", label: "[2] AI.ANALYST" },
-                    { id: "dcf", label: "[3] DCF.MODELS" },
-                    { id: "reports", label: "[4] STOCK.REPORTS" }
-                  ].map(tab => (
-                    <button
-                      key={tab.id}
-                      onClick={() => setActivePreviewTab(tab.id as any)}
-                      className={`text-left px-3 py-2.5 rounded text-xs transition-colors font-bold uppercase ${
-                        activePreviewTab === tab.id 
-                          ? "bg-[#00f0ff]/10 text-[#00f0ff] border border-[#00f0ff]/20" 
-                          : "text-slate-500 hover:text-slate-300"
-                      }`}
-                    >
-                      {tab.label}
-                    </button>
-                  ))}
-                </div>
-
-                {/* Main Viewports */}
-                <div className="flex-1 bg-[#0b0f19] p-4 flex flex-col justify-between overflow-x-auto min-h-[350px]">
-                  
-                  {/* Viewport 1: Stock Charts Canvas */}
-                  {activePreviewTab === "charts" && (
-                    <div className="flex-1 flex flex-col justify-between h-full relative min-h-[280px]">
-                      <div className="flex justify-between items-center text-xs border-b border-slate-900 pb-2">
-                        <div className="flex items-center space-x-2">
-                          <span className="font-bold text-white">AAPL</span>
-                          <span className="text-[10px] text-slate-500">NASDAQ • Apple Inc.</span>
-                        </div>
-                        <div className="flex items-center space-x-3">
-                          <span className="text-white font-bold">$182.52</span>
-                          <span className="text-[#00e676] text-[10px] font-bold">+2.14%</span>
-                        </div>
-                      </div>
-
-                      <div className="flex-1 relative my-2 min-h-[200px]">
-                        <canvas 
-                          ref={chartCanvasRef}
-                          onMouseMove={handleCanvasMouseMove}
-                          onMouseLeave={handleCanvasMouseLeave}
-                          className="w-full h-full cursor-crosshair min-h-[190px]"
-                        />
-
-                        {/* Interactive Absolute Tooltip Overlay */}
-                        {hoveredDataPoint && (
-                          <div 
-                            className="absolute bg-[#0b0f19] border border-[#00f0ff]/20 rounded p-1.5 text-[9px] pointer-events-none z-10 shadow-lg"
-                            style={{ left: tooltipPos.x, top: tooltipPos.y }}
-                          >
-                            <div className="text-slate-400">AAPL {hoveredDataPoint.date}</div>
-                            <div className="text-[#00f0ff] font-bold">${hoveredDataPoint.price.toFixed(2)}</div>
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="flex justify-between text-[9px] text-slate-500 border-t border-slate-900 pt-2">
-                        <span>H: $183.92</span>
-                        <span>L: $180.88</span>
-                        <span>V: 52.4M</span>
-                        <span>PE: 28.4</span>
-                        <span className="text-[#00f0ff]">← Hover to track crosshair →</span>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Viewport 2: AI Co-Pilot terminal */}
-                  {activePreviewTab === "ai" && (
-                    <div className="flex-1 flex flex-col justify-between h-full min-h-[280px]">
-                      <div className="flex justify-between items-center text-xs border-b border-slate-900 pb-2">
-                        <span className="font-bold text-white">AI CO-PILOT CORE</span>
-                        <span className="text-[#00e676] text-[10px] font-bold">INTELLIGENCE OPERATIONAL</span>
-                      </div>
-
-                      {/* Chat History View */}
-                      <div className="flex-1 overflow-y-auto max-h-[180px] space-y-3 my-3 text-[11px] leading-relaxed scrollbar-thin">
-                        {aiChatHistory.map((chat, idx) => (
-                          <div key={idx} className={`p-2.5 rounded ${
-                            chat.role === "user" 
-                              ? "bg-[#00f0ff]/5 border border-[#00f0ff]/10 text-white" 
-                              : "bg-[#05070a]/60 border border-slate-950 text-slate-300 whitespace-pre-wrap"
-                          }`}>
-                            <span className={`font-bold block text-[10px] mb-1 uppercase ${
-                              chat.role === "user" ? "text-[#00f0ff]" : "text-[#00e676]"
-                            }`}>
-                              {chat.role === "user" ? "> USER" : ">> CO_PILOT"}
-                            </span>
-                            {chat.content}
-                          </div>
-                        ))}
-                        {isAiTyping && (
-                          <div className="p-2.5 rounded bg-[#05070a]/60 border border-slate-950 text-slate-400 text-xs italic flex items-center space-x-2">
-                            <span className="pulse-blue"></span>
-                            <span className="blinking-cursor">Compiling stock indices analysis</span>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Suggestions and input bar */}
-                      <div className="space-y-2">
-                        <div className="flex flex-wrap gap-1 text-[9px]">
-                          <span className="text-slate-500 self-center mr-1">QUERIES:</span>
-                          <button onClick={() => handleAiSend("Analyze Reliance Industries")} className="bg-[#05070a] border border-slate-800 hover:border-[#00f0ff] hover:text-white text-slate-400 px-2 py-0.5 rounded">Reliance Analysis</button>
-                          <button onClick={() => handleAiSend("Build DCF for TCS")} className="bg-[#05070a] border border-slate-800 hover:border-[#00f0ff] hover:text-white text-slate-400 px-2 py-0.5 rounded">TCS Model</button>
-                          <button onClick={() => handleAiSend("SYS_PING")} className="bg-[#05070a] border border-slate-800 hover:border-[#00f0ff] hover:text-white text-slate-400 px-2 py-0.5 rounded">System Ping</button>
-                        </div>
-
-                        <div className="flex border border-[#00f0ff]/15 rounded bg-[#05070a] overflow-hidden">
-                          <input 
-                            type="text" 
-                            value={aiInput}
-                            onChange={e => setAiInput(e.target.value)}
-                            onKeyDown={e => e.key === "Enter" && handleAiSend()}
-                            placeholder="Type a command (e.g. Reliance valuation, LIST_STOCKS, HELP)..."
-                            className="flex-1 bg-transparent px-3 py-2 text-xs text-white outline-none border-none"
-                          />
-                          <button 
-                            onClick={() => handleAiSend()}
-                            className="bg-[#070b13] px-4 text-[#00f0ff] border-l border-[#00f0ff]/12 hover:bg-[#00f0ff]/10"
-                          >
-                            RUN
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Viewport 3: DCF recalculating sensitivity models */}
-                  {activePreviewTab === "dcf" && (
-                    <div className="flex-1 flex flex-col justify-between h-full min-h-[280px]">
-                      <div className="flex justify-between items-center text-xs border-b border-slate-900 pb-2">
-                        <span className="font-bold text-white">DCF VALUATION ENGINE</span>
-                        <span className="text-[#00e676] text-[10px] font-bold">RECALCULATING AUTOMATICALLY</span>
-                      </div>
-
-                      {/* EBITDA Growth multiple discount WACC inputs */}
-                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 my-3 text-[10px]">
-                        <div className="bg-[#05070a] border border-slate-850 p-2 rounded">
-                          <span className="text-slate-500 block mb-1">EBITDA (₹ Lakhs)</span>
-                          <input 
-                            type="number" 
-                            value={dcfEbitda}
-                            onChange={e => setDcfEbitda(Math.max(1, Number(e.target.value)))}
-                            className="bg-transparent border-none outline-none text-white text-xs font-bold w-full"
-                          />
-                        </div>
-                        <div className="bg-[#05070a] border border-slate-850 p-2 rounded">
-                          <span className="text-slate-500 block mb-1">Growth (%)</span>
-                          <input 
-                            type="number" 
-                            value={dcfGrowth}
-                            onChange={e => setDcfGrowth(Number(e.target.value))}
-                            className="bg-transparent border-none outline-none text-white text-xs font-bold w-full"
-                          />
-                        </div>
-                        <div className="bg-[#05070a] border border-slate-850 p-2 rounded">
-                          <span className="text-slate-500 block mb-1">WACC (%)</span>
-                          <input 
-                            type="number" 
-                            step="0.5"
-                            value={dcfWacc}
-                            onChange={e => setDcfWacc(Math.max(0.5, Number(e.target.value)))}
-                            className="bg-transparent border-none outline-none text-white text-xs font-bold w-full"
-                          />
-                        </div>
-                        <div className="bg-[#05070a] border border-slate-850 p-2 rounded">
-                          <span className="text-slate-500 block mb-1">Exit Multiple</span>
-                          <input 
-                            type="number" 
-                            value={dcfMultiple}
-                            onChange={e => setDcfMultiple(Math.max(1, Number(e.target.value)))}
-                            className="bg-transparent border-none outline-none text-white text-xs font-bold w-full"
-                          />
-                        </div>
-                      </div>
-
-                      {/* Display calculations outputs */}
-                      <div className="grid grid-cols-2 gap-3 mb-2 bg-[#05070a]/80 p-2.5 rounded border border-slate-900">
-                        <div className="text-xs">
-                          <span className="text-slate-500 block text-[9px] mb-0.5">Enterprise Value</span>
-                          <span className="text-[#00e676] font-bold text-sm">{formatIndianCurrency(enterpriseValue)}</span>
-                        </div>
-                        <div className="text-xs">
-                          <span className="text-slate-500 block text-[9px] mb-0.5">Implied Share Price</span>
-                          <span className="text-[#00f0ff] font-bold text-sm">₹{impliedSharePrice.toFixed(2)}</span>
-                        </div>
-                      </div>
-
-                      {/* PV / TV progressive breakdown bars */}
-                      <div className="my-2 space-y-1">
-                        <div className="flex justify-between text-[8px] text-slate-500">
-                          <span>PV of Cash Flows ({pvPercent.toFixed(0)}%)</span>
-                          <span>Terminal Value ({tvPercent.toFixed(0)}%)</span>
-                        </div>
-                        <div className="w-full h-1.5 bg-slate-950 rounded-full overflow-hidden flex">
-                          <div className="h-full bg-[#00f0ff]" style={{ width: `${pvPercent}%` }} />
-                          <div className="h-full bg-[#00e676]" style={{ width: `${tvPercent}%` }} />
-                        </div>
-                      </div>
-
-                      {/* Sensitivity Table WACC vs Multiples */}
-                      <div className="dcf-sensitivity-container max-h-[120px] overflow-y-auto">
-                        <span className="sens-title block mb-1.5">SENSITIVITY MATRIX (Implied share price ₹)</span>
-                        <table className="sens-grid-table">
-                          <thead>
-                            <tr>
-                              <th>WACC \ Multiple</th>
-                              <th>{multiplesList[0]}x</th>
-                              <th className="active-col">{multiplesList[1]}x (Base)</th>
-                              <th>{multiplesList[2]}x</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {waccList.map((w, wIdx) => (
-                              <tr key={wIdx}>
-                                <td className="sens-wacc-label">{w.toFixed(1)}%</td>
-                                {multiplesList.map((m, mIdx) => {
-                                  const cellPrice = calculateCellPrice(w, m);
-                                  const isBase = wIdx === 1 && mIdx === 1;
-                                  return (
-                                    <td key={mIdx} className={isBase ? "sens-cell active-cell" : "sens-cell"}>
-                                      ₹{cellPrice.toFixed(2)}
-                                    </td>
-                                  );
-                                })}
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Viewport 4: Stock Reports */}
-                  {activePreviewTab === "reports" && (
-                    <div className="flex-1 flex flex-col justify-between h-full min-h-[280px]">
-                      <div className="flex justify-between items-center text-xs border-b border-slate-900 pb-2">
-                        <span className="font-bold text-white">RELIANCE</span>
-                        <span className="text-[#00e676] text-[10px] font-bold">NSE • EQUITY RESEARCH VERDICT</span>
-                      </div>
-
-                      <div className="bg-[#05070a]/60 border border-slate-950 rounded-lg p-3 my-3 space-y-3">
-                        <span className="text-[9px] font-mono text-[#00f0ff] bg-[#00f0ff]/10 px-2 py-0.5 rounded font-bold">INSTITUTIONAL EQUITY RESEARCH scorecard</span>
-                        <h4 className="text-white font-bold text-sm uppercase">Reliance Industries Limited</h4>
-                        
-                        <div className="grid grid-cols-2 gap-2 text-[10px]">
-                          <div className="bg-[#0b0f19] border border-slate-900 p-2 rounded">
-                            <span className="text-slate-500 block mb-0.5">YoY Revenue Growth</span>
-                            <span className="text-[#00f0ff] font-bold text-xs">8.2% (FY26)</span>
-                          </div>
-                          <div className="bg-[#0b0f19] border border-slate-900 p-2 rounded">
-                            <span className="text-slate-500 block mb-0.5">EBITDA Margin</span>
-                            <span className="text-[#00e676] font-bold text-xs">17.5% (Strong)</span>
-                          </div>
-                          <div className="bg-[#0b0f19] border border-slate-900 p-2 rounded">
-                            <span className="text-slate-500 block mb-0.5">CAPM discount (WACC)</span>
-                            <span className="text-white font-bold text-xs">9.0%</span>
-                          </div>
-                          <div className="bg-[#0b0f19] border border-[#00e676]/30 bg-[#00e676]/3 p-2 rounded">
-                            <span className="text-slate-500 block mb-0.5">VALUATION GAP</span>
-                            <span className="text-[#00e676] font-bold text-xs">Undervalued 7.3%</span>
-                          </div>
-                        </div>
-
-                        <p className="text-slate-400 text-[10px] leading-relaxed border-t border-slate-900 pt-2.5">
-                          Reliance Industries exhibits robust fundamental metrics with Year-over-Year (YoY) revenue expansion of <strong>8.2%</strong> and healthy EBITDA margins stable at <strong>17.5%</strong>. Our multi-stage growth discount model computes a conservative intrinsic target price of <strong>₹2,650 per share</strong>. Based on current market valuations, the stock presents an attractive entry point, trading at a <strong>7.3% discount</strong> to its true intrinsic target valuation.
-                        </p>
-                      </div>
-                    </div>
-                  )}
-
-                </div>
-              </div>
-            </div>
+              <span>LAUNCH ACCESS IN:</span>
+              <span className="text-[#34d399] font-bold">{countdown}</span>
+            </motion.div>
 
           </div>
         </section>
 
-        {/* -----------------------------------------------------------
-        * SECTION A: BUILT FOR LEADERS
-        * ----------------------------------------------------------- */}
-        <section className="w-full bg-[#05070a] py-20 border-b border-slate-900 flex flex-col items-center">
-          <div className="w-full max-w-6xl px-6">
-            <h2 className="text-3xl font-extrabold font-mono tracking-tight text-white text-center mb-12">
-              BUILT FOR NEXT-GEN FINANCE LEADERS
-            </h2>
+        {/* ==========================================
+        * SECTION 2: FEATURE GRID & STAT CARDS
+        * ========================================== */}
+        <section className="w-screen h-screen flex-shrink-0 snap-start overflow-hidden relative flex items-center justify-center px-12 md:px-20 pt-16">
+          <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {[
-                {
-                  title: "CFA Candidates",
-                  desc: "Practice valuation models, DCFs, comps, and financial analysis frameworks mapped directly to the CFA curriculum."
-                },
-                {
-                  title: "Equity Research Analysts",
-                  desc: "Sling corporate financials, extract notes from PDF earnings filings, and run professional research with institutional data speeds."
-                },
-                {
-                  title: "Finance Students",
-                  desc: "Bridge academic theory with real market data. Build dynamic simulated portfolios and model live Indian equities."
-                },
-                {
-                  title: "Long-Term Investors",
-                  desc: "Run rigorous intrinsic value projections and deep-dive screenings. Avoid overpriced, low-conviction market noise."
-                }
-              ].map((item, idx) => (
-                <div key={idx} className="terminal-card rounded-lg p-6 flex gap-4 transition-all">
-                  <div className="w-9 h-9 rounded-full bg-[#00e676]/10 border border-[#00e676]/30 flex items-center justify-center flex-shrink-0 text-[#00e676]">
-                    <Check className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <h3 className="text-white font-bold font-mono text-sm uppercase">{item.title}</h3>
-                    <p className="text-slate-400 text-xs mt-2 leading-relaxed">{item.desc}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* -----------------------------------------------------------
-        * SECTION B: LOCKOUT PROBLEMS PAIN CARDS
-        * ----------------------------------------------------------- */}
-        <section className="w-full bg-[#0b0f19] py-20 border-b border-[#00f0ff]/12 flex flex-col items-center">
-          <div className="w-full max-w-6xl px-6">
-            <h2 className="text-3xl font-extrabold font-mono tracking-tight text-white text-center mb-12 max-w-2xl mx-auto leading-tight">
-              YOUNG PROFESSIONALS ARE LOCKED OUT OF PROFESSIONAL FINANCE TOOLS
-            </h2>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              {[
-                {
-                  title: "Bloomberg costs ₹2.5L/year",
-                  desc: "Legacy finance terminals are gatekept by enterprise licensing, leaving junior analysts to analyze multi-billion mergers with retail tools."
-                },
-                {
-                  title: "Finance data scattered in 10 apps",
-                  desc: "Toggling between Screener, TradingView, SEBI filings, PDF reports, and Excel sheets drains focus and increases operational errors."
-                },
-                {
-                  title: "No tool built for learning + doing",
-                  desc: "Theoretical courses teach DCF theory, but fail to provide dynamic, live environments where young analysts can safely practice real valuation skills."
-                }
-              ].map((card, idx) => (
-                <div key={idx} className="terminal-card rounded-lg p-6 flex flex-col justify-between h-full bg-[#05070a]/60 border border-slate-900">
-                  <div className="space-y-4">
-                    <div className="w-10 h-10 rounded-lg bg-[#ff3860]/10 border border-[#ff3860]/30 flex items-center justify-center text-[#ff3860]">
-                      <AlertTriangle className="w-5 h-5" />
-                    </div>
-                    <h3 className="text-white font-bold font-mono text-sm uppercase leading-snug">{card.title}</h3>
-                    <p className="text-slate-400 text-xs leading-relaxed">{card.desc}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* -----------------------------------------------------------
-        * SECTION C: 11-FEATURES SPEC DIRECTORY
-        * ----------------------------------------------------------- */}
-        <section className="w-full bg-[#05070a] py-20 border-b border-slate-900 flex flex-col items-center">
-          <div className="w-full max-w-6xl px-6">
-            <div className="text-center md:text-left mb-12">
-              <span className="terminal-badge">MODULE DIRECTORY</span>
-              <h2 className="text-3xl font-extrabold text-white tracking-tight mt-3 font-mono uppercase">
-                FactSet-Grade Feature Catalog
+            {/* Left Panel: Description and Chat Terminal Cockpit */}
+            <motion.div 
+              initial={{ opacity: 0, x: -30 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.8 }}
+              className="lg:col-span-7 text-left space-y-4"
+            >
+              <span className="terminal-badge">02. FEATURES GRIDS</span>
+              <h2 className="text-2xl md:text-3xl font-bold font-display text-white uppercase tracking-tight leading-none mt-2">
+                Unified Analytical Cockpit
               </h2>
-              <p className="text-slate-400 mt-2 text-xs">
-                Explore the complete institutional specifications compiled into the AnalystOS engine.
+              <p className="text-white/45 text-xs max-w-md font-sans leading-relaxed">
+                Interact with high-performance dashboards, stock margin predictions, and secure databases. Our co-pilot chats directly with local NSE servers.
               </p>
-            </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {[
-                { title: "Financial Modeling", desc: "Dynamic pro-forma forecasts, income statements, balance sheets.", icon: Cpu },
-                { title: "DCF Analysis", desc: "Interactive Exit Multiple and Perpetuity Growth valuation engines.", icon: DollarSign },
-                { title: "Valuation Tools", desc: "Leveraged Buyout (LBO) sheets and comparable comp tables.", icon: BarChart3 },
-                { title: "Statement Review", desc: "Automated analysis of core financial statement margins and working capital.", icon: FileText },
-                { title: "Market Research", desc: "Live macroeconomic indicator maps and sector indexes.", icon: LineChart },
-                { title: "Company Analysis", desc: "Red flag indicators scanning margins, leverage, and promoter pledge.", icon: Shield },
-                { title: "Research Notes", desc: "Monospace research journals with citation indices.", icon: Terminal },
-                { title: "Investment Frameworks", desc: "Pre-loaded SWOT modules, Porter's 5 Forces, and economic moat guides.", icon: BookOpen },
-                { title: "Learning Hub", desc: "Practice valuation simulators and financial concept maps.", icon: CheckSquare },
-                { title: "CFA Concepts", desc: "Formulas and study references mapped directly to the CFA Level 1 syllabus.", icon: Shield },
-                { title: "Excel Templates", desc: "High-density model layouts and keyboard navigation cheat sheets.", icon: FileText }
-              ].map((feat, idx) => (
-                <div key={idx} className="terminal-card rounded-lg p-5 flex items-start space-x-4">
-                  <div className="bg-[#00f0ff]/10 p-2.5 rounded border border-[#00f0ff]/20">
-                    <feat.icon className="w-5 h-5 text-[#00f0ff]" />
+              {/* Chat terminal widget cockpit */}
+              <div className="w-full bg-[#0b0f19]/90 border border-white/10 rounded-xl overflow-hidden shadow-2xl font-mono text-xs mt-4">
+                <div className="flex items-center justify-between border-b border-white/10 px-4 py-2.5 bg-[#070b13] text-[10px] text-slate-500">
+                  <div className="flex items-center space-x-1.5">
+                    <span className="w-2 h-2 rounded-full bg-[#ff3860]" />
+                    <span className="w-2 h-2 rounded-full bg-[#ffdd57]" />
+                    <span className="w-2 h-2 rounded-full bg-[#34d399]" />
+                    <span className="font-bold ml-2 text-slate-400">CO-PILOT.ANALYST.OS</span>
                   </div>
-                  <div>
-                    <h4 className="text-white font-bold font-mono text-sm uppercase">{feat.title}</h4>
-                    <p className="text-slate-400 text-xs mt-1.5 leading-relaxed">{feat.desc}</p>
-                  </div>
+                  <span className="text-[#34d399]">NSE NODE ONLINE</span>
                 </div>
-              ))}
-            </div>
-          </div>
-        </section>
 
-        {/* -----------------------------------------------------------
-        * SECTION D: FOUNDER STORY BLOCK
-        * ----------------------------------------------------------- */}
-        <section className="w-full bg-[#0b0f19] py-20 border-b border-[#00f0ff]/12 flex flex-col items-center">
-          <div className="w-full max-w-6xl px-6">
-            <div className="terminal-card rounded-xl p-8 max-w-3xl mx-auto border border-[#00f0ff]/15 bg-[#05070a]/40 relative overflow-hidden">
-              <span className="terminal-badge mb-4">FOUNDER STORY</span>
-              <h2 className="text-2xl font-bold font-mono text-white tracking-tight uppercase mb-4 mt-2">Why I Built AnalystOS</h2>
-              
-              <blockquote className="border-l-2 border-[#00f0ff] pl-4 py-1 italic text-slate-200 text-xs leading-relaxed bg-[#05070a]/80 rounded-r">
-                "While learning DCF valuation, equity research, and financial modeling, I realized most tools were built for professionals. AnalystOS is my attempt to make institutional-grade research accessible to anyone willing to learn."
-              </blockquote>
-              
-              <div className="flex items-center space-x-3 mt-6">
-                <div className="w-6 h-0.5 bg-[#00f0ff]" />
-                <div className="text-xs font-mono">
-                  <span className="text-white font-bold">Revanth Pemmaraju</span>
-                  <span className="text-slate-500 block text-[9px] mt-0.5">Creator & Founder</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* -----------------------------------------------------------
-        * SECTION E: PREMIUM PRICING GRIDS
-        * ----------------------------------------------------------- */}
-        <section className="w-full bg-[#05070a] py-20 border-b border-slate-900 flex flex-col items-center">
-          <div className="w-full max-w-6xl px-6">
-            <h2 className="text-3xl font-extrabold font-mono text-white tracking-tight text-center mb-4 uppercase">
-              Pricing that doesn't require a <span className="text-[#00f0ff] glow-text">corporate expense account</span>
-            </h2>
-            <p className="text-slate-500 text-xs text-center mb-12">
-              Get access to premium equities research pipelines at standard student pricing.
-            </p>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              
-              {/* Plan 1: FREE */}
-              <div className="terminal-card rounded-lg p-6 bg-[#0b0f19] border border-slate-900 flex flex-col justify-between">
-                <div>
-                  <div className="border-b border-slate-900 pb-4 mb-4 text-left">
-                    <span className="text-xs font-mono text-slate-400 block mb-1">FREE PLAN</span>
-                    <div className="flex items-baseline space-x-1">
-                      <span className="text-3xl font-bold text-white">₹0</span>
-                      <span className="text-xs text-slate-500 font-mono">/mo</span>
+                {/* history list */}
+                <div className="p-4 h-[160px] overflow-y-auto space-y-2 text-left bg-slate-950/40 select-text scrollbar-thin">
+                  {aiChatHistory.map((item, idx) => (
+                    <div key={idx} className="space-y-0.5">
+                      <span className={`text-[10px] font-bold ${
+                        item.role === 'user' ? 'text-[#60a5fa]' : 'text-[#a78bfa]'
+                      }`}>
+                        {item.role === 'user' ? '>> COMMAND_INPUT' : '>> PIPELINE_REPLY'}
+                      </span>
+                      <pre className="text-slate-350 font-mono whitespace-pre-wrap leading-relaxed text-[11px]">{item.content}</pre>
                     </div>
-                    <p className="text-slate-400 text-[10px] mt-1.5 leading-relaxed">For students and curious beginners starting out.</p>
-                  </div>
-                  
-                  <ul className="space-y-2.5 text-xs text-slate-400 mb-8 text-left">
-                    <li className="flex items-center space-x-2">
-                      <Check className="w-3.5 h-3.5 text-[#00e676] flex-shrink-0" />
-                      <span>5 AI questions / day</span>
-                    </li>
-                    <li className="flex items-center space-x-2">
-                      <Check className="w-3.5 h-3.5 text-[#00e676] flex-shrink-0" />
-                      <span>Basic market dashboard</span>
-                    </li>
-                    <li className="flex items-center space-x-2">
-                      <Check className="w-3.5 h-3.5 text-[#00e676] flex-shrink-0" />
-                      <span>1 simulated portfolio</span>
-                    </li>
-                    <li className="flex items-center space-x-2 text-slate-600">
-                      <Lock className="w-3.5 h-3.5 text-slate-600 flex-shrink-0" />
-                      <span>No premium valuation models</span>
-                    </li>
-                    <li className="flex items-center space-x-2 text-slate-600">
-                      <Lock className="w-3.5 h-3.5 text-slate-600 flex-shrink-0" />
-                      <span>No career OS & DCF sandbox</span>
-                    </li>
-                  </ul>
-                </div>
-                
-                <Link 
-                  href="/signup" 
-                  className="w-full text-center border border-slate-800 text-slate-300 font-bold font-mono py-2 rounded text-xs hover:border-[#00f0ff] hover:text-white transition-all bg-[#05070a]"
-                >
-                  GET STARTED
-                </Link>
-              </div>
-
-              {/* Plan 2: PRO */}
-              <div className="terminal-card rounded-lg p-6 bg-[#0b0f19] border-2 border-[#00f0ff] flex flex-col justify-between relative shadow-[0_0_30px_rgba(0,240,255,0.1)]">
-                <span className="absolute -top-3 right-6 bg-[#00f0ff] text-[#05070a] text-[9px] font-bold px-2 py-0.5 rounded font-mono uppercase tracking-wider">MOST POPULAR</span>
-                <div>
-                  <div className="border-b border-slate-900 pb-4 mb-4 text-left">
-                    <span className="text-xs font-mono text-[#00f0ff] block mb-1">PRO PLAN</span>
-                    <div className="flex items-baseline space-x-1">
-                      <span className="text-3xl font-bold text-white">₹499</span>
-                      <span className="text-xs text-slate-500 font-mono">/mo</span>
-                    </div>
-                    <p className="text-slate-400 text-[10px] mt-1.5 leading-relaxed">For serious young professionals building careers.</p>
-                  </div>
-
-                  <ul className="space-y-2.5 text-xs text-slate-300 mb-8 text-left">
-                    <li className="flex items-center space-x-2 font-bold text-white">
-                      <Check className="w-3.5 h-3.5 text-[#00f0ff] flex-shrink-0" />
-                      <span>Unlimited AI questions</span>
-                    </li>
-                    <li className="flex items-center space-x-2">
-                      <Check className="w-3.5 h-3.5 text-[#00f0ff] flex-shrink-0" />
-                      <span>Full real-time market data</span>
-                    </li>
-                    <li className="flex items-center space-x-2">
-                      <Check className="w-3.5 h-3.5 text-[#00f0ff] flex-shrink-0" />
-                      <span>5 simulated portfolios</span>
-                    </li>
-                    <li className="flex items-center space-x-2">
-                      <Check className="w-3.5 h-3.5 text-[#00f0ff] flex-shrink-0" />
-                      <span>All company deep-dives & alerts</span>
-                    </li>
-                    <li className="flex items-center space-x-2">
-                      <Check className="w-3.5 h-3.5 text-[#00f0ff] flex-shrink-0" />
-                      <span>Daily Morning Briefings</span>
-                    </li>
-                  </ul>
-                </div>
-
-                <Link 
-                  href="/signup" 
-                  className="w-full text-center bg-[#00f0ff] text-[#05070a] font-bold font-mono py-2.5 rounded text-xs hover:bg-[#00f0ff]/80 transition-all shadow-[0_0_15px_rgba(0,240,255,0.15)]"
-                >
-                  CLAIM 3 MONTHS FREE
-                </Link>
-              </div>
-
-              {/* Plan 3: ANALYST */}
-              <div className="terminal-card rounded-lg p-6 bg-[#0b0f19] border border-slate-900 flex flex-col justify-between">
-                <div>
-                  <div className="border-b border-slate-900 pb-4 mb-4 text-left">
-                    <span className="text-xs font-mono text-slate-400 block mb-1">ANALYST PLAN</span>
-                    <div className="flex items-baseline space-x-1">
-                      <span className="text-3xl font-bold text-white">₹1,499</span>
-                      <span className="text-xs text-slate-500 font-mono">/mo</span>
-                    </div>
-                    <p className="text-slate-400 text-[10px] mt-1.5 leading-relaxed">For ultimate power users aiming to scale instantly.</p>
-                  </div>
-
-                  <ul className="space-y-2.5 text-xs text-slate-400 mb-8 text-left">
-                    <li className="flex items-center space-x-2 font-bold text-white">
-                      <Check className="w-3.5 h-3.5 text-[#00e676] flex-shrink-0" />
-                      <span>Everything in PRO tier</span>
-                    </li>
-                    <li className="flex items-center space-x-2">
-                      <Check className="w-3.5 h-3.5 text-[#00e676] flex-shrink-0" />
-                      <span>Premium DCF, LBO, pitch builders</span>
-                    </li>
-                    <li className="flex items-center space-x-2">
-                      <Check className="w-3.5 h-3.5 text-[#00e676] flex-shrink-0" />
-                      <span>Unlimited portfolios & simulators</span>
-                    </li>
-                    <li className="flex items-center space-x-2">
-                      <Check className="w-3.5 h-3.5 text-[#00e676] flex-shrink-0" />
-                      <span>AI Mock Interview Simulator</span>
-                    </li>
-                    <li className="flex items-center space-x-2">
-                      <Check className="w-3.5 h-3.5 text-[#00e676] flex-shrink-0" />
-                      <span>Elite Career OS Dashboard</span>
-                    </li>
-                  </ul>
-                </div>
-
-                <Link 
-                  href="/signup" 
-                  className="w-full text-center border border-slate-800 text-slate-300 font-bold font-mono py-2 rounded text-xs hover:border-[#00f0ff] hover:text-white transition-all bg-[#05070a]"
-                >
-                  UPGRADE MY CAREER
-                </Link>
-              </div>
-
-            </div>
-          </div>
-        </section>
-
-        {/* -----------------------------------------------------------
-        * SECTION F: LOCKED VALUATION TEMPLATES RESOURCES LOCKER
-        * ----------------------------------------------------------- */}
-        <section className="w-full max-w-6xl px-6 py-20" id="resources-vault">
-          <div className="terminal-card rounded-xl p-8 border border-[#00e676]/15 bg-[#0b0f19]/80 flex flex-col items-center max-w-3xl mx-auto text-center">
-            <span className="terminal-badge-success uppercase">ANALYST TOOLKIT</span>
-            <h2 className="text-3xl font-bold font-mono text-white tracking-tight mt-3 uppercase">
-              Unlock Free Valuation Templates
-            </h2>
-            <p className="text-slate-400 text-xs max-w-md mt-2 leading-relaxed">
-              Enter your email below to instantly activate your credentials and unlock 5 professional valuation, Excel shortcuts, and CFA concepts guides for free.
-            </p>
-
-            {/* List items with locked statuses */}
-            <div className="w-full flex flex-col gap-3 my-8 font-mono text-xs max-w-md text-left">
-              {[
-                "01. Corporate DCF Valuation Model Template (.xlsx)",
-                "02. 30+ Wall Street Excel Keyboard Shortcuts Guide (.pdf)",
-                "03. Financial Ratios & Valuation Cheat Sheet (.pdf)",
-                "04. Institutional Equity Research Stock Template (.docx)",
-                "05. CFA Level 1 Study & Formula Notes (.pdf)"
-              ].map((item, idx) => (
-                <div key={idx} className="flex items-center justify-between border-b border-slate-900 pb-2.5">
-                  <span className="text-slate-350">{item}</span>
-                  <span className={`px-2 py-0.5 rounded text-[9px] font-bold ${
-                    vaultUnlocked 
-                      ? "bg-[#00e676]/10 text-[#00e676] border border-[#00e676]/30" 
-                      : "bg-[#ff3860]/10 text-[#ff3860] border border-[#ff3860]/30"
-                  }`}>
-                    {vaultUnlocked ? "UNLOCKED" : "LOCKED"}
-                  </span>
-                </div>
-              ))}
-            </div>
-
-            {/* Email form logs to waitlist in Supabase */}
-            {!vaultUnlocked ? (
-              <form onSubmit={handleUnlockVault} className="w-full max-w-md flex flex-col sm:flex-row gap-3">
-                <input
-                  type="email"
-                  required
-                  value={vaultEmail}
-                  onChange={e => setVaultEmail(e.target.value)}
-                  placeholder="Enter your email to unlock toolkit..."
-                  className="flex-1 bg-[#05070a] border border-[#00e676]/25 rounded px-4 py-2.5 text-xs text-white outline-none focus:border-[#00e676] focus:ring-1 focus:ring-[#00e676]"
-                />
-                <button
-                  type="submit"
-                  disabled={vaultLoading}
-                  className="bg-[#00e676] hover:bg-[#00e676]/80 text-[#05070a] font-mono font-bold px-6 py-2.5 rounded text-xs transition-colors flex items-center justify-center space-x-2"
-                >
-                  {vaultLoading ? (
-                    <RefreshCw className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <>
-                      <Lock className="w-3.5 h-3.5" />
-                      <span>UNLOCK VAULT</span>
-                    </>
+                  ))}
+                  {isAiTyping && (
+                    <div className="text-[#a78bfa] animate-pulse text-[11px]">{">>>"} PARSING PIPELINE ASSUMPTIONS...</div>
                   )}
-                </button>
-              </form>
-            ) : (
-              <div className="w-full max-w-xl flex flex-col space-y-4 animate-fadeIn">
-                <div className="bg-[#00e676]/10 border border-[#00e676]/20 p-4 rounded text-center text-xs text-[#00e676] font-mono flex items-center justify-center space-x-2">
-                  <Unlock className="w-4 h-4" />
-                  <span>VAULT UNLOCKED: CREDENTIALS GRANTED INSTANTLY</span>
                 </div>
 
-                {/* Unlocked drawer items */}
+                {/* Form console input */}
+                <form onSubmit={handleSendAiMessage} className="flex border-t border-white/10">
+                  <input
+                    type="text"
+                    placeholder="Ask co-pilot... (e.g. HELP, SYS_PING, LIST_STOCKS)"
+                    value={aiInput}
+                    onChange={(e) => setAiInput(e.target.value)}
+                    className="flex-1 bg-[#05070a] border-none outline-none text-white text-xs px-4 py-2.5 font-mono cursor-none"
+                  />
+                  <button type="submit" className="bg-[#a78bfa] hover:bg-[#a78bfa]/80 text-[#020010] font-bold px-4 py-2.5 transition-colors cursor-none">
+                    <Send className="w-3.5 h-3.5" />
+                  </button>
+                </form>
+              </div>
+            </motion.div>
+
+            {/* Right Panel: The 4 Figma stat cards floating 2x2 grid */}
+            <div className="lg:col-span-5 flex justify-center">
+              <div className="grid grid-cols-2 gap-4">
+                <FloatingStatCard 
+                  label="Data Models" 
+                  val="1,200+" 
+                  sub="↑ Live pipelines" 
+                  delay={0.2}
+                  duration={14}
+                />
+                <FloatingStatCard 
+                  label="Latency" 
+                  val="12ms" 
+                  sub="↑ Real-time" 
+                  delay={0.4}
+                  duration={18}
+                />
+                <FloatingStatCard 
+                  label="Accuracy" 
+                  val="99.4%" 
+                  sub="↑ ML inference" 
+                  delay={0.6}
+                  duration={16}
+                />
+                <FloatingStatCard 
+                  label="Dashboards" 
+                  val="340+" 
+                  sub="↑ Auto-generated" 
+                  delay={0.8}
+                  duration={20}
+                />
+              </div>
+            </div>
+
+          </div>
+        </section>
+
+        {/* ==========================================
+        * SECTION 3: METRICS 2×3 DCF SANDBOX
+        * ========================================== */}
+        <section className="w-screen h-screen flex-shrink-0 snap-start overflow-hidden relative flex items-center justify-center px-12 md:px-20 pt-16">
+          <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+            
+            {/* Left Panel: The DCF assumptions sliders */}
+            <motion.div 
+              initial={{ opacity: 0, x: -30 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.8 }}
+              className="lg:col-span-5 text-left space-y-4"
+            >
+              <span className="terminal-badge">03. METRICS SANDBOX</span>
+              <h2 className="text-2xl md:text-3xl font-bold font-display text-white uppercase tracking-tight leading-none mt-2">
+                Live DCF Model Recalculator
+              </h2>
+              <p className="text-white/45 text-xs max-w-md font-sans leading-relaxed">
+                Recalculate implied valuations instantly. Drag assumptions sliders to update sensitivities and fair values.
+              </p>
+
+              {/* Slider form cards */}
+              <div className="space-y-3 bg-[#0b0f19]/70 border border-white/5 p-4 rounded-xl font-mono text-[11px]">
+                <div className="space-y-1">
+                  <div className="flex justify-between text-slate-400">
+                    <span>Base Year EBITDA</span>
+                    <span className="text-white font-bold">₹{dcfEbitda} Lakhs</span>
+                  </div>
+                  <input 
+                    type="range" 
+                    min="50" 
+                    max="500" 
+                    value={dcfEbitda} 
+                    onChange={e => setDcfEbitda(Number(e.target.value))}
+                    className="w-full h-1 bg-slate-950 rounded-lg appearance-none cursor-none accent-[#a78bfa]"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <div className="flex justify-between text-slate-400">
+                    <span>5-Yr EBITDA Growth</span>
+                    <span className="text-[#60a5fa] font-bold">{dcfGrowth}%</span>
+                  </div>
+                  <input 
+                    type="range" 
+                    min="5" 
+                    max="40" 
+                    value={dcfGrowth} 
+                    onChange={e => setDcfGrowth(Number(e.target.value))}
+                    className="w-full h-1 bg-slate-950 rounded-lg appearance-none cursor-none accent-[#60a5fa]"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <div className="flex justify-between text-slate-400">
+                    <span>WACC Discount Rate</span>
+                    <span className="text-[#34d399] font-bold">{dcfWacc.toFixed(1)}%</span>
+                  </div>
+                  <input 
+                    type="range" 
+                    min="5.0" 
+                    max="15.0" 
+                    step="0.5"
+                    value={dcfWacc} 
+                    onChange={e => setDcfWacc(Number(e.target.value))}
+                    className="w-full h-1 bg-slate-950 rounded-lg appearance-none cursor-none accent-[#34d399]"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <div className="flex justify-between text-slate-400">
+                    <span>Terminal EBITDA Multiple</span>
+                    <span className="text-[#ffdd57] font-bold">{dcfMultiple}x</span>
+                  </div>
+                  <input 
+                    type="range" 
+                    min="8" 
+                    max="22" 
+                    value={dcfMultiple} 
+                    onChange={e => setDcfMultiple(Number(e.target.value))}
+                    className="w-full h-1 bg-slate-950 rounded-lg appearance-none cursor-none accent-[#ffdd57]"
+                  />
+                </div>
+              </div>
+            </motion.div>
+
+            {/* Right Panel: Metrics 2x3 Grid */}
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }}
+              whileInView={{ opacity: 1, scale: 1.0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.8 }}
+              className="lg:col-span-7 w-full"
+            >
+              <div className="grid grid-cols-3 gap-3">
+                
+                {/* 1. Implied Price Card */}
+                <div className="col-span-2 bg-white/[0.02] border border-white/[0.08] p-4 rounded-xl flex flex-col justify-between h-[95px] text-left">
+                  <span className="text-[9px] uppercase tracking-wider text-slate-500 font-mono">DCF Intrinsic Fair Price</span>
+                  <span className="text-2xl font-bold font-display text-white">₹{impliedSharePrice.toFixed(2)}</span>
+                  <span className="text-[10px] text-[#34d399] font-mono font-medium">Implied Value per Share</span>
+                </div>
+
+                {/* 2. NSE status node */}
+                <div className="col-span-1 bg-white/[0.02] border border-white/[0.08] p-4 rounded-xl flex flex-col justify-between h-[95px] text-left">
+                  <span className="text-[9px] uppercase tracking-wider text-slate-500 font-mono">NSE NODE</span>
+                  <div className="flex items-center space-x-1.5">
+                    <span className="w-2 h-2 rounded-full bg-[#34d399] animate-pulse" />
+                    <span className="text-[11px] font-bold text-white font-mono">LIVE_200</span>
+                  </div>
+                  <span className="text-[10px] text-slate-500 font-mono">Systems safe</span>
+                </div>
+
+                {/* 3. WACC Table sensitivities */}
+                <div className="col-span-3 bg-slate-950/60 border border-white/[0.05] p-3 rounded-xl">
+                  <span className="text-[9px] uppercase tracking-wider text-[#a78bfa] font-mono block text-left mb-1.5">EBITDA sensitivity score table</span>
+                  <table className="w-full font-mono text-[9px] border-collapse">
+                    <thead>
+                      <tr className="border-b border-white/10 text-slate-500">
+                        <th className="text-left pb-1 font-normal">WACC \ Mult</th>
+                        <th className="text-right pb-1 font-normal">{multiplesList[0]}x</th>
+                        <th className="text-right pb-1 font-normal font-bold text-slate-400">{multiplesList[1]}x</th>
+                        <th className="text-right pb-1 font-normal">{multiplesList[2]}x</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {waccList.map((w, idx) => (
+                        <tr key={idx} className="border-b border-white/5">
+                          <td className="text-left py-1 text-slate-400 font-bold">{w.toFixed(1)}%</td>
+                          <td className="text-right py-1 text-slate-350">₹{calculateCellPrice(w, multiplesList[0]).toFixed(1)}</td>
+                          <td className="text-right py-1 font-bold text-[#34d399]">₹{calculateCellPrice(w, multiplesList[1]).toFixed(1)}</td>
+                          <td className="text-right py-1 text-slate-350">₹{calculateCellPrice(w, multiplesList[2]).toFixed(1)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+              </div>
+            </motion.div>
+
+          </div>
+        </section>
+
+        {/* ==========================================
+        * SECTION 4: DESIGN STACK 2×2 GRID
+        * ========================================== */}
+        <section className="w-screen h-screen flex-shrink-0 snap-start overflow-hidden relative flex items-center justify-center px-12 md:px-20 pt-16">
+          <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+            
+            {/* Left Panel: Description */}
+            <motion.div 
+              initial={{ opacity: 0, x: -30 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.8 }}
+              className="lg:col-span-5 text-left space-y-4"
+            >
+              <span className="terminal-badge">04. STACK SPECS</span>
+              <h2 className="text-2xl md:text-3xl font-bold font-display text-white uppercase tracking-tight leading-none mt-2">
+                High-Fidelity Technology Stack
+              </h2>
+              <p className="text-white/45 text-xs max-w-md font-sans leading-relaxed">
+                The visual frameworks that compile our 3D-first terminal workspace, engineered for zero-latency graphics and fluid responsive layouts.
+              </p>
+            </motion.div>
+
+            {/* Right Panel: 2x2 Grid Stack Cards */}
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }}
+              whileInView={{ opacity: 1, scale: 1.0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.8 }}
+              className="lg:col-span-7 w-full"
+            >
+              <div className="grid grid-cols-2 gap-4">
+                
+                {/* 1. Figma Card */}
+                <div className="bg-white/[0.02] border border-white/[0.08] p-5 rounded-2xl text-left hover:border-[#a78bfa]/25 transition-all">
+                  <span className="text-[10px] font-mono text-[#a78bfa] uppercase">Figma · Design System</span>
+                  <h4 className="text-lg font-bold font-display text-white uppercase mt-2">AnalystOS</h4>
+                  <p className="text-white/40 text-[11px] font-sans mt-1 leading-relaxed">
+                    Auto Layout grid grids, rich near-black `#020010` backdrops, violet, electric blue, and emerald accents.
+                  </p>
+                </div>
+
+                {/* 2. Framer Card */}
+                <div className="bg-white/[0.02] border border-white/[0.08] p-5 rounded-2xl text-left hover:border-[#60a5fa]/25 transition-all">
+                  <span className="text-[10px] font-mono text-[#60a5fa] uppercase">Framer · Snap Motion</span>
+                  <h4 className="text-lg font-bold font-display text-white uppercase mt-2">Spring Physics</h4>
+                  <p className="text-white/40 text-[11px] font-sans mt-1 leading-relaxed">
+                    Smooth horizontal snapping curves (stiffness 80, damping 18), scroll progress tracking, and spring coordinates cursor.
+                  </p>
+                </div>
+
+                {/* 3. Spline Card */}
+                <div className="bg-white/[0.02] border border-white/[0.08] p-5 rounded-2xl text-left hover:border-[#34d399]/25 transition-all">
+                  <span className="text-[10px] font-mono text-[#34d399] uppercase">Spline · WebGL Scene</span>
+                  <h4 className="text-lg font-bold font-display text-white uppercase mt-2">3D Depth Parallax</h4>
+                  <p className="text-white/40 text-[11px] font-sans mt-1 leading-relaxed">
+                    120 oscillating colored spheres, fog at 1200, 60 real-time cylinder connections, camera mouse springs tilts and Z zoom.
+                  </p>
+                </div>
+
+                {/* 4. Jitter Card */}
+                <div className="bg-white/[0.02] border border-white/[0.08] p-5 rounded-2xl text-left hover:border-[#ffdd57]/25 transition-all">
+                  <span className="text-[10px] font-mono text-[#ffdd57] uppercase">Jitter · Opening sequences</span>
+                  <h4 className="text-lg font-bold font-display text-white uppercase mt-2">CRT Scanlines</h4>
+                  <p className="text-white/40 text-[11px] font-sans mt-1 leading-relaxed">
+                    Masked letter-by-letter header reveals, motion blurred suffix enterings, and linear CRT scan sweeps.
+                  </p>
+                </div>
+
+              </div>
+            </motion.div>
+
+          </div>
+        </section>
+
+        {/* ==========================================
+        * SECTION 5: FINAL CTA & LOCKED VALUATION VAULT
+        * ========================================== */}
+        <section className="w-screen h-screen flex-shrink-0 snap-start overflow-hidden relative flex items-center justify-center px-12 md:px-20 pt-16">
+          <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+            
+            {/* Left Panel: Waitlist locker capture form */}
+            <motion.div 
+              initial={{ opacity: 0, x: -30 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.8 }}
+              className="lg:col-span-6 text-left space-y-4"
+            >
+              <span className="terminal-badge">05. SECURE LOCKER</span>
+              <h2 className="text-2xl md:text-3xl font-bold font-display text-white uppercase tracking-tight leading-none mt-2">
+                Unlock Free Valuation Vault
+              </h2>
+              <p className="text-white/45 text-xs max-w-md font-sans leading-relaxed">
+                Enter your email to instantly activate your waitlist credentials and unlock 5 high-density pro-forma spreadsheets and reference handbooks.
+              </p>
+
+              {/* Locker Waitlist capture form */}
+              <div className="bg-white/[0.01] border border-white/[0.06] rounded-xl p-6 backdrop-blur-sm mt-4">
+                {vaultUnlocked ? (
+                  <div className="text-center py-4 space-y-2">
+                    <span className="inline-flex bg-[#34d399]/10 border border-[#34d399]/35 text-[#34d399] font-mono px-3 py-1 rounded text-xs animate-bounce font-bold">
+                      ACCESS_GRANTED: VALUATION VAULT UNLOCKED
+                    </span>
+                    <p className="text-slate-400 text-xs font-sans">You have unlocked the AnalystOS templates deck. Download templates inside the Lab panel on the right.</p>
+                  </div>
+                ) : (
+                  <form onSubmit={handleUnlockVault} className="space-y-3 font-sans">
+                    <input
+                      type="email"
+                      placeholder="Enter operational email address"
+                      value={vaultEmail}
+                      onChange={(e) => setVaultEmail(e.target.value)}
+                      required
+                      className="w-full bg-slate-950 border border-white/10 rounded-lg px-4 py-3 text-xs text-white placeholder-slate-650 outline-none focus:border-[#a78bfa] transition-colors cursor-none font-mono"
+                    />
+                    <button
+                      type="submit"
+                      disabled={vaultLoading}
+                      className="w-full bg-[#a78bfa] hover:bg-[#a78bfa]/90 disabled:bg-[#a78bfa]/40 text-[#020010] font-bold py-3 rounded-lg text-xs tracking-wider uppercase transition-all flex items-center justify-center space-x-2 cursor-none font-sans"
+                    >
+                      {vaultLoading ? (
+                        <span className="animate-spin rounded-full h-3.5 w-3.5 border-2 border-[#020010] border-t-transparent" />
+                      ) : (
+                        <>
+                          <Unlock className="w-3.5 h-3.5" />
+                          <span>Unlock Institutional Vault</span>
+                        </>
+                      )}
+                    </button>
+                  </form>
+                )}
+              </div>
+            </motion.div>
+
+            {/* Right Panel: Vault items copy scorecard links list */}
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }}
+              whileInView={{ opacity: 1, scale: 1.0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.8 }}
+              className="lg:col-span-6 w-full font-mono text-[11px] text-left bg-slate-950/60 border border-white/[0.05] p-5 rounded-2xl"
+            >
+              <div className="space-y-3">
                 {[
                   {
-                    id: "dcf-model",
-                    title: "01. Corporate DCF Valuation Model Template",
+                    id: "dcf_temp",
+                    label: "01. Corporate DCF Model Template (.xlsx)",
                     text: "[AnalystOS Corporate DCF Model Template v1.2]\nSheet 1: assumptions\nWACC = 9.0% | Exit EBITDA Multiple = 14.0x\nEBITDA Growth Rate = 15.0% (Yr 1-3), 8.0% (Yr 4-5)\nImplied Enterprise Value = ₹18.54 Cr\nDownload URL: https://analystos.com/resources/AnalystOS_DCF_Valuation_Model.xlsx"
                   },
                   {
-                    id: "shortcuts",
-                    title: "02. 30+ Wall Street Excel Shortcuts Guide",
+                    id: "excel_short",
+                    label: "02. Wall Street Excel Keyboard Shortcuts Guide (.pdf)",
                     text: "[AnalystOS Excel Shortcuts Handbook]\n- Ctrl + [ : Trace precedents\n- F5 + Enter: Return to cell\n- Alt + E + S + V: Paste Special as Values\n- Alt + H + O + I: Autofit column widths"
                   },
                   {
-                    id: "cheat-sheet",
-                    title: "03. Financial Ratios & Valuation Cheat Sheet",
+                    id: "ratios_cheat",
+                    label: "03. Financial Ratios & Valuation Cheat Sheet (.pdf)",
                     text: "[AnalystOS Formula Cheat Sheet]\n1. EV = Market Cap + Debt - Cash\n2. WACC = (E/V * Ke) + (D/V * Kd * (1 - Tax))\n3. Ke = Rf + Beta * (Rm - Rf) [CAPM]\n4. FCFF = EBIT*(1-T) + D&A - Capex - dNWC"
                   }
-                ].map((cabinet, idx) => (
-                  <div key={idx} className="bg-[#05070a] border border-[#00f0ff]/10 rounded-lg p-4 text-left">
-                    <div className="flex justify-between items-center border-b border-slate-900 pb-2 mb-3">
-                      <span className="text-white font-bold font-mono text-xs uppercase">{cabinet.title}</span>
+                ].map((item, idx) => (
+                  <div key={idx} className="flex items-center justify-between border-b border-slate-900 pb-2.5">
+                    <span className="text-slate-350">{item.label}</span>
+                    {vaultUnlocked ? (
                       <button
-                        type="button"
-                        onClick={() => copyToClipboard(cabinet.id, cabinet.text)}
-                        className="text-slate-400 hover:text-[#00f0ff] font-mono text-[10px] flex items-center space-x-1"
+                        onClick={() => copyToClipboard(item.id, item.text)}
+                        className="bg-transparent border border-white/10 text-slate-300 hover:border-[#34d399] hover:text-[#34d399] font-bold px-3 py-1 rounded transition-all flex items-center space-x-1 font-sans text-[10px] cursor-none"
                       >
-                        {copiedId === cabinet.id ? <Check className="w-3 h-3 text-[#00e676]" /> : <Copy className="w-3 h-3" />}
-                        <span>{copiedId === cabinet.id ? "COPIED" : "COPY SPECS"}</span>
+                        {copiedId === item.id ? (
+                          <>
+                            <Check className="w-3 h-3" />
+                            <span>COPIED</span>
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="w-3 h-3" />
+                            <span>COPY DATA</span>
+                          </>
+                        )}
                       </button>
-                    </div>
-                    <pre className="text-slate-400 font-mono text-[10px] leading-relaxed whitespace-pre bg-[#0b0f19]/60 p-2.5 rounded overflow-x-auto">
-                      {cabinet.text}
-                    </pre>
+                    ) : (
+                      <div className="flex items-center space-x-1 text-slate-500">
+                        <Lock className="w-3 h-3 text-[#ff3860]" />
+                        <span className="text-[9px] uppercase font-bold tracking-wider text-[#ff3860]/80">LOCKED</span>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
-            )}
+
+              {/* connection partner nodes ticket support */}
+              <div className="mt-4 pt-4 border-t border-slate-900 flex justify-between items-center text-[10px] text-slate-500">
+                <button onClick={() => openHub("contact")} className="hover:text-[#a78bfa] cursor-none bg-transparent border-none uppercase tracking-wider">[Open Support connection Desk]</button>
+                <span>SYS_PING: 28ms</span>
+              </div>
+            </motion.div>
+
           </div>
         </section>
 
       </main>
 
-      {/* -----------------------------------------------------------
-      * FACTSET-GRADE INFO HUB SIDEBAR OVERLAY PORTAL
-      * ----------------------------------------------------------- */}
-      {infoHubActive && (
-        <div className="fixed inset-0 bg-[#05070a]/90 backdrop-blur-xl z-50 flex items-center justify-center font-mono p-4">
-          <div className="w-full max-w-4xl h-[85vh] bg-[#0b0f19] border border-[#00f0ff]/20 rounded-xl overflow-hidden flex flex-col md:flex-row shadow-2xl relative">
-            
-            {/* Sidebar menu */}
-            <div className="w-full md:w-64 border-r border-[#00f0ff]/12 bg-[#05070a]/80 flex flex-col p-6">
-              <button 
-                onClick={() => setInfoHubActive(false)} 
-                className="text-slate-400 hover:text-white font-bold text-xs uppercase tracking-wider mb-8 text-left flex items-center space-x-1"
-              >
-                <span>✕ RETURN TO DASHBOARD</span>
-              </button>
-              
-              <div className="text-[10px] text-slate-500 uppercase font-bold tracking-widest mb-4 border-b border-slate-900 pb-2">TERMINAL_INDEX</div>
-              <div className="flex flex-col gap-1">
-                {[
-                  { id: "home", label: "[01] TERMINAL_HOME" },
-                  { id: "about", label: "[02] FOUNDERS_NOTE" },
-                  { id: "contact", label: "[03] CONNECT_DESK" },
-                  { id: "changelog", label: "[04] VER_HISTORY" },
-                  { id: "privacy", label: "[05] DATA_SAFEGUARD" },
-                  { id: "terms", label: "[06] USER_LICENSE" }
-                ].map(item => (
-                  <button
-                    key={item.id}
-                    onClick={() => setActiveHubTab(item.id)}
-                    className={`text-left px-3 py-2.5 rounded text-xs transition-colors font-bold ${
-                      activeHubTab === item.id 
-                        ? "bg-[#00f0ff]/10 text-[#00f0ff] border border-[#00f0ff]/20" 
-                        : "text-slate-400 hover:text-slate-200"
-                    }`}
-                  >
-                    {item.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Content viewports */}
-            <div className="flex-1 p-8 overflow-y-auto bg-[#0b0f19]">
-              
-              {/* Close helper button */}
+      {/* 7. Fullscreen sidebar hub overlay overlay */}
+      <AnimatePresence>
+        {infoHubActive && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-6 select-none"
+            style={{ cursor: "none" }}
+          >
+            <motion.div 
+              initial={{ scale: 0.95, y: 15 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.95, y: 15 }}
+              className="bg-[#0b0f19] border border-white/10 rounded-2xl w-full max-w-4xl h-[80vh] flex overflow-hidden shadow-2xl relative"
+            >
+              {/* Close Hub button */}
               <button 
                 onClick={() => setInfoHubActive(false)}
-                className="absolute top-6 right-6 border border-slate-800 rounded px-3 py-1.5 hover:border-[#00f0ff] hover:text-[#00f0ff] text-slate-400 text-xs font-bold"
+                className="absolute top-4 right-4 bg-transparent border border-white/10 hover:border-[#ff3860] hover:text-[#ff3860] text-slate-400 w-8 h-8 rounded-full flex items-center justify-center transition-colors cursor-none"
               >
-                CLOSE
+                ✕
               </button>
 
-              {/* Hub Home view */}
-              {activeHubTab === "home" && (
-                <div className="flex flex-col space-y-4">
-                  <span className="terminal-badge self-start">CORE_MODULE.WELCOME</span>
-                  <h3 className="text-xl font-extrabold text-white tracking-tight">AnalystOS Terminal Info Hub</h3>
-                  <p className="text-slate-400 text-xs leading-relaxed">
-                    Welcome to the central command specifications center. Use the left FactSet-grade navigation index to explore features lists, founder logs, open direct engineering support tickets, and review encryption safeguards.
-                  </p>
-                  <div className="border border-dashed border-[#00f0ff]/20 p-4 rounded bg-[#00f0ff]/3 flex items-start space-x-3 text-xs">
-                    <Terminal className="w-5 h-5 text-[#00f0ff] flex-shrink-0" />
-                    <div>
-                      <h5 className="text-[#00f0ff] font-bold">[SYSTEM_LOG: ACTIVE]</h5>
-                      <p className="text-slate-400 mt-1">You are inside the active terminal specification dashboard overlay. Revert back to the homepage anytime by clicking Return.</p>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Hub About view */}
-              {activeHubTab === "about" && (
-                <div className="flex flex-col space-y-4">
-                  <span className="terminal-badge self-start">FOUNDERS_NOTE.METADATA</span>
-                  <h3 className="text-xl font-extrabold text-white tracking-tight">Our Mission & Revanth Pemmaraju's Story</h3>
-                  <p className="text-slate-400 text-xs leading-relaxed">
-                    AnalystOS was conceived with a simple yet powerful mission: to democratize institutional-grade financial analysis tools. For too long, young professional analysts, candidates, and students have been priced out of professional Bloomberg, FactSet, or Capital IQ subscriptions (which cost ₹2.5 lakh/year).
-                  </p>
-                  <blockquote className="border-l-2 border-[#00f0ff] pl-4 py-1 italic text-slate-200 text-xs my-3 bg-[#05070a]/40">
-                    "We believe that high-quality equity research, company deep-dives, and financial modeling tools should be accessible to anyone with a willingness to learn. By providing institutional speed and clean data pipelines at a fraction of the cost, we empower the next generation of finance leaders."
-                    <br /><span className="text-[10px] text-slate-500 font-bold block mt-2">— Revanth Pemmaraju, Founder</span>
-                  </blockquote>
-                </div>
-              )}
-
-              {/* Hub Contact Ticket view */}
-              {activeHubTab === "contact" && (
-                <div className="flex flex-col space-y-4">
-                  <span className="terminal-badge self-start">CONNECT_DESK.PORTAL</span>
-                  <h3 className="text-xl font-extrabold text-white tracking-tight">Technical Support & Sales Desk</h3>
-                  <p className="text-slate-400 text-xs">Transmit a query ticket directly to our engineering desk.</p>
-                  
-                  {!contactRef ? (
-                    <form onSubmit={handleContactSubmit} className="space-y-4 text-xs">
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="flex flex-col space-y-1.5">
-                          <label className="text-slate-500 uppercase text-[9px]">FULL NAME</label>
-                          <input 
-                            type="text" 
-                            required
-                            value={contactName}
-                            onChange={e => setContactName(e.target.value)}
-                            placeholder="Your name" 
-                            className="bg-[#05070a] border border-[#00f0ff]/15 rounded p-2.5 text-white outline-none focus:border-[#00f0ff]" 
-                          />
-                        </div>
-                        <div className="flex flex-col space-y-1.5">
-                          <label className="text-slate-500 uppercase text-[9px]">PROFESSIONAL EMAIL</label>
-                          <input 
-                            type="email" 
-                            required
-                            value={contactEmail}
-                            onChange={e => setContactEmail(e.target.value)}
-                            placeholder="you@firm.com" 
-                            className="bg-[#05070a] border border-[#00f0ff]/15 rounded p-2.5 text-white outline-none focus:border-[#00f0ff]" 
-                          />
-                        </div>
-                      </div>
-                      
-                      <div className="flex flex-col space-y-1.5">
-                        <label className="text-slate-500 uppercase text-[9px]">FIRM TYPE / PORTFOLIO</label>
-                        <select 
-                          value={contactFirm}
-                          onChange={e => setContactFirm(e.target.value)}
-                          className="bg-[#05070a] border border-[#00f0ff]/15 rounded p-2.5 text-slate-350 outline-none focus:border-[#00f0ff]"
-                        >
-                          <option value="student">Student / CFA Candidate</option>
-                          <option value="analyst">Buy-side or Sell-side Analyst</option>
-                          <option value="hedgefund">Asset Management / Family Office</option>
-                          <option value="retail">Retail Investor</option>
-                        </select>
-                      </div>
-
-                      <div className="flex flex-col space-y-1.5">
-                        <label className="text-slate-500 uppercase text-[9px]">INQUIRY DETAIL SUMMARY</label>
-                        <textarea 
-                          required
-                          rows={4}
-                          value={contactMsg}
-                          onChange={e => setContactMsg(e.target.value)}
-                          placeholder="Please provide details of your inquiry..." 
-                          className="bg-[#05070a] border border-[#00f0ff]/15 rounded p-2.5 text-white outline-none focus:border-[#00f0ff]" 
-                        />
-                      </div>
-
+              {/* Sidebar directory links */}
+              <div className="w-1/4 border-r border-white/10 bg-[#070b13] p-6 text-left flex flex-col justify-between font-mono text-xs">
+                <div className="space-y-4">
+                  <div className="text-slate-400 font-bold text-[10px] tracking-widest uppercase">System Directories</div>
+                  <div className="flex flex-col space-y-2">
+                    {[
+                      { id: "home", label: "[0] TERMINAL.HOME" },
+                      { id: "about", label: "[1] FOUNDERS_NOTE" },
+                      { id: "contact", label: "[2] SUPPORT_DESK" },
+                      { id: "changelog", label: "[3] RELEASES_HISTORY" },
+                      { id: "privacy", label: "[4] PRIVACY_SAFEGUARDS" },
+                      { id: "terms", label: "[5] LICENSE_TERMS" }
+                    ].map(tab => (
                       <button
-                        type="submit"
-                        disabled={contactLoading}
-                        className="bg-[#00f0ff] hover:bg-[#00f0ff]/80 text-[#05070a] font-bold py-3 rounded transition-colors w-full flex items-center justify-center space-x-2"
+                        key={tab.id}
+                        onClick={() => setActiveHubTab(tab.id)}
+                        className={`text-left transition-colors cursor-none ${
+                          activeHubTab === tab.id ? 'text-[#a78bfa] font-bold' : 'text-slate-400 hover:text-white'
+                        }`}
                       >
-                        {contactLoading ? (
-                          <RefreshCw className="w-4 h-4 animate-spin" />
-                        ) : (
-                          <>
-                            <Send className="w-3.5 h-3.5" />
-                            <span>TRANSMIT SUPPORT TICKET →</span>
-                          </>
-                        )}
+                        {tab.label}
                       </button>
-                    </form>
-                  ) : (
-                    <div className="bg-[#00e676]/10 border border-[#00e676]/20 p-6 rounded-lg text-center font-mono space-y-3">
-                      <Check className="w-8 h-8 text-[#00e676] mx-auto animate-bounce" />
-                      <h4 className="text-white font-bold text-sm uppercase">TICKET_TRANSMITTED_SUCCESSFULLY</h4>
-                      <p className="text-slate-400 text-xs">
-                        Support ticket ref: <span className="text-[#00e676] font-bold">{contactRef}</span> has been logged securely in waitlist logs. Our support team will coordinate via email.
-                      </p>
-                      <button 
-                        onClick={() => setContactRef(null)} 
-                        className="text-[#00f0ff] hover:underline text-xs"
-                      >
-                        [OPEN NEW TICKET]
-                      </button>
-                    </div>
-                  )}
-
-                </div>
-              )}
-
-              {/* Hub Changelog view */}
-              {activeHubTab === "changelog" && (
-                <div className="flex flex-col space-y-4">
-                  <span className="terminal-badge self-start">VER_HISTORY.STREAM</span>
-                  <h3 className="text-xl font-extrabold text-white tracking-tight">Terminal Version History</h3>
-                  <div className="space-y-4 text-xs font-mono text-left">
-                    <div className="border-l-2 border-[#00e676] pl-4">
-                      <strong className="text-white">v1.0.4 (Active Launch)</strong> <span className="text-slate-500 text-[10px]">2026-05-31</span>
-                      <p className="text-slate-400 mt-1">Pivoted landing experience to full-stack Next.js 14 App Router, integrating active Supabase PostgreSQL data schemas, Razorpay bindings, Claude API prompts, and Career OS modules.</p>
-                    </div>
-                    <div className="border-l-2 border-[#00f0ff] pl-4">
-                      <strong className="text-white">v1.0.2 (Payments & Auth)</strong> <span className="text-slate-500 text-[10px]">2026-05-30</span>
-                      <p className="text-slate-400 mt-1">Integrated client-side Supabase Auth, Google OAuth hooks, and configured Indian INR checkout orders via Razorpay scripts.</p>
-                    </div>
+                    ))}
                   </div>
                 </div>
-              )}
 
-              {/* Hub Privacy Safeguards view */}
-              {activeHubTab === "privacy" && (
-                <div className="flex flex-col space-y-4 text-xs">
-                  <span className="terminal-badge self-start">DATA_SAFEGUARD.COMPLIANCE</span>
-                  <h3 className="text-xl font-extrabold text-white tracking-tight">Privacy Policy Safeguards</h3>
-                  <div className="space-y-3 text-slate-400 leading-relaxed">
-                    <p>At AnalystOS, we prioritize the protection and security of your financial and personal data. We utilize enterprise-grade security structures through **Supabase PostgreSQL** and **Vercel** hosting platforms.</p>
-                    <strong className="text-white uppercase block">1. Information We Collect</strong>
-                    <p>We collect your email, name, and billing details upon sign-up or download. Payment transactions are processed securely through **Razorpay** checkout systems; no credit card details are stored directly on our servers.</p>
-                    <strong className="text-white uppercase block">2. Cookies and Logs</strong>
-                    <p>We use localized tokens to store active sessions and monitor terminal diagnostic heartbeats. All logs are securely archived and cleared regularly.</p>
-                  </div>
+                <div className="text-[10px] text-slate-500 uppercase leading-relaxed font-mono">
+                  <span>AnalystOS Terminal v1.0.4</span>
                 </div>
-              )}
+              </div>
 
-              {/* Hub Terms view */}
-              {activeHubTab === "terms" && (
-                <div className="flex flex-col space-y-4 text-xs">
-                  <span className="terminal-badge self-start">USER_LICENSE.LEGAL_FRAME</span>
-                  <h3 className="text-xl font-extrabold text-white tracking-tight">Terms of Service License</h3>
-                  <div className="space-y-3 text-slate-400 leading-relaxed">
-                    <p>Please read these terms carefully before accessing the AnalystOS terminal workspace. By creating an account, you agree to comply with these terms.</p>
-                    <strong className="text-white uppercase block">1. Subscription Billing</strong>
-                    <p>AnalystOS is billed on a recurring monthly cycle of **₹499/month** for the PRO plan. You may cancel your subscription at any time directly through the user navigation pill.</p>
-                    <strong className="text-white uppercase block">2. Acceptable Use</strong>
-                    <p>The terminal features, DCF sandboxes, and financial models are provided for educational and research analysis purposes. We do not offer direct investment advisory or brokerage execution services.</p>
+              {/* Content panels */}
+              <div className="flex-1 p-8 text-left overflow-y-auto scrollbar-thin select-text">
+                {activeHubTab === "home" && (
+                  <div className="space-y-4">
+                    <h3 className="text-xl font-bold text-white tracking-tight font-display uppercase">AnalystOS Terminal Info Hub</h3>
+                    <p className="text-slate-350 font-sans text-xs leading-relaxed">
+                      AnalystOS was conceived with a simple yet powerful mission: to democratize institutional-grade financial analysis tools. For too long, young professional analysts, candidates, and students have been priced out of professional Bloomberg, FactSet, or Capital IQ subscriptions (which cost ₹2.5 lakh/year).
+                    </p>
+                    <p className="text-slate-350 font-sans text-xs leading-relaxed">
+                      We bridges this gap by combining raw real-time data feeds, customizable pro-forma calculations, responsive WebGL 3D layers, and secure databases inside a high-contrast minimalist browser cockpit.
+                    </p>
                   </div>
-                </div>
-              )}
+                )}
 
-            </div>
-          </div>
-        </div>
-      )}
+                {activeHubTab === "about" && (
+                  <div className="space-y-4">
+                    <h3 className="text-xl font-bold text-white tracking-tight font-display uppercase">Why I Built AnalystOS</h3>
+                    <div className="border-l-2 border-[#a78bfa] pl-4 italic text-slate-350 text-xs font-sans">
+                      "While learning DCF valuation, equity research, and financial modeling, I realized most tools were built for professionals. AnalystOS is my attempt to make institutional-grade research accessible to anyone willing to learn."
+                    </div>
+                  </div>
+                )}
 
-      {/* Footer */}
-      <footer className="w-full bg-[#05070a] border-t border-slate-900 py-12 text-slate-500 text-xs font-mono">
-        <div className="max-w-6xl mx-auto px-6 grid grid-cols-1 md:grid-cols-4 gap-8">
-          <div className="space-y-3">
-            <span className="text-white font-bold text-sm">AnalystOS</span>
-            <p className="text-slate-400 text-xs leading-relaxed">
-              The financial OS designed for the next generation of investment analysts.
-            </p>
-            <span className="text-[10px] block">&copy; {new Date().getFullYear()} AnalystOS. All rights reserved.</span>
-          </div>
+                {activeHubTab === "contact" && (
+                  <div className="space-y-4">
+                    <h3 className="text-xl font-bold text-white tracking-tight font-display uppercase">Operational support ticket desk</h3>
+                    {contactRef ? (
+                      <div className="bg-[#34d399]/10 border border-[#34d399]/35 text-[#34d399] p-4 rounded font-mono text-xs space-y-1 animate-pulse">
+                        <div className="font-bold">TICKET_RESOLVED: OK</div>
+                        <div>Your ticket support index ref is {contactRef}. Connecting partners desk response queued.</div>
+                      </div>
+                    ) : (
+                      <form onSubmit={handleContactSubmit} className="space-y-3 font-mono text-xs">
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="text-slate-500 block mb-1">Your Name</label>
+                            <input
+                              type="text"
+                              value={contactName}
+                              onChange={e => setContactName(e.target.value)}
+                              required
+                              className="w-full bg-slate-950 border border-white/10 rounded px-3 py-2 text-white outline-none focus:border-[#a78bfa] cursor-none"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-slate-500 block mb-1">Operational Email</label>
+                            <input
+                              type="email"
+                              value={contactEmail}
+                              onChange={e => setContactEmail(e.target.value)}
+                              required
+                              className="w-full bg-slate-950 border border-white/10 rounded px-3 py-2 text-white outline-none focus:border-[#a78bfa] cursor-none"
+                            />
+                          </div>
+                        </div>
 
-          <div>
-            <h5 className="text-white font-bold mb-3">PLATFORM</h5>
-            <div className="flex flex-col space-y-2">
-              <Link href="/signup" className="hover:text-[#00f0ff]">[OPEN_TERMINAL]</Link>
-              <a href="#resources-vault" className="hover:text-[#00f0ff]">[FREE_TEMPLATES]</a>
-              <button onClick={() => openHub("contact")} className="text-left hover:text-[#00f0ff]">[SUPPORT_DESK]</button>
-            </div>
-          </div>
+                        <div>
+                          <label className="text-slate-500 block mb-1">Connection Segment</label>
+                          <select
+                            value={contactFirm}
+                            onChange={e => setContactFirm(e.target.value)}
+                            className="w-full bg-slate-950 border border-white/10 rounded px-3 py-2 text-white outline-none focus:border-[#a78bfa] cursor-none"
+                          >
+                            <option value="student">Student / CFA Candidate</option>
+                            <option value="analyst">Buy-side or Sell-side Analyst</option>
+                            <option value="partner">Corporate Partner Desk</option>
+                          </select>
+                        </div>
 
-          <div>
-            <h5 className="text-white font-bold mb-3">INFO HUB</h5>
-            <div className="flex flex-col space-y-2">
-              <button onClick={() => openHub("about")} className="text-left hover:text-[#00f0ff]">[FOUNDERS_NOTE]</button>
-              <button onClick={() => openHub("changelog")} className="text-left hover:text-[#00f0ff]">[VERSION_RELEASES]</button>
-              <button onClick={() => openHub("contact")} className="text-left hover:text-[#00f0ff]">[PARTNERSHIP_DESK]</button>
-            </div>
-          </div>
+                        <div>
+                          <label className="text-slate-500 block mb-1">Operational Message</label>
+                          <textarea
+                            rows={4}
+                            value={contactMsg}
+                            onChange={e => setContactMsg(e.target.value)}
+                            required
+                            className="w-full bg-slate-950 border border-white/10 rounded px-3 py-2 text-white outline-none focus:border-[#a78bfa] cursor-none"
+                          />
+                        </div>
 
-          <div>
-            <h5 className="text-white font-bold mb-3">LEGAL</h5>
-            <div className="flex flex-col space-y-2">
-              <button onClick={() => openHub("privacy")} className="text-left hover:text-[#00f0ff]">[PRIVACY_SAFEGUARDS]</button>
-              <button onClick={() => openHub("terms")} className="text-left hover:text-[#00f0ff]">[LICENSE_TERMS]</button>
-            </div>
-          </div>
-        </div>
-      </footer>
+                        <button
+                          type="submit"
+                          disabled={contactLoading}
+                          className="bg-[#a78bfa] hover:bg-[#a78bfa]/80 text-[#020010] font-bold px-4 py-2 rounded transition-colors uppercase cursor-none"
+                        >
+                          {contactLoading ? "SUBMITTING_TICKET..." : "SUBMIT CONNECTION TICKET"}
+                        </button>
+                      </form>
+                    )}
+                  </div>
+                )}
+
+                {activeHubTab === "changelog" && (
+                  <div className="space-y-4">
+                    <h3 className="text-xl font-bold text-white tracking-tight font-display uppercase">Operational Releases Index</h3>
+                    <div className="font-mono text-xs space-y-4 leading-relaxed text-slate-350">
+                      <div>
+                        <span className="text-[#34d399] font-bold">RELEASE: v1.0.4 [2026-05-31]</span>
+                        <ul className="list-disc pl-4 mt-1 space-y-1">
+                          <li>Replaced the static 3D globe with a custom 120-particle WebGL interactive horizontal-snapping environment.</li>
+                          <li>Integrated spring cursor coordinates with dual-ring spring settings (stiffness 120, damping 18).</li>
+                          <li>Constructed the 5 horizontal snapping sections (Hero, Features Grid, DCF Assumptions, Tech Stack, Vault Locker).</li>
+                          <li>Deactivated movie intro overlays to prevent loading latency.</li>
+                        </ul>
+                      </div>
+                      <div>
+                        <span className="text-[#60a5fa] font-bold">RELEASE: v1.0.1 [2026-05-18]</span>
+                        <ul className="list-disc pl-4 mt-1 space-y-1">
+                          <li>Connected NSE market data pipelines directly to pro-forma sensitivities.</li>
+                          <li>Linked waitlist lockers with Supabase database integrations.</li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {activeHubTab === "privacy" && (
+                  <div className="space-y-4">
+                    <h3 className="text-xl font-bold text-white tracking-tight font-display uppercase">Privacy Safeguards</h3>
+                    <p className="text-slate-350 font-sans text-xs leading-relaxed">
+                      At AnalystOS, we prioritize the protection and security of your financial and personal data. We utilize enterprise-grade security structures through **Supabase PostgreSQL** and **Vercel** hosting platforms.
+                    </p>
+                  </div>
+                )}
+
+                {activeHubTab === "terms" && (
+                  <div className="space-y-4">
+                    <h3 className="text-xl font-bold text-white tracking-tight font-display uppercase">License Terms</h3>
+                    <p className="text-slate-350 font-sans text-xs leading-relaxed">
+                      Please read these terms carefully before accessing the AnalystOS terminal workspace. By creating an account, you agree to comply with these terms.
+                    </p>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
     </div>
   );
 }
