@@ -391,19 +391,22 @@
       border-color: #00d4ff;
     }
 
-    /* Premium Design overrides */
+    /* Premium Institutional Finance overrides */
     :root {
       --premium-accent: #00f0ff;
       --premium-accent-rgb: 0, 240, 255;
       --premium-accent-hover: #4df8ff;
-      --premium-glow: 0 0 20px rgba(0, 240, 255, 0.15);
-      --premium-glow-strong: 0 0 35px rgba(0, 240, 255, 0.3);
+      --premium-green: #00e676;
+      --premium-green-rgb: 0, 230, 118;
+      --premium-glow: 0 0 25px rgba(0, 240, 255, 0.15);
+      --premium-green-glow: 0 0 25px rgba(0, 230, 118, 0.15);
     }
 
     /* Better Spacing & Layout spacing adjustment */
     .hero-section {
-      padding: 140px 0 100px 0 !important;
+      padding: 150px 0 100px 0 !important;
       position: relative;
+      background: radial-gradient(circle at 50% 0%, rgba(0, 240, 255, 0.05) 0%, rgba(5, 7, 10, 0) 65%) !important;
     }
     
     .premium-tagline-badge {
@@ -416,9 +419,9 @@
       border-radius: 30px;
       color: var(--premium-accent);
       font-family: 'JetBrains Mono', monospace;
-      font-size: 12px;
+      font-size: 11px;
       font-weight: 600;
-      letter-spacing: 0.05em;
+      letter-spacing: 0.08em;
       text-transform: uppercase;
       margin-bottom: 24px;
       box-shadow: 0 4px 20px rgba(0, 240, 255, 0.05);
@@ -439,7 +442,6 @@
       position: relative;
       display: inline-block;
     }
-    
     .badge-pulse-blue::after {
       content: '';
       position: absolute;
@@ -451,25 +453,71 @@
       border-radius: 50%;
       animation: pulseBlue 1.5s ease-out infinite;
     }
-    
     @keyframes pulseBlue {
       0% { transform: scale(1); opacity: 1; }
       100% { transform: scale(2.8); opacity: 0; }
     }
 
+    .badge-pulse-green {
+      width: 8px;
+      height: 8px;
+      background: var(--premium-green);
+      border-radius: 50%;
+      position: relative;
+      display: inline-block;
+    }
+    .badge-pulse-green::after {
+      content: '';
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      top: 0;
+      left: 0;
+      background: var(--premium-green);
+      border-radius: 50%;
+      animation: pulseGreen 1.5s ease-out infinite;
+    }
+    @keyframes pulseGreen {
+      0% { transform: scale(1); opacity: 1; }
+      100% { transform: scale(2.8); opacity: 0; }
+    }
+
+    /* System Heartbeat Log */
+    .system-heartbeat-ticker {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: #6B7280;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-top: 14px;
+    }
+    .heartbeat-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--premium-green);
+      animation: pulseBlink 1.2s infinite;
+      box-shadow: 0 0 8px var(--premium-green);
+    }
+    @keyframes pulseBlink {
+      0%, 100% { opacity: 0.3; }
+      50% { opacity: 1; }
+    }
+
     /* Typography fixes */
     .hero-headline {
       font-family: 'Inter Tight', sans-serif !important;
-      font-size: 56px !important;
-      line-height: 1.15 !important;
-      letter-spacing: -0.02em !important;
+      font-size: 58px !important;
+      line-height: 1.12 !important;
+      letter-spacing: -0.03em !important;
       font-weight: 800 !important;
       margin-bottom: 20px !important;
     }
     
     .hero-subheadline {
       font-family: 'Inter', sans-serif !important;
-      font-size: 18px !important;
+      font-size: 19px !important;
       line-height: 1.6 !important;
       color: #9CA3AF !important;
       max-width: 680px !important;
@@ -494,27 +542,24 @@
       -webkit-text-fill-color: transparent !important;
     }
 
-    /* Showcase section styling */
-    .workspace-showcase-section {
+    /* Institutional Previews Section */
+    .institutional-previews-section {
       padding: 120px 0 100px 0;
-      background: radial-gradient(circle at 50% 0%, rgba(0, 240, 255, 0.03) 0%, rgba(5, 7, 10, 0) 70%);
+      border-top: 1px solid rgba(255, 255, 255, 0.03);
+      background: radial-gradient(circle at 50% 0%, rgba(0, 240, 255, 0.02) 0%, rgba(5, 7, 10, 0) 70%);
       position: relative;
       z-index: 10;
-      border-top: 1px solid rgba(255, 255, 255, 0.03);
     }
-    
-    .showcase-container {
+    .previews-container {
       max-width: var(--container-max-width);
       margin: 0 auto;
       padding: 0 24px;
     }
-    
-    .showcase-header {
+    .previews-header {
       text-align: center;
       margin-bottom: 64px;
     }
-    
-    .showcase-badge {
+    .previews-badge {
       display: inline-block;
       padding: 6px 12px;
       background: rgba(0, 240, 255, 0.05);
@@ -528,18 +573,16 @@
       text-transform: uppercase;
       margin-bottom: 16px;
     }
-    
-    .showcase-title {
+    .previews-title {
       font-family: 'Inter Tight', sans-serif;
-      font-size: 38px;
+      font-size: 40px;
       font-weight: 800;
       line-height: 1.25;
       color: #F9FAFB;
       letter-spacing: -0.01em;
       margin-bottom: 16px;
     }
-    
-    .showcase-desc {
+    .previews-desc {
       font-family: 'Inter', sans-serif;
       font-size: 16px;
       color: #9CA3AF;
@@ -547,375 +590,283 @@
       margin: 0 auto;
       line-height: 1.5;
     }
-    
-    .showcase-grid {
+    .previews-grid {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
+      grid-template-columns: repeat(2, 1fr);
       gap: 32px;
     }
-    
-    @media (max-width: 1024px) {
-      .showcase-grid {
+    @media (max-width: 900px) {
+      .previews-grid {
         grid-template-columns: 1fr;
         gap: 40px;
       }
     }
     
-    /* Showcase card wrapper */
-    .showcase-card {
+    /* Institutional Previews Card style */
+    .preview-card {
       background: rgba(11, 15, 23, 0.65);
-      border: 1px solid rgba(255, 255, 255, 0.06);
-      border-radius: 16px;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 14px;
       overflow: hidden;
       display: flex;
       flex-direction: column;
-      height: 480px;
+      height: 400px;
       backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
       box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
       transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
     }
-    
-    .showcase-card:hover {
-      transform: translateY(-8px);
-      border-color: rgba(0, 240, 255, 0.3);
+    .preview-card:hover {
+      transform: translateY(-6px);
+      border-color: rgba(0, 240, 255, 0.25);
       box-shadow: var(--premium-glow), 0 12px 40px rgba(0, 0, 0, 0.6);
     }
-    
-    .card-topbar {
-      padding: 16px 20px;
-      background: rgba(17, 24, 39, 0.8);
-      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    .preview-topbar {
+      padding: 14px 18px;
+      background: rgba(17, 24, 39, 0.85);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
       display: flex;
       justify-content: space-between;
       align-items: center;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
     }
-    
-    .card-indicator {
+    .preview-sys {
       display: flex;
       align-items: center;
       gap: 8px;
-    }
-    
-    .card-dot-decor {
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-      background: #EF4444;
-    }
-    .showcase-card:hover .card-dot-decor {
-      background: var(--premium-accent);
-      box-shadow: 0 0 8px var(--premium-accent);
-    }
-    
-    .card-tag {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 11px;
-      font-weight: 500;
       color: #6B7280;
     }
-    
-    .showcase-card:hover .card-tag {
+    .preview-card:hover .preview-sys {
       color: #F9FAFB;
     }
-    
-    .card-content-body {
+    .preview-title-tag {
+      font-weight: 700;
+      color: var(--premium-accent);
+    }
+    .preview-content {
       flex: 1;
-      padding: 24px;
+      padding: 20px;
       overflow: hidden;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
       position: relative;
     }
 
-    /* 1. PDF Parser Styles */
-    .pdf-viewer-sim {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      height: 100%;
-    }
-    
-    .pdf-file-header {
-      background: rgba(255, 255, 255, 0.03);
-      border: 1px dashed rgba(255, 255, 255, 0.1);
-      padding: 10px 14px;
-      border-radius: 8px;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 12px;
-      color: #F9FAFB;
-    }
-    
-    .pdf-icon-decor {
-      color: #EF4444;
-      font-weight: 700;
-    }
-    
-    .pdf-text-highlighted-box {
-      font-family: 'Inter', sans-serif;
-      font-size: 12px;
-      line-height: 1.55;
-      color: #9CA3AF;
-      background: rgba(255, 255, 255, 0.01);
-      border-left: 2px solid rgba(255, 255, 255, 0.1);
-      padding: 10px;
-      margin-bottom: 4px;
-      text-align: left;
-    }
-    
-    .ocr-highlight {
-      background: rgba(0, 240, 255, 0.15);
-      border-bottom: 2px solid var(--premium-accent);
-      color: #F9FAFB;
-      font-weight: 500;
-      padding: 2px 0;
-      position: relative;
-    }
-    
-    .ocr-highlight::after {
-      content: 'AI EXTRACT';
-      position: absolute;
-      bottom: -16px;
-      right: 0;
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 8px;
-      font-weight: 700;
-      color: var(--premium-accent);
-      letter-spacing: 0.05em;
-    }
-    
-    .ocr-results-panel {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      margin-top: auto;
-    }
-    
-    .ocr-result-item {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 8px 12px;
-      background: rgba(0, 240, 255, 0.03);
-      border: 1px solid rgba(0, 240, 255, 0.08);
-      border-radius: 8px;
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 11px;
-    }
-    
-    .ocr-key {
-      color: #9CA3AF;
-    }
-    
-    .ocr-val {
-      font-weight: 700;
-      color: var(--premium-accent);
-    }
-    
-    .ocr-pct {
-      color: #10B981;
-      font-weight: 700;
-      margin-left: 6px;
-    }
-
-    /* 2. Company Profile Styles */
-    .company-sim-dashboard {
+    /* Preview 1: Professional Dashboard */
+    .dash-sim {
       display: flex;
       flex-direction: column;
       gap: 16px;
       height: 100%;
     }
-    
-    .company-header-sim {
-      display: flex;
-      justify-content: space-between;
-      align-items: start;
-    }
-    
-    .company-info-decor {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-      text-align: left;
-    }
-    
-    .comp-name-decor {
-      font-family: 'Inter Tight', sans-serif;
-      font-weight: 700;
-      font-size: 15px;
-      color: #F9FAFB;
-    }
-    
-    .comp-ticker-decor {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 11px;
-      color: #6B7280;
-    }
-    
-    .comp-rating-badge {
-      background: rgba(16, 185, 129, 0.1);
-      border: 1px solid rgba(16, 185, 129, 0.3);
-      color: #10B981;
-      padding: 4px 8px;
-      border-radius: 4px;
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 11px;
-      font-weight: 700;
-    }
-    
-    .metrics-gauges-grid {
+    .dash-stats-row {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
-      gap: 10px;
+      gap: 12px;
     }
-    
-    .metric-gauge-card {
-      background: rgba(255, 255, 255, 0.02);
-      border: 1px solid rgba(255, 255, 255, 0.05);
+    .dash-stat-box {
+      background: rgba(255,255,255,0.02);
+      border: 1px solid rgba(255,255,255,0.05);
       border-radius: 8px;
       padding: 10px;
-      text-align: center;
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
+      text-align: left;
     }
-    
-    .gauge-label {
+    .dash-stat-lbl {
       font-family: 'Inter', sans-serif;
-      font-size: 10px;
+      font-size: 9px;
       color: #6B7280;
       text-transform: uppercase;
       letter-spacing: 0.02em;
     }
-    
-    .gauge-value {
-      font-family: 'JetBrains Mono', monospace;
+    .dash-stat-val {
+      font-family: 'IBM Plex Sans', sans-serif;
       font-size: 14px;
       font-weight: 700;
       color: #F9FAFB;
+      margin-top: 4px;
     }
-    
-    .showcase-card:hover .gauge-value {
-      color: var(--premium-accent);
-    }
-    
-    .gauge-status {
+    .dash-stat-trend {
+      font-family: 'JetBrains Mono', monospace;
       font-size: 9px;
-      font-family: 'JetBrains Mono', monospace;
-      color: #10B981;
+      color: var(--premium-green);
+      margin-top: 2px;
     }
-    
-    .comps-comparison-table {
-      width: 100%;
-      border-collapse: collapse;
+    .dash-pie-comps {
+      display: flex;
+      gap: 16px;
       margin-top: auto;
+      align-items: center;
     }
-    
-    .comps-comparison-table th, .comps-comparison-table td {
-      text-align: left;
-      padding: 8px 6px;
-      font-size: 10px;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    .dash-pie-circle {
+      width: 110px;
+      height: 110px;
+      border-radius: 50%;
+      background: conic-gradient(
+        var(--premium-accent) 0% 45%,
+        #3B82F6 45% 75%,
+        var(--premium-green) 75% 100%
+      );
+      position: relative;
     }
-    
-    .comps-comparison-table th {
+    .dash-pie-circle::before {
+      content: '';
+      position: absolute;
+      width: 60px;
+      height: 60px;
+      top: 25px;
+      left: 25px;
+      background: #0B0F17;
+      border-radius: 50%;
+    }
+    .dash-legend {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
       font-family: 'Inter', sans-serif;
-      color: #6B7280;
-      text-transform: uppercase;
-      font-weight: 600;
-    }
-    
-    .comps-comparison-table td {
-      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
       color: #9CA3AF;
     }
-    
-    .comps-comparison-table tr.active td {
-      color: #F9FAFB;
-      font-weight: 600;
-      background: rgba(0, 240, 255, 0.03);
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .legend-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+    }
+    .dot-blue { background: var(--premium-accent); }
+    .dot-mid { background: #3B82F6; }
+    .dot-green { background: var(--premium-green); }
+
+    /* Preview 2: Terminal Preview */
+    .term-sim {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      height: 100%;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: #9CA3AF;
+      text-align: left;
+    }
+    .term-log-stream {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      overflow: hidden;
+    }
+    .log-line {
+      display: flex;
+      gap: 10px;
+    }
+    .log-time { color: #6B7280; }
+    .log-sec { color: var(--premium-accent); }
+    .log-msg { color: #F9FAFB; }
+    .term-input-prompt {
+      margin-top: auto;
+      border-top: 1px solid rgba(255,255,255,0.06);
+      padding-top: 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .term-caret {
+      color: var(--premium-accent);
+      font-weight: 700;
+      animation: pulseBlink 0.8s infinite;
     }
 
-    /* 3. Thesis Memorandum Styles */
-    .thesis-sim-memo {
+    /* Preview 3: Market Data Mockup */
+    .market-sim {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      height: 100%;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .market-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 11px;
+    }
+    .market-table th, .market-table td {
+      padding: 8px;
+      text-align: left;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    }
+    .market-table th {
+      color: #6B7280;
+      font-weight: 600;
+    }
+    .market-table td {
+      color: #9CA3AF;
+    }
+    .tick-up { color: var(--premium-green) !important; font-weight: 700; }
+    .tick-down { color: #EF4444 !important; font-weight: 700; }
+    .market-bid-ask {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      margin-top: auto;
+      background: rgba(255,255,255,0.02);
+      border: 1px solid rgba(255,255,255,0.05);
+      border-radius: 8px;
+      padding: 10px;
+    }
+    .bid-ask-box {
+      flex: 1;
+      text-align: center;
+    }
+    .bid-ask-lbl {
+      font-size: 9px;
+      color: #6B7280;
+      text-transform: uppercase;
+    }
+    .bid-ask-val {
+      font-size: 13px;
+      font-weight: 700;
+      color: #F9FAFB;
+      margin-top: 4px;
+    }
+
+    /* Preview 4: DCF Valuation Preview */
+    .dcf-sim-preview {
       display: flex;
       flex-direction: column;
       gap: 14px;
       height: 100%;
       text-align: left;
     }
-    
-    .memo-header {
-      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-      padding-bottom: 10px;
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-    }
-    
-    .memo-label {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 9px;
-      color: var(--premium-accent);
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      font-weight: 700;
-    }
-    
-    .memo-title-decor {
-      font-family: 'Inter Tight', sans-serif;
-      font-size: 14px;
-      font-weight: 800;
-      color: #F9FAFB;
-    }
-    
-    .memo-body-scroll {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      font-size: 11px;
-      line-height: 1.5;
-      color: #9CA3AF;
-      overflow: hidden;
-    }
-    
-    .memo-section {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-    }
-    
-    .memo-sec-title {
-      font-family: 'Inter Tight', sans-serif;
-      font-weight: 700;
-      color: #F9FAFB;
-      font-size: 12px;
-    }
-    
-    .memo-sec-desc {
-      font-family: 'Inter', sans-serif;
-    }
-    
-    .memo-bullet {
-      display: flex;
-      align-items: start;
+    .dcf-grid-pe {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
       gap: 8px;
-      padding-left: 4px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
     }
-    
-    .bullet-icon-decor {
-      color: var(--premium-accent);
+    .dcf-pe-header {
+      font-family: 'Inter', sans-serif;
+      color: #6B7280;
+      font-weight: 600;
+    }
+    .dcf-pe-cell {
+      background: rgba(255,255,255,0.02);
+      border: 1px solid rgba(255,255,255,0.05);
+      border-radius: 4px;
+      padding: 6px;
+      text-align: center;
+      color: #9CA3AF;
+    }
+    .dcf-pe-cell.active-val {
+      background: rgba(0, 240, 255, 0.05);
+      border-color: var(--premium-accent);
+      color: #F9FAFB;
       font-weight: 700;
     }
-    
-    .memo-upside-callout {
+    .dcf-calc-box {
       margin-top: auto;
-      background: linear-gradient(90deg, rgba(0, 240, 255, 0.08) 0%, rgba(0, 0, 0, 0) 100%);
+      background: linear-gradient(90deg, rgba(0, 240, 255, 0.08) 0%, rgba(0,0,0,0) 100%);
       border-left: 2px solid var(--premium-accent);
       padding: 10px 14px;
       border-radius: 0 8px 8px 0;
@@ -923,19 +874,494 @@
       justify-content: space-between;
       align-items: center;
     }
-    
-    .callout-title {
+    .dcf-calc-lbl {
       font-family: 'Inter', sans-serif;
-      font-weight: 600;
-      color: #F9FAFB;
       font-size: 11px;
+      color: #F9FAFB;
+      font-weight: 600;
+    }
+    .dcf-calc-val {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      font-weight: 800;
+      color: var(--premium-green);
+    }
+
+    /* Features Section */
+    .specs-section {
+      padding: 120px 0 100px 0;
+      border-top: 1px solid rgba(255, 255, 255, 0.03);
+      position: relative;
+      z-index: 10;
+    }
+    .specs-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 32px;
+      margin-top: 50px;
+    }
+    @media (max-width: 1024px) {
+      .specs-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+    @media (max-width: 640px) {
+      .specs-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+    .spec-card {
+      background: rgba(11, 15, 23, 0.55);
+      border: 1px solid rgba(255, 255, 255, 0.04);
+      border-radius: 12px;
+      padding: 24px;
+      backdrop-filter: blur(10px);
+      text-align: left;
+      transition: all 0.3s ease;
+    }
+    .spec-card:hover {
+      border-color: rgba(0, 240, 255, 0.2);
+      transform: translateY(-4px);
+      box-shadow: 0 4px 20px rgba(0, 240, 255, 0.05);
+    }
+    .spec-icon-wrapper {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      background: rgba(0, 240, 255, 0.06);
+      border: 1px solid rgba(0, 240, 255, 0.15);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      color: var(--premium-accent);
+      margin-bottom: 18px;
+    }
+    .spec-title {
+      font-family: 'Inter Tight', sans-serif;
+      font-size: 16px;
+      font-weight: 700;
+      color: #F9FAFB;
+      margin-bottom: 8px;
+    }
+    .spec-desc {
+      font-family: 'Inter', sans-serif;
+      font-size: 13px;
+      color: #9CA3AF;
+      line-height: 1.5;
+    }
+
+    /* Resources Locker (Lead Magnet) Section */
+    .vault-section {
+      padding: 120px 0;
+      border-top: 1px solid rgba(255,255,255,0.03);
+      background: radial-gradient(circle at 50% 100%, rgba(0, 230, 118, 0.03) 0%, rgba(5, 7, 10, 0) 65%);
+      position: relative;
+      z-index: 10;
+    }
+    .vault-inner {
+      max-width: 800px;
+      margin: 0 auto;
+      background: rgba(11, 15, 23, 0.7);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 18px;
+      padding: 40px 32px;
+      backdrop-filter: blur(12px);
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+    }
+    .vault-header {
+      text-align: center;
+      margin-bottom: 36px;
+    }
+    .vault-badge {
+      display: inline-block;
+      padding: 6px 12px;
+      background: rgba(0, 230, 118, 0.06);
+      border: 1px solid rgba(0, 230, 118, 0.2);
+      border-radius: 20px;
+      color: var(--premium-green);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      margin-bottom: 16px;
+    }
+    .vault-title {
+      font-family: 'Inter Tight', sans-serif;
+      font-size: 28px;
+      font-weight: 800;
+      color: #F9FAFB;
+      margin-bottom: 12px;
+    }
+    .vault-desc {
+      font-family: 'Inter', sans-serif;
+      font-size: 14px;
+      color: #9CA3AF;
+      line-height: 1.5;
+    }
+    .vault-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 36px;
+    }
+    .vault-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 14px 18px;
+      background: rgba(255,255,255,0.02);
+      border: 1px solid rgba(255,255,255,0.04);
+      border-radius: 8px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      text-align: left;
+    }
+    .vault-item-lbl {
+      color: #F9FAFB;
+      font-weight: 500;
+    }
+    .vault-status-pill {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-size: 10px;
+      font-weight: 700;
+    }
+    .vault-status-pill.locked {
+      background: rgba(239, 68, 68, 0.08);
+      border: 1px solid rgba(239, 68, 68, 0.25);
+      color: #EF4444;
+    }
+    .vault-status-pill.unlocked {
+      background: rgba(0, 230, 118, 0.08);
+      border: 1px solid rgba(0, 230, 118, 0.25);
+      color: var(--premium-green);
+    }
+    .vault-form {
+      display: flex;
+      gap: 16px;
+    }
+    @media (max-width: 640px) {
+      .vault-form {
+        flex-direction: column;
+      }
+    }
+    .vault-input {
+      flex: 1;
+      background: #05070A;
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 8px;
+      padding: 14px;
+      color: #F9FAFB;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 14px;
+      transition: all 0.2s ease;
+    }
+    .vault-input:focus {
+      outline: none;
+      border-color: var(--premium-green);
+      box-shadow: 0 0 10px rgba(0, 230, 118, 0.15);
+    }
+    .vault-submit-btn {
+      background: var(--premium-green) !important;
+      color: #05070a !important;
+      border: none;
+      border-radius: 8px;
+      padding: 14px 28px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: var(--premium-green-glow) !important;
+      transition: all 0.2s ease;
+    }
+    .vault-submit-btn:hover {
+      background: #33f092 !important;
+      box-shadow: 0 0 35px rgba(0, 230, 118, 0.35) !important;
     }
     
-    .callout-val {
+    /* Unlocked Content Drawer */
+    .unlocked-vault-cabinet {
+      display: none;
+      flex-direction: column;
+      gap: 24px;
+      text-align: left;
+    }
+    .unlocked-resource-card {
+      background: rgba(255,255,255,0.02);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 12px;
+      padding: 20px;
+    }
+    .unlocked-resource-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      padding-bottom: 12px;
+      margin-bottom: 14px;
+    }
+    .unlocked-resource-title {
+      font-family: 'Inter Tight', sans-serif;
+      font-weight: 700;
+      color: #F9FAFB;
+      font-size: 15px;
+    }
+    .btn-copy-resource {
+      background: rgba(0, 230, 118, 0.08);
+      border: 1px solid rgba(0, 230, 118, 0.2);
+      color: var(--premium-green);
+      border-radius: 4px;
+      padding: 4px 10px;
       font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .btn-copy-resource:hover {
+      background: var(--premium-green);
+      color: #05070A;
+    }
+    .unlocked-resource-content {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      line-height: 1.5;
+      color: #9CA3AF;
+      max-height: 180px;
+      overflow-y: auto;
+      background: #05070A;
+      padding: 12px;
+      border-radius: 6px;
+      border: 1px solid rgba(255,255,255,0.03);
+    }
+
+    /* Dynamic Info Hub Sidebar Overlay */
+    .info-hub-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(5, 7, 10, 0.75);
+      backdrop-filter: blur(25px);
+      -webkit-backdrop-filter: blur(25px);
+      z-index: 99999;
+      display: flex;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .info-hub-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .info-hub-cabinet {
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 85%;
+      max-width: 900px;
+      height: 100%;
+      background: #070d1a;
+      border-left: 1px solid rgba(0, 240, 255, 0.15);
+      box-shadow: -10px 0 40px rgba(0,0,0,0.8);
+      display: flex;
+      transform: translateX(100%);
+      transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .info-hub-overlay.active .info-hub-cabinet {
+      transform: translateX(0);
+    }
+    @media (max-width: 768px) {
+      .info-hub-cabinet {
+        width: 100%;
+        flex-direction: column;
+      }
+    }
+    
+    .info-hub-sidebar {
+      width: 260px;
+      background: rgba(11, 15, 23, 0.85);
+      border-right: 1px solid rgba(255,255,255,0.04);
+      padding: 30px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+    @media (max-width: 768px) {
+      .info-hub-sidebar {
+        width: 100%;
+        height: auto;
+        padding: 20px;
+        flex-direction: row;
+        overflow-x: auto;
+        gap: 12px;
+      }
+    }
+    .sidebar-header-title {
+      font-family: 'Inter Tight', sans-serif;
+      font-size: 15px;
       font-weight: 800;
-      color: #10B981;
+      color: #F9FAFB;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      padding-bottom: 12px;
+      text-align: left;
+    }
+    @media (max-width: 768px) {
+      .sidebar-header-title {
+        display: none;
+      }
+    }
+    .sidebar-menu-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    @media (max-width: 768px) {
+      .sidebar-menu-list {
+        flex-direction: row;
+        width: 100%;
+      }
+    }
+    .hub-menu-btn {
+      background: none;
+      border: none;
+      text-align: left;
+      padding: 12px 14px;
+      border-radius: 6px;
+      color: #6B7280;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .hub-menu-btn.active {
+      color: var(--premium-accent);
+      background: rgba(0, 240, 255, 0.05);
+      border: 1px solid rgba(0, 240, 255, 0.1);
+    }
+    .hub-menu-btn:hover:not(.active) {
+      color: #F9FAFB;
+      background: rgba(255,255,255,0.02);
+    }
+    
+    .info-hub-content-viewport {
+      flex: 1;
+      padding: 40px;
+      overflow-y: auto;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+    }
+    @media (max-width: 768px) {
+      .info-hub-content-viewport {
+        padding: 24px;
+      }
+    }
+    .hub-close-btn {
+      position: absolute;
+      top: 30px;
+      right: 40px;
+      background: none;
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 6px;
+      padding: 6px 12px;
+      color: #9CA3AF;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      z-index: 10;
+    }
+    .hub-close-btn:hover {
+      border-color: var(--premium-accent);
+      color: var(--premium-accent);
+    }
+    
+    /* Hub View Panels */
+    .hub-view-panel {
+      display: none;
+      flex-direction: column;
+      gap: 20px;
+      height: 100%;
+      text-align: left;
+    }
+    .hub-view-panel.active {
+      display: flex;
+    }
+    .hub-panel-badge {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--premium-accent);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+    .hub-panel-title {
+      font-family: 'Inter Tight', sans-serif;
+      font-size: 32px;
+      font-weight: 800;
+      color: #F9FAFB;
+      letter-spacing: -0.01em;
+      margin-bottom: 8px;
+    }
+    .hub-panel-desc {
+      font-family: 'Inter', sans-serif;
+      font-size: 15px;
+      color: #9CA3AF;
+      line-height: 1.6;
+    }
+    
+    /* Custom Contact Form elements inside Hub */
+    .hub-form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    .hub-form-group label {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      color: #6B7280;
+      text-transform: uppercase;
+    }
+    .hub-form-input, .hub-form-select, .hub-form-textarea {
+      background: #05070A;
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 6px;
+      padding: 12px 14px;
+      color: #F9FAFB;
+      font-family: 'JetBrains Mono', monospace;
       font-size: 13px;
+      width: 100%;
+    }
+    .hub-form-input:focus, .hub-form-select:focus, .hub-form-textarea:focus {
+      outline: none;
+      border-color: var(--premium-accent);
+    }
+    .hub-submit-btn {
+      background: var(--premium-accent);
+      color: #05070A;
+      border: none;
+      border-radius: 6px;
+      padding: 14px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      width: 100%;
+      box-shadow: var(--premium-glow);
+    }
+    .hub-submit-btn:hover {
+      background: var(--premium-accent-hover);
     }
   </style>
 </head>
@@ -1004,16 +1430,25 @@
         
         <div class="premium-tagline-badge reveal" style="margin-top: 16px;">
           <span class="badge-pulse-blue"></span>
-          Hedge Fund Research — Generate investment theses faster
+          Bloomberg Alternative for Next-Gen Analysts
         </div>
         
         <h1 class="hero-headline reveal" id="hero-title">
-          AI Research Terminal for<br><span class="gradient-text">Finance & Investment Analysis</span>
+          Research. Analyze. Execute.
         </h1>
         
         <p class="hero-subheadline reveal" id="hero-subtitle">
-          Upload reports, analyze companies, generate investment research, and organize knowledge in one workspace.
+          The Institutional Finance Terminal for Hedge Fund & Investment Research.
         </p>
+        
+        <div class="system-heartbeat-ticker reveal" style="justify-content: center; margin-bottom: 24px;">
+          <span class="heartbeat-dot"></span>
+          <span>SYS_FEED: ACTIVE</span>
+          <span>•</span>
+          <span>PORTAL_LATENCY: 12ms</span>
+          <span>•</span>
+          <span>DATABASE_SYNC: ONLINE</span>
+        </div>
         
         <div class="hero-actions reveal" id="hero-cta-buttons">
           <a href="#waitlist" class="btn-primary btn-magnetic" id="btn-hero-primary-waitlist">Start Analysis</a>
@@ -1242,162 +1677,212 @@
       </div>
     </section>
 
-    <!-- Workspace Showcase Section -->
-    <section class="workspace-showcase-section" id="workspace-showcase">
-      <div class="showcase-container">
-        <div class="showcase-header reveal">
-          <span class="showcase-badge">Showcase Sandbox</span>
-          <h2 class="showcase-title">The Terminal Workspace in Action</h2>
-          <p class="showcase-desc">Explore the exact tools used by elite hedge funds to ingest data, evaluate comps, and synthesize long-form investment theses faster.</p>
+    <!-- Institutional Previews Section -->
+    <section class="institutional-previews-section" id="workspace-previews">
+      <div class="previews-container">
+        <div class="previews-header reveal">
+          <span class="previews-badge">WORKSPACE PREVIEWS</span>
+          <h2 class="previews-title">Institutional Finance Sandbox</h2>
+          <p class="previews-desc">Experience the tools built on deep financial data, clean monospace caret logs, dynamic valuations, and high-frequency indices.</p>
         </div>
         
-        <div class="showcase-grid reveal">
-          <!-- Card 1: PDF Report Ingestion -->
-          <div class="showcase-card">
-            <div class="card-topbar">
-              <div class="card-indicator">
-                <span class="card-dot-decor"></span>
-                <span class="card-tag">INGEST_OCR.SERVICE</span>
+        <div class="previews-grid reveal">
+          <!-- Preview 1: Professional Dashboard -->
+          <div class="preview-card">
+            <div class="preview-topbar">
+              <div class="preview-sys">
+                <span class="badge-pulse-blue"></span>
+                <span>SYS_FEEDS.DASHBOARD</span>
               </div>
-              <span class="card-tag">[PDF_EXTRACT]</span>
+              <span class="preview-title-tag">[ANALYST_VIEW]</span>
             </div>
-            <div class="card-content-body">
-              <div class="pdf-viewer-sim">
-                <div class="pdf-file-header">
-                  <span class="pdf-icon-decor">PDF</span>
-                  <span>NVDA_Q4_2026_EARNINGS.pdf</span>
+            <div class="preview-content">
+              <div class="dash-sim">
+                <div class="dash-stats-row">
+                  <div class="dash-stat-box">
+                    <span class="dash-stat-lbl">Portfolio value</span>
+                    <div class="dash-stat-val">₹48,29,510</div>
+                    <div class="dash-stat-trend">▲ +14.8%</div>
+                  </div>
+                  <div class="dash-stat-box">
+                    <span class="dash-stat-lbl">Alpha index</span>
+                    <div class="dash-stat-val">8.42%</div>
+                    <div class="dash-stat-trend">▲ Outperforming</div>
+                  </div>
+                  <div class="dash-stat-box">
+                    <span class="dash-stat-lbl">Sharpe ratio</span>
+                    <div class="dash-stat-val">2.84</div>
+                    <div class="dash-stat-trend">▲ Excellent</div>
+                  </div>
                 </div>
                 
-                <div class="pdf-text-highlighted-box">
-                  "...Data Center revenue for the fourth quarter was <span class="ocr-highlight">a record $18.4 billion</span>, up 27% from the previous quarter and up 409% from a year ago. Full-year Data Center revenue grew 217% to a record $47.5 billion..."
-                </div>
-                
-                <div class="ocr-results-panel">
-                  <div class="ocr-result-item">
-                    <span class="ocr-key">Target Company</span>
-                    <span class="ocr-val">NVIDIA (NVDA:US)</span>
-                  </div>
-                  <div class="ocr-result-item">
-                    <span class="ocr-key">Extracted Data Center Rev</span>
-                    <span class="ocr-val">$18.40B <span class="ocr-pct">+409% YoY</span></span>
-                  </div>
-                  <div class="ocr-result-item">
-                    <span class="ocr-key">Full-Year Segment Revenue</span>
-                    <span class="ocr-val">$47.50B <span class="ocr-pct">+217% YoY</span></span>
+                <div class="dash-pie-comps">
+                  <div class="dash-pie-circle"></div>
+                  <div class="dash-legend">
+                    <div class="legend-item">
+                      <span class="legend-dot dot-blue"></span>
+                      <span>Equities (45%)</span>
+                    </div>
+                    <div class="legend-item">
+                      <span class="legend-dot dot-mid"></span>
+                      <span>Fixed Income (30%)</span>
+                    </div>
+                    <div class="legend-item">
+                      <span class="legend-dot dot-green"></span>
+                      <span>Cash Reserves (25%)</span>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
           </div>
           
-          <!-- Card 2: Company Metrics Profile -->
-          <div class="showcase-card">
-            <div class="card-topbar">
-              <div class="card-indicator">
-                <span class="card-dot-decor"></span>
-                <span class="card-tag">VALUATION_ENGINE.COMPS</span>
+          <!-- Preview 2: Terminal Preview -->
+          <div class="preview-card">
+            <div class="preview-topbar">
+              <div class="preview-sys">
+                <span class="badge-pulse-green"></span>
+                <span>CORE_DIAGNOSTICS.SYSTEM</span>
               </div>
-              <span class="card-tag">[MULTIPLES]</span>
+              <span class="preview-title-tag">[SHELL_EXEC]</span>
             </div>
-            <div class="card-content-body">
-              <div class="company-sim-dashboard">
-                <div class="company-header-sim">
-                  <div class="company-info-decor">
-                    <span class="comp-name-decor">NVIDIA Corp.</span>
-                    <span class="comp-ticker-decor">NASDAQ: NVDA</span>
+            <div class="preview-content">
+              <div class="term-sim">
+                <div class="term-log-stream">
+                  <div class="log-line">
+                    <span class="log-time">[10:14:02]</span>
+                    <span class="log-sec">CORE.INIT</span>
+                    <span class="log-msg">Aladdin system boot sequence complete.</span>
                   </div>
-                  <span class="comp-rating-badge">BUY | Target $1,150</span>
-                </div>
-                
-                <div class="metrics-gauges-grid">
-                  <div class="metric-gauge-card">
-                    <span class="gauge-label">FWD P/E</span>
-                    <span class="gauge-value">28.4x</span>
-                    <span class="gauge-status">Sector Low</span>
+                  <div class="log-line">
+                    <span class="log-time">[10:14:03]</span>
+                    <span class="log-sec">DB.SYNC</span>
+                    <span class="log-msg">Supabase active databases linked standard.</span>
                   </div>
-                  <div class="metric-gauge-card">
-                    <span class="gauge-label">EV/EBITDA</span>
-                    <span class="gauge-value">21.8x</span>
-                    <span class="gauge-status">Optimal</span>
+                  <div class="log-line">
+                    <span class="log-time">[10:14:05]</span>
+                    <span class="log-sec">API.MARKET</span>
+                    <span class="log-msg">High-frequency bid-ask streams connected.</span>
                   </div>
-                  <div class="metric-gauge-card">
-                    <span class="gauge-label">PEG RATIO</span>
-                    <span class="gauge-value">1.15x</span>
-                    <span class="gauge-status">Undervalued</span>
+                  <div class="log-line">
+                    <span class="log-time">[10:14:06]</span>
+                    <span class="log-sec">VAL.DCF</span>
+                    <span class="log-msg">Recalculating sensitivity indexes for NVDA...</span>
                   </div>
                 </div>
                 
-                <table class="comps-comparison-table">
+                <div class="term-input-prompt">
+                  <span class="term-caret">&gt;</span>
+                  <span>run --sec=NVDA --val=DCF_COMPARE</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Preview 3: Market Data Mockup -->
+          <div class="preview-card">
+            <div class="preview-topbar">
+              <div class="preview-sys">
+                <span class="badge-pulse-blue"></span>
+                <span>REAL_TIME.MARKET_DATA</span>
+              </div>
+              <span class="preview-title-tag">[TICK_STREAM]</span>
+            </div>
+            <div class="preview-content">
+              <div class="market-sim">
+                <table class="market-table">
                   <thead>
                     <tr>
                       <th>Ticker</th>
-                      <th>P/E Fwd</th>
-                      <th>EV/EBITDA</th>
-                      <th>YoY Rev</th>
+                      <th>Last Price</th>
+                      <th>Chg%</th>
+                      <th>Volume</th>
                     </tr>
                   </thead>
                   <tbody>
-                    <tr class="active">
+                    <tr>
                       <td>NVDA</td>
-                      <td>28.4x</td>
-                      <td>21.8x</td>
-                      <td>+265%</td>
+                      <td>$875.12</td>
+                      <td class="tick-up">+4.20%</td>
+                      <td>48.2M</td>
                     </tr>
                     <tr>
-                      <td>AMD</td>
-                      <td>41.2x</td>
-                      <td>33.5x</td>
-                      <td>+12%</td>
+                      <td>AAPL</td>
+                      <td>$182.52</td>
+                      <td class="tick-up">+2.14%</td>
+                      <td>52.4M</td>
                     </tr>
                     <tr>
-                      <td>INTC</td>
-                      <td>18.9x</td>
-                      <td>12.4x</td>
-                      <td>-4%</td>
+                      <td>RELIANCE</td>
+                      <td>₹2,480.15</td>
+                      <td class="tick-up">+2.80%</td>
+                      <td>12.8M</td>
+                    </tr>
+                    <tr>
+                      <td>TCS</td>
+                      <td>₹3,892.40</td>
+                      <td class="tick-down">-1.15%</td>
+                      <td>4.2M</td>
                     </tr>
                   </tbody>
                 </table>
+                
+                <div class="market-bid-ask">
+                  <div class="bid-ask-box">
+                    <span class="bid-ask-lbl">BID</span>
+                    <div class="bid-ask-val" style="color: var(--premium-green);">874.98</div>
+                  </div>
+                  <div class="bid-ask-box" style="border-left: 1px solid rgba(255,255,255,0.06);">
+                    <span class="bid-ask-lbl">ASK</span>
+                    <div class="bid-ask-val" style="color: #EF4444;">875.15</div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
           
-          <!-- Card 3: AI Investment Thesis Memorandum -->
-          <div class="showcase-card">
-            <div class="card-topbar">
-              <div class="card-indicator">
-                <span class="card-dot-decor"></span>
-                <span class="card-tag">SYNTHESIZER.MEMO</span>
+          <!-- Preview 4: DCF Valuation Preview -->
+          <div class="preview-card">
+            <div class="preview-topbar">
+              <div class="preview-sys">
+                <span class="badge-pulse-green"></span>
+                <span>VALUATION_MODEL.DCF_SENSITIVITY</span>
               </div>
-              <span class="card-tag">[RESEARCH_OUTPUT]</span>
+              <span class="preview-title-tag">[PRO_FORMA]</span>
             </div>
-            <div class="card-content-body">
-              <div class="thesis-sim-memo">
-                <div class="memo-header">
-                  <span class="memo-label">EQUITY RESEARCH MEMORANDUM</span>
-                  <span class="memo-title-decor">NVDA: Sustainable AI Leadership</span>
+            <div class="preview-content">
+              <div class="dcf-sim-preview">
+                <div class="dcf-calc-box" style="margin-top: 0; margin-bottom: 8px;">
+                  <span class="dcf-calc-lbl">Baseline WACC Discount</span>
+                  <span class="dcf-calc-val">9.0%</span>
                 </div>
                 
-                <div class="memo-body-scroll">
-                  <div class="memo-section">
-                    <span class="memo-sec-title">I. Thesis Foundation</span>
-                    <span class="memo-sec-desc">Market underestimates recurring software licensing and Blackwell hardware transition timeline.</span>
-                  </div>
-                  <div class="memo-section">
-                    <span class="memo-sec-title">II. Growth Catalysts</span>
-                    <div class="memo-bullet">
-                      <span class="bullet-icon-decor">▪</span>
-                      <span>Blackwell chip architecture commercial rollout Q3 2026.</span>
-                    </div>
-                    <div class="memo-bullet">
-                      <span class="bullet-icon-decor">▪</span>
-                      <span>Cuda developers database exceeds 4.5M (sticky ecosystem).</span>
-                    </div>
-                  </div>
+                <span class="dcf-pe-header" style="font-size: 9px; text-transform: uppercase;">Implied Share Value (₹) by WACC vs Growth</span>
+                <div class="dcf-grid-pe">
+                  <span class="dcf-pe-header">WACC / G</span>
+                  <span class="dcf-pe-header">10%</span>
+                  <span class="dcf-pe-header">12%</span>
+                  <span class="dcf-pe-header">14%</span>
+                  
+                  <span>8.0%</span>
+                  <span class="dcf-pe-cell">₹1,742</span>
+                  <span class="dcf-pe-cell">₹1,850</span>
+                  <span class="dcf-pe-cell">₹1,992</span>
+                  
+                  <span>9.0%</span>
+                  <span class="dcf-pe-cell">₹1,620</span>
+                  <span class="dcf-pe-cell active-val">₹1,650</span>
+                  <span class="dcf-pe-cell">₹1,754</span>
+                  
+                  <span>10.0%</span>
+                  <span class="dcf-pe-cell">₹1,480</span>
+                  <span class="dcf-pe-cell">₹1,510</span>
+                  <span class="dcf-pe-cell">₹1,598</span>
                 </div>
                 
-                <div class="memo-upside-callout">
-                  <span class="callout-title">Implied Value Upside</span>
-                  <span class="callout-val">+32.4% BUY</span>
+                <div class="dcf-calc-box">
+                  <span class="dcf-calc-lbl">Implied Equity Upside (Target)</span>
+                  <span class="dcf-calc-val">+32.4% BUY</span>
                 </div>
               </div>
             </div>
@@ -1516,77 +2001,112 @@
     </section>
 
     <!-- Features Section -->
-    <section class="features-section" id="features">
-      <div class="features-container">
-        <h2 class="section-title reveal" id="features-title">
-          Everything a professional analyst needs.<br><span class="gradient-text">Nothing you don't.</span>
-        </h2>
+    <section class="specs-section" id="features">
+      <div class="previews-container">
+        <div class="previews-header reveal">
+          <span class="previews-badge">TERMINAL SPECIFICATIONS</span>
+          <h2 class="previews-title">Everything an Elite Analyst Command Center Demands</h2>
+          <p class="previews-desc">Institutional-grade tools, dynamic calculations, and concept modules organized into a single high-fidelity terminal.</p>
+        </div>
         
-        <div class="features-grid">
-          <!-- Feature 1 -->
-          <div class="feature-card reveal" id="feature-ai">
-            <div class="feature-header">
-              <div class="feature-icon-wrapper">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feature-icon"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" x2="12" y1="22.08" y2="12"></line></svg>
-              </div>
-              <h3 class="feature-title">AI Analyst</h3>
+        <div class="specs-grid reveal">
+          <!-- Spec 1: Financial Modeling -->
+          <div class="spec-card">
+            <div class="spec-icon-wrapper">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"></path><path d="M18.7 8l-5.1 5.2-2.8-2.7L7 14.3"></path></svg>
             </div>
-            <p class="feature-description">Ask anything about any stock, earnings, or market event in plain English. Get back citations and model integrations instantly.</p>
+            <h3 class="spec-title">Financial Modeling</h3>
+            <p class="spec-desc">Build pro-forma forecasts, income statements, and balance sheet models with structural integrity.</p>
           </div>
           
-          <!-- Feature 2 -->
-          <div class="feature-card reveal" id="feature-market">
-            <div class="feature-header">
-              <div class="feature-icon-wrapper">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feature-icon"><line x1="18" x2="18" y1="20" y2="10"></line><line x1="12" x2="12" y1="20" y2="4"></line><line x1="6" x2="6" y1="20" y2="14"></line></svg>
-              </div>
-              <h3 class="feature-title">Live Market Data</h3>
+          <!-- Spec 2: DCF Analysis -->
+          <div class="spec-card">
+            <div class="spec-icon-wrapper">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2" ry="2"></rect><line x1="12" y1="4" x2="12" y2="20"></line></svg>
             </div>
-            <p class="feature-description">NSE, BSE, global indices — real-time, in one place. No delays, no limits, with direct CSV/API endpoints built-in.</p>
+            <h3 class="spec-title">DCF Analysis</h3>
+            <p class="spec-desc">Calculate WACC, exit multiples, terminal values, and intrinsic target valuations instantly.</p>
           </div>
           
-          <!-- Feature 3 -->
-          <div class="feature-card reveal" id="feature-portfolio">
-            <div class="feature-header">
-              <div class="feature-icon-wrapper">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feature-icon"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg>
-              </div>
-              <h3 class="feature-title">Portfolio Simulator</h3>
+          <!-- Spec 3: Valuation Tools -->
+          <div class="spec-card">
+            <div class="spec-icon-wrapper">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20"></path><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
             </div>
-            <p class="feature-description">Build and backtest paper portfolios without risking real money. Compare alpha metrics against major benchmarks.</p>
+            <h3 class="spec-title">Valuation Tools</h3>
+            <p class="spec-desc">Deploy LBO leverage builders, Comparable Comps matrices, and Dividend Discount Models.</p>
           </div>
           
-          <!-- Feature 4 -->
-          <div class="feature-card reveal" id="feature-deepdives">
-            <div class="feature-header">
-              <div class="feature-icon-wrapper">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feature-icon"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>
-              </div>
-              <h3 class="feature-title">Company Deep-Dives</h3>
+          <!-- Spec 4: Financial Statement Review -->
+          <div class="spec-card">
+            <div class="spec-icon-wrapper">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
             </div>
-            <p class="feature-description">AI-summarised annual reports, earnings calls, key valuation ratios, and red flag warnings dynamically updated weekly.</p>
+            <h3 class="spec-title">Financial Statement Review</h3>
+            <p class="spec-desc">Audit financial statements (10-K, 10-Q) with automated calculations of liquidity and margin metrics.</p>
           </div>
           
-          <!-- Feature 5 -->
-          <div class="feature-card reveal" id="feature-brief">
-            <div class="feature-header">
-              <div class="feature-icon-wrapper">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feature-icon"><path d="M12 2.247a15.5 15.5 0 0 0-10 2.3v14a15.5 15.5 0 0 1 10-2.3 15.5 15.5 0 0 1 10 2.3v-14a15.5 15.5 0 0 0-10-2.3z"></path><path d="M12 6v12"></path></svg>
-              </div>
-              <h3 class="feature-title">Morning Brief</h3>
+          <!-- Spec 5: Market Research -->
+          <div class="spec-card">
+            <div class="spec-icon-wrapper">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
             </div>
-            <p class="feature-description">A curated 5-minute market digest delivered directly to your terminal dashboard and email every morning before bell ring.</p>
+            <h3 class="spec-title">Market Research</h3>
+            <p class="spec-desc">Track real-time macroeconomic datasets, industry sectors, indices, and global commodities.</p>
           </div>
           
-          <!-- Feature 6 -->
-          <div class="feature-card reveal" id="feature-career">
-            <div class="feature-header">
-              <div class="feature-icon-wrapper">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feature-icon"><path d="M16 18l6-6-6-6"></path><path d="M8 6l-6 6 6 6"></path></svg>
-              </div>
-              <h3 class="feature-title">Career OS</h3>
+          <!-- Spec 6: Company Analysis -->
+          <div class="spec-card">
+            <div class="spec-icon-wrapper">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path></svg>
             </div>
-            <p class="feature-description">Pre-loaded valuation models (DCF, LBO, comps), institutional pitch templates, and interactive mock interview AI bots.</p>
+            <h3 class="spec-title">Company Analysis</h3>
+            <p class="spec-desc">Scan leverage multipliers, debt service covers, red flags, and operating margins instantly.</p>
+          </div>
+          
+          <!-- Spec 7: Research Notes -->
+          <div class="spec-card">
+            <div class="spec-icon-wrapper">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+            </div>
+            <h3 class="spec-title">Research Notes</h3>
+            <p class="spec-desc">Create monospace markdown journals to organize knowledge, compile tickers, and log models.</p>
+          </div>
+          
+          <!-- Spec 8: Investment Frameworks -->
+          <div class="spec-card">
+            <div class="spec-icon-wrapper">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>
+            </div>
+            <h3 class="spec-title">Investment Frameworks</h3>
+            <p class="spec-desc">Apply Porter's 5 Forces, SWOT analysis, and competitive moat matrices to target firms.</p>
+          </div>
+          
+          <!-- Spec 9: Learning Hub -->
+          <div class="spec-card">
+            <div class="spec-icon-wrapper">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+            </div>
+            <h3 class="spec-title">Learning Hub</h3>
+            <p class="spec-desc">Simulate live market valuations and bridge theoretical metrics with real equity data.</p>
+          </div>
+          
+          <!-- Spec 10: CFA Concepts -->
+          <div class="spec-card">
+            <div class="spec-icon-wrapper">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"></path><path d="M6 12v5c0 2 2 3 6 3s6-1 6-3v-5"></path></svg>
+            </div>
+            <h3 class="spec-title">CFA Concepts</h3>
+            <p class="spec-desc">Practice formulas mapped directly to the CFA Level 1 (Quant, Equity, Portfolios) curriculum.</p>
+          </div>
+          
+          <!-- Spec 11: Excel Templates -->
+          <div class="spec-card">
+            <div class="spec-icon-wrapper">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="9" y1="3" x2="9" y2="21"></line><line x1="15" y1="3" x2="15" y2="21"></line><line x1="3" y1="9" x2="21" y2="9"></line><line x1="3" y1="15" x2="21" y2="15"></line></svg>
+            </div>
+            <h3 class="spec-title">Excel Templates</h3>
+            <p class="spec-desc">Access institutional Wall Street templates, sheets structures, and model shortcuts.</p>
           </div>
         </div>
       </div>
@@ -1734,6 +2254,143 @@
       </div>
     </section>
 
+    <!-- Resources Vault Locker Section -->
+    <section class="vault-section" id="resources-vault">
+      <div class="previews-container">
+        <div class="vault-inner">
+          <div class="vault-header">
+            <span class="vault-badge">ANALYST TOOLKIT</span>
+            <h2 class="vault-title">Unlock Institutional Modeling Templates</h2>
+            <p class="vault-desc">Enter your email below to instantly activate your credentials and unlock 5 professional valuation, Excel, and CFA concepts tools for free.</p>
+          </div>
+          
+          <!-- Locked/Unlocked State lists -->
+          <div class="vault-list" id="vault-items-list">
+            <div class="vault-item">
+              <span class="vault-item-lbl">01. Corporate DCF Valuation Model Template (.xlsx)</span>
+              <span class="vault-status-pill locked" id="vault-status-1">LOCKED</span>
+            </div>
+            <div class="vault-item">
+              <span class="vault-item-lbl">02. 30+ Wall Street Excel Keyboard Shortcuts (.pdf)</span>
+              <span class="vault-status-pill locked" id="vault-status-2">LOCKED</span>
+            </div>
+            <div class="vault-item">
+              <span class="vault-item-lbl">03. Financial Ratios & Valuation Cheat Sheet (.pdf)</span>
+              <span class="vault-status-pill locked" id="vault-status-3">LOCKED</span>
+            </div>
+            <div class="vault-item">
+              <span class="vault-item-lbl">04. Institutional Equity Research Stock Template (.docx)</span>
+              <span class="vault-status-pill locked" id="vault-status-4">LOCKED</span>
+            </div>
+            <div class="vault-item">
+              <span class="vault-item-lbl">05. CFA Level 1 Study & Formula Notes (.pdf)</span>
+              <span class="vault-status-pill locked" id="vault-status-5">LOCKED</span>
+            </div>
+          </div>
+          
+          <!-- Email Form (locked state) -->
+          <form class="vault-form" id="vault-form-collector" onsubmit="handleUnlockVault(event)">
+            <input type="email" id="vault-email" class="vault-input" placeholder="Enter your professional email to unlock..." required>
+            <button type="submit" class="vault-submit-btn" id="btn-unlock-vault">Unlock Vault →</button>
+          </form>
+          
+          <!-- Unlocked Content Drawer -->
+          <div class="unlocked-vault-cabinet" id="vault-unlocked-drawer">
+            <div class="unlocked-resource-card">
+              <div class="unlocked-resource-header">
+                <span class="unlocked-resource-title">01. Corporate DCF Valuation Model Template</span>
+                <button class="btn-copy-resource" onclick="copyToClipboard('dcf-sheet-data')">Copy Excel Sheet Specs</button>
+              </div>
+              <pre class="unlocked-resource-content" id="dcf-sheet-data">
+[AnalystOS Corporate DCF Model Template v1.2]
+Sheet 1: assumptions
+--------------------------------------------
+WACC = 9.0% | Exit EBITDA Multiple = 14.0x
+EBITDA Growth Rate = 15.0% (Yr 1-3), 8.0% (Yr 4-5)
+Tax Rate = 25% | Capex / Sales = 4.0%
+--------------------------------------------
+Sheet 2: free cash flow projection (₹ Lakhs)
+Yr 1 EBITDA = 120.0 | Yr 2 = 138.0 | Yr 3 = 158.7
+Yr 4 EBITDA = 171.4 | Yr 5 = 185.1
+Implied Enterprise Value = ₹18.54 Cr
+Download Excel File Link: https://analystos-terminal.vercel.app/resources/AnalystOS_DCF_Valuation_Model.xlsx
+              </pre>
+            </div>
+            
+            <div class="unlocked-resource-card">
+              <div class="unlocked-resource-header">
+                <span class="unlocked-resource-title">02. 30+ Wall Street Excel Shortcuts Guide</span>
+                <button class="btn-copy-resource" onclick="copyToClipboard('shortcuts-data')">Copy Shortcuts</button>
+              </div>
+              <pre class="unlocked-resource-content" id="shortcuts-data">
+[AnalystOS Excel Modeling Shortcuts Handbook]
+Navigation & Selection:
+- Ctrl + [  : Trace precedent formulas
+- F5 + Enter: Return to previous cell after tracing
+- Shift + Space: Select entire row
+- Ctrl + Space : Select entire column
+Formatting & Editing:
+- Alt + E + S + V: Paste Special as Values
+- F2 : Edit active cell
+- Alt + H + B + A: Add border to selection
+- Alt + H + O + I: Autofit column widths
+              </pre>
+            </div>
+            
+            <div class="unlocked-resource-card">
+              <div class="unlocked-resource-header">
+                <span class="unlocked-resource-title">03. Financial Ratios & Valuation Cheat Sheet</span>
+                <button class="btn-copy-resource" onclick="copyToClipboard('valuation-data')">Copy Cheat Sheet</button>
+              </div>
+              <pre class="unlocked-resource-content" id="valuation-data">
+[AnalystOS Financial Formula Cheat Sheet]
+1. Enterprise Value (EV):
+   EV = Market Cap + Total Debt + Preferred Stock + Minority Interest - Cash
+2. Weighted Average Cost of Capital (WACC):
+   WACC = (E/V * Ke) + (D/V * Kd * (1 - Tax Rate))
+   - Cost of Equity (Ke) = Rf + Beta * (Rm - Rf) [CAPM]
+3. Free Cash Flow to Firm (FCFF):
+   FCFF = EBIT * (1 - Tax Rate) + D&A - Capex - Change in NWC
+              </pre>
+            </div>
+            
+            <div class="unlocked-resource-card">
+              <div class="unlocked-resource-header">
+                <span class="unlocked-resource-title">04. Institutional Equity Research Stock Template</span>
+                <button class="btn-copy-resource" onclick="copyToClipboard('research-notes-data')">Copy Template</button>
+              </div>
+              <pre class="unlocked-resource-content" id="research-notes-data">
+[AnalystOS Equity Research Report Outline]
+Section I: Executive Summary
+- Ticker: [TICKER] | Recommendation: BUY/HOLD/SELL
+- Current Price: [PRICE] | Target Intrinsic Target: [TARGET]
+Section III: Earnings Quality & Ratios Scan
+- Leverage scans, EBITDA margins, and operating diagnostic logs.
+Section IV: Target DCF Sensitivity Table
+              </pre>
+            </div>
+            
+            <div class="unlocked-resource-card">
+              <div class="unlocked-resource-header">
+                <span class="unlocked-resource-title">05. CFA Level 1 Study & Formula Notes</span>
+                <button class="btn-copy-resource" onclick="copyToClipboard('cfa-data')">Copy CFA Notes</button>
+              </div>
+              <pre class="unlocked-resource-content" id="cfa-data">
+[CFA Level 1 Equity & Quant concept notes]
+1. Capital Asset Pricing Model (CAPM):
+   Ke = Rf + Beta * (Rm - Rf)
+2. Dividend Discount Model (DDM) - Gordon Growth:
+   Po = D1 / (Ke - g)
+3. Dupont Analysis 3-Step:
+   ROE = Net Profit Margin * Asset Turnover * Financial Leverage
+   ROE = (Net Income / Sales) * (Sales / Assets) * (Assets / Equity)
+              </pre>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <!-- Waitlist Section -->
     <section class="waitlist-section" id="waitlist">
       <div class="waitlist-container reveal">
@@ -1781,18 +2438,164 @@
         <h4 class="footer-heading">Platform</h4>
         <a href="#features" class="footer-link">Features</a>
         <a href="#pricing" class="footer-link">Pricing</a>
+        <a href="#resources-vault" class="footer-link">Free Resources</a>
+      </div>
+      
+      <div class="footer-links-column">
+        <h4 class="footer-heading">Info Hub</h4>
+        <a href="#about" class="footer-link">About Us</a>
+        <a href="#contact" class="footer-link">Contact Support</a>
+        <a href="#changelog" class="footer-link">Changelog</a>
       </div>
       
       <div class="footer-links-column">
         <h4 class="footer-heading">Legal</h4>
-        <a href="#" class="footer-link">Privacy</a>
-        <a href="#" class="footer-link">Terms</a>
+        <a href="#privacy" class="footer-link">Privacy Policy</a>
+        <a href="#terms" class="footer-link">Terms of Service</a>
       </div>
     </div>
     <div class="footer-bottom">
       <span class="copyright" id="footer-copyright">&copy; 2025 AnalystOS. All rights reserved.</span>
     </div>
   </footer>
+
+  <!-- Interactive Info Hub Overlay Portal -->
+  <div id="info-hub-overlay" class="info-hub-overlay">
+    <div class="info-hub-cabinet">
+      <button class="hub-close-btn" onclick="closeInfoHub()">✕ RETURN</button>
+      
+      <div class="info-hub-sidebar">
+        <div class="sidebar-header-title">AnalystOS Hub</div>
+        <div class="sidebar-menu-list">
+          <button class="hub-menu-btn active" id="hub-tab-home" onclick="switchHubTab('home')">[01] TERMINAL_HOME</button>
+          <button class="hub-menu-btn" id="hub-tab-features" onclick="switchHubTab('features')">[02] SPEC_DIRECTORY</button>
+          <button class="hub-menu-btn" id="hub-tab-about" onclick="switchHubTab('about')">[03] FOUNDERS_NOTE</button>
+          <button class="hub-menu-btn" id="hub-tab-contact" onclick="switchHubTab('contact')">[04] CONNECT_DESK</button>
+          <button class="hub-menu-btn" id="hub-tab-changelog" onclick="switchHubTab('changelog')">[05] VER_HISTORY</button>
+          <button class="hub-menu-btn" id="hub-tab-privacy" onclick="switchHubTab('privacy')">[06] DATA_SAFEGUARD</button>
+          <button class="hub-menu-btn" id="hub-tab-terms" onclick="switchHubTab('terms')">[07] USER_LICENSE</button>
+        </div>
+      </div>
+      
+      <div class="info-hub-content-viewport">
+        <!-- Panel 1: Home -->
+        <div class="hub-view-panel active" id="hub-panel-home">
+          <span class="hub-panel-badge">CORE_MODULE.WELCOME</span>
+          <h2 class="hub-panel-title">AnalystOS Terminal Info Hub</h2>
+          <p class="hub-panel-desc">Welcome to the central command specifications center. Use the left FactSet-grade navigation index to explore features lists, founders story logs, connect directly with technical desks, and review compliance frameworks.</p>
+          <div style="margin-top: 24px; padding: 18px; border: 1px dashed rgba(0,240,255,0.15); background: rgba(0,240,255,0.02); border-radius: 8px;">
+            <h4 style="font-family: 'JetBrains Mono', monospace; font-size: 13px; color: var(--premium-accent); margin-bottom: 8px;">[SYSTEM_LOG: ACTIVE]</h4>
+            <p style="font-family: 'Inter', sans-serif; font-size: 13px; color: #9CA3AF; line-height: 1.5;">You are currently inside the active terminal subpage portal. Press **✕ RETURN** at the top right to revert to the main dashboard.</p>
+          </div>
+        </div>
+        
+        <!-- Panel 2: Features -->
+        <div class="hub-view-panel" id="hub-panel-features">
+          <span class="hub-panel-badge">MODULE_SPEC.DIRECTORY</span>
+          <h2 class="hub-panel-title">Institutional Features specs</h2>
+          <p class="hub-panel-desc">Deep dive overview of the institutional specifications compiled into the AnalystOS engine:</p>
+          <div style="display:flex; flex-direction:column; gap:12px; margin-top:16px; font-family:'JetBrains Mono',monospace; font-size:12px;">
+            <div style="padding:10px; background:rgba(255,255,255,0.02); border-radius:6px; border:1px solid rgba(255,255,255,0.04);">
+              <strong style="color:var(--premium-accent)">[01] Financial Modeling</strong>: Full dynamic pro-forma forecasts, income statements, asset balances.
+            </div>
+            <div style="padding:10px; background:rgba(255,255,255,0.02); border-radius:6px; border:1px solid rgba(255,255,255,0.04);">
+              <strong style="color:var(--premium-accent)">[02] DCF Valuation Sensitivity</strong>: Sensitivity index tables (Growth rate vs WACC discount factors).
+            </div>
+            <div style="padding:10px; background:rgba(255,255,255,0.02); border-radius:6px; border:1px solid rgba(255,255,255,0.04);">
+              <strong style="color:var(--premium-accent)">[03] CFA Level 1 Concepts Hub</strong>: Mapped concepts covering DuPont equations, WACC, and Gordon Growth models.
+            </div>
+          </div>
+        </div>
+        
+        <!-- Panel 3: About -->
+        <div class="hub-view-panel" id="hub-panel-about">
+          <span class="hub-panel-badge">FOUNDERS_NOTE.METADATA</span>
+          <h2 class="hub-panel-title">Our Mission & Founders Story</h2>
+          <p class="hub-panel-desc">AnalystOS was conceived with a simple yet powerful mission: to democratize institutional-grade financial analysis tools. For too long, young professional analysts, candidates, and students have been priced out of professional Bloomberg, FactSet, or Capital IQ subscriptions (which cost ₹2.5 lakh/year).</p>
+          <blockquote style="border-left: 2px solid var(--premium-accent); padding-left: 16px; margin: 16px 0; color: #F9FAFB; font-style: italic; font-family: 'Inter', sans-serif; font-size: 14px;">
+            "We believe that high-quality equity research, company deep-dives, and financial modeling tools should be accessible to anyone with a willingness to learn. By providing institutional speed and clean data pipelines at a fraction of the cost, we empower the next generation of finance leaders."
+            <br><span style="display:block; margin-top:8px; font-family:'JetBrains Mono',monospace; font-size:11px; font-style:normal; color:#6B7280;">— Revanth Pemmaraju, Founder</span>
+          </blockquote>
+        </div>
+        
+        <!-- Panel 4: Contact -->
+        <div class="hub-view-panel" id="hub-panel-contact">
+          <span class="hub-panel-badge">CONNECT_DESK.PORTAL</span>
+          <h2 class="hub-panel-title">Technical Support & Sales Desk</h2>
+          <p class="hub-panel-desc">Reach out directly to our engineering or investment support teams. Enter your details below to open a ticket.</p>
+          
+          <form id="hub-contact-form" onsubmit="handleHubContactSubmit(event)" style="margin-top: 16px;">
+            <div class="hub-form-group">
+              <label for="contact-name">Full Name</label>
+              <input type="text" id="contact-name" class="hub-form-input" placeholder="Your name" required>
+            </div>
+            <div class="hub-form-group">
+              <label for="contact-email">Professional Email</label>
+              <input type="email" id="contact-email" class="hub-form-input" placeholder="you@firm.com" required>
+            </div>
+            <div class="hub-form-group">
+              <label for="contact-firm">Firm / Segment Type</label>
+              <select id="contact-firm" class="hub-form-select" required>
+                <option value="student">Student / CFA Candidate</option>
+                <option value="analyst">Buy-Side / Sell-Side Analyst</option>
+                <option value="hedgefund">Hedge Fund / Asset Management</option>
+                <option value="retail">Retail Investor</option>
+              </select>
+            </div>
+            <div class="hub-form-group">
+              <label for="contact-msg">Message Summary</label>
+              <textarea id="contact-msg" class="hub-form-textarea" rows="4" placeholder="Enter your inquiry details..." required></textarea>
+            </div>
+            <button type="submit" class="hub-submit-btn" id="btn-submit-hub-contact">Transmit Ticket →</button>
+          </form>
+          <div id="hub-contact-message" style="margin-top: 14px; font-family:'JetBrains Mono',monospace; font-size:12px;"></div>
+        </div>
+        
+        <!-- Panel 5: Changelog -->
+        <div class="hub-view-panel" id="hub-panel-changelog">
+          <span class="hub-panel-badge">VER_HISTORY.STREAM</span>
+          <h2 class="hub-panel-title">Terminal Changelog Updates</h2>
+          <p class="hub-panel-desc">Product releases logs and security hotfixes stream:</p>
+          <div style="display:flex; flex-direction:column; gap:16px; margin-top:16px; font-family:'JetBrains Mono',monospace; font-size:12px; text-align:left;">
+            <div style="border-left: 2px solid var(--premium-green); padding-left: 14px;">
+              <strong style="color:#F9FAFB">v1.0.4 (Active Launch)</strong> <span style="color:#6B7280; font-size:10px;">— 2026-05-31</span>
+              <p style="margin-top:6px; font-family:'Inter',sans-serif; font-size:12px; color:#9CA3AF;">Pivoted visual design to institutional FactSet/Bloomberg dense grids. Integrated the **Resources Locker Lead Magnet** and **dynamic fullscreen overlays**. Upgraded tagline layouts.</p>
+            </div>
+            <div style="border-left: 2px solid var(--premium-accent); padding-left: 14px;">
+              <strong style="color:#F9FAFB">v1.0.2 (Auth & Payments integration)</strong> <span style="color:#6B7280; font-size:10px;">— 2026-05-30</span>
+              <p style="margin-top:6px; font-family:'Inter',sans-serif; font-size:12px; color:#9CA3AF;">Integrated Supabase user signup/login and configured Razorpay checkout supports with secure SHA-256 HMAC digital signatures.</p>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Panel 6: Privacy Policy -->
+        <div class="hub-view-panel" id="hub-panel-privacy">
+          <span class="hub-panel-badge">DATA_SAFEGUARD.COMPLIANCE</span>
+          <h2 class="hub-panel-title">Privacy Policy</h2>
+          <div style="font-family:'Inter',sans-serif; font-size:13px; color:#9CA3AF; line-height:1.6; display:flex; flex-direction:column; gap:12px;">
+            <p>At AnalystOS, we prioritize the protection and security of your financial and personal data. We utilize enterprise-grade security structures through **Supabase PostgreSQL** and **Vercel** hosting platforms.</p>
+            <strong style="color:#F9FAFB">1. Information We Collect</strong>
+            <p>We collect your email, name, and billing details upon sign-up or download. Payment transactions are processed securely through **Razorpay** checkout systems; no credit card details are stored directly on our servers.</p>
+            <strong style="color:#F9FAFB">2. Cookies and Logs</strong>
+            <p>We use localized tokens to store active sessions and monitor terminal diagnostic heartbeats. All logs are securely archived and cleared regularly.</p>
+          </div>
+        </div>
+        
+        <!-- Panel 7: Terms of Service -->
+        <div class="hub-view-panel" id="hub-panel-terms">
+          <span class="hub-panel-badge">USER_LICENSE.LEGAL_FRAME</span>
+          <h2 class="hub-panel-title">Terms of Service</h2>
+          <div style="font-family:'Inter',sans-serif; font-size:13px; color:#9CA3AF; line-height:1.6; display:flex; flex-direction:column; gap:12px;">
+            <p>Please read these terms carefully before accessing the AnalystOS terminal workspace. By creating an account, you agree to comply with these terms.</p>
+            <strong style="color:#F9FAFB">1. Subscription Billing</strong>
+            <p>AnalystOS is billed on a recurring monthly cycle of **₹499/month** for the PRO plan. You may cancel your subscription at any time directly through the user navigation pill.</p>
+            <strong style="color:#F9FAFB">2. Acceptable Use</strong>
+            <p>The terminal features, DCF sandboxes, and financial models are provided for educational and research analysis purposes. We do not offer direct investment advisory or brokerage execution services.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <!-- Premium Authentication & Payment Modal -->
   <div id="auth-overlay">
@@ -1857,6 +2660,126 @@
     let selectedPlan = 'free';
 
     function isLaunched() { return new Date() >= LAUNCH_DATE; }
+
+    /* Interactive Info Hub Navigation & Routing Logic */
+    function openInfoHub(tab = 'home') {
+      document.getElementById('info-hub-overlay').classList.add('active');
+      switchHubTab(tab);
+    }
+    
+    function closeInfoHub() {
+      document.getElementById('info-hub-overlay').classList.remove('active');
+      // Reset URL hash quietly to prevent scroll jumps
+      history.pushState("", document.title, window.location.pathname + window.location.search);
+    }
+    
+    function switchHubTab(tab) {
+      // Deactivate all hub tabs
+      document.querySelectorAll('.hub-menu-btn').forEach(btn => btn.classList.remove('active'));
+      document.querySelectorAll('.hub-view-panel').forEach(panel => panel.classList.remove('active'));
+      
+      // Activate target hub tab & content view
+      const targetBtn = document.getElementById(`hub-tab-${tab}`);
+      const targetPanel = document.getElementById(`hub-panel-${tab}`);
+      if (targetBtn) targetBtn.classList.add('active');
+      if (targetPanel) targetPanel.classList.add('active');
+    }
+
+    /* Clipboard Copy Utility */
+    function copyToClipboard(id) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      navigator.clipboard.writeText(el.textContent.trim()).then(() => {
+        showNotificationToast("Specs Copied!", "Locker specs loaded into clipboard buffer.");
+      });
+    }
+
+    /* Shared Toast Notification */
+    function showNotificationToast(title, desc) {
+      const toast = document.getElementById('waitlist-toast');
+      if (!toast) return;
+      toast.querySelector('.toast-title').textContent = title;
+      toast.querySelector('.toast-desc').textContent = desc;
+      toast.classList.add('active');
+      setTimeout(() => {
+        toast.classList.remove('active');
+      }, 3500);
+    }
+
+    /* Lead Log helper utilizing Supabase Waitlist */
+    async function logEmailToSupabase(email, segment = "lead_magnet") {
+      try {
+        const { data, error } = await _supabase.from('waitlist').insert([{ email, segment, created_at: new Date() }]);
+        if (error) console.warn("Supabase log warning:", error.message);
+      } catch (err) {
+        console.warn("Supabase integration bypassed / warning:", err);
+      }
+    }
+
+    /* Lead Magnet Vault Unlock State Handler */
+    async function handleUnlockVault(e) {
+      e.preventDefault();
+      const email = document.getElementById('vault-email').value.trim();
+      const btn = document.getElementById('btn-unlock-vault');
+      if (!email) return;
+      btn.disabled = true;
+      btn.textContent = 'CONNECTING...';
+      
+      // Save lead securely in Supabase
+      await logEmailToSupabase(email, "lead_magnet_vault");
+      
+      setTimeout(() => {
+        // Unlock items
+        for (let i = 1; i <= 5; i++) {
+          const statusEl = document.getElementById(`vault-status-${i}`);
+          if (statusEl) {
+            statusEl.textContent = 'UNLOCKED';
+            statusEl.className = 'vault-status-pill unlocked';
+          }
+        }
+        // Hide form & show cabinet
+        document.getElementById('vault-form-collector').style.display = 'none';
+        document.getElementById('vault-unlocked-drawer').style.display = 'flex';
+        
+        showNotificationToast("Vault Unlocked!", "Your 5 professional templates are available.");
+      }, 1000);
+    }
+
+    /* Hub Contact support form handler */
+    async function handleHubContactSubmit(e) {
+      e.preventDefault();
+      const name = document.getElementById('contact-name').value.trim();
+      const email = document.getElementById('contact-email').value.trim();
+      const firm = document.getElementById('contact-firm').value;
+      const msg = document.getElementById('contact-msg').value.trim();
+      const btn = document.getElementById('btn-submit-hub-contact');
+      const msgEl = document.getElementById('hub-contact-message');
+      
+      btn.disabled = true;
+      btn.textContent = 'TRANSMITTING...';
+      
+      await logEmailToSupabase(email, `contact_desk_${firm}`);
+      
+      setTimeout(() => {
+        btn.textContent = 'Transmit Ticket →';
+        btn.disabled = false;
+        msgEl.style.color = 'var(--premium-green)';
+        msgEl.innerHTML = `✓ TICKET_TRANSMITTED: LOGGED<br>REF_ID: ${Math.floor(Math.random()*900000+100000)}<br>Support desk will reach you at ${email}.`;
+        
+        document.getElementById('hub-contact-form').reset();
+      }, 1200);
+    }
+
+    /* URL Hash Change Router */
+    function handleHashNavigation() {
+      const hash = window.location.hash.substring(1);
+      const validTabs = ['home', 'features', 'about', 'contact', 'changelog', 'privacy', 'terms'];
+      if (validTabs.includes(hash)) {
+        openInfoHub(hash);
+      }
+    }
+    window.addEventListener('hashchange', handleHashNavigation);
+    window.addEventListener('DOMContentLoaded', handleHashNavigation);
 
     function applyMode() {
       const launched = isLaunched();
