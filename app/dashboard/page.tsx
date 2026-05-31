@@ -13,7 +13,7 @@ import {
   TrendingUp, Download, Briefcase, Award, Send, RefreshCw, Check,
   Sliders, Grid, Calculator, BookOpen, Layers, Printer, Maximize2, Columns
 } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useMotionValue, useSpring } from "framer-motion";
 
 interface StockQuote {
   ticker: string;
@@ -77,6 +77,67 @@ const CountUpValue = ({
 
   return (
     <span>{prefix}{displayVal.toFixed(decimals)}{suffix}</span>
+  );
+};
+
+const MagneticButton = ({ 
+  children, 
+  className, 
+  onClick, 
+  href, 
+  type = "button", 
+  disabled = false 
+}: { 
+  children: React.ReactNode; 
+  className?: string; 
+  onClick?: () => void; 
+  href?: string; 
+  type?: "button" | "submit" | "reset"; 
+  disabled?: boolean; 
+}) => {
+  const x = useSpring(useMotionValue(0), { stiffness: 120, damping: 15 });
+  const y = useSpring(useMotionValue(0), { stiffness: 120, damping: 15 });
+
+  function handleMouseMove(e: React.MouseEvent<HTMLButtonElement | HTMLAnchorElement>) {
+    if (disabled) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const mouseX = e.clientX - rect.left - rect.width / 2;
+    const mouseY = e.clientY - rect.top - rect.height / 2;
+    x.set(mouseX * 0.35);
+    y.set(mouseY * 0.35);
+  }
+
+  function handleMouseLeave() {
+    x.set(0);
+    y.set(0);
+  }
+
+  if (href) {
+    return (
+      <motion.a
+        href={href}
+        onMouseMove={handleMouseMove}
+        onMouseLeave={handleMouseLeave}
+        style={{ x, y }}
+        className={className}
+      >
+        {children}
+      </motion.a>
+    );
+  }
+
+  return (
+    <motion.button
+      type={type}
+      disabled={disabled}
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
+      onClick={onClick}
+      style={{ x, y }}
+      className={className}
+    >
+      {children}
+    </motion.button>
   );
 };
 
@@ -803,7 +864,7 @@ IMPLIED FAIR VALUATION SPOT: ₹2,580.40
                     )}
                   </div>
 
-                  <button 
+                  <MagneticButton 
                     onClick={handleGenerateMemo}
                     disabled={memoLoading}
                     className="w-full bg-[#a78bfa] hover:bg-[#a78bfa]/80 text-[#020010] font-bold py-2.5 rounded-lg text-xs mt-6 transition-all uppercase tracking-wider font-mono flex items-center justify-center space-x-1.5 cursor-none"
@@ -816,7 +877,7 @@ IMPLIED FAIR VALUATION SPOT: ₹2,580.40
                         <span>Generate Investment Memo</span>
                       </>
                     )}
-                  </button>
+                  </MagneticButton>
                 </div>
 
                 {/* Right Panel: Output report memo panel */}
@@ -1047,12 +1108,12 @@ IMPLIED FAIR VALUATION SPOT: ₹2,580.40
                         <p className="text-slate-400 text-xs max-w-md mx-auto leading-relaxed">
                           Test your analytical capabilities. Initialize a session to receive dynamic technical interview questions, scored directly by Anthropic Claude co-pilot.
                         </p>
-                        <button
+                        <MagneticButton
                           onClick={handleStartInterview}
                           className="bg-[#a78bfa] hover:bg-[#a78bfa]/80 text-[#020010] font-bold px-6 py-2.5 rounded-lg text-xs transition-colors font-mono uppercase tracking-wider cursor-none"
                         >
                           LAUNCH_INTERVIEW_SESSION
-                        </button>
+                        </MagneticButton>
                       </div>
                     ) : (
                       <div className="space-y-4 text-xs font-mono">
@@ -1082,7 +1143,7 @@ IMPLIED FAIR VALUATION SPOT: ₹2,580.40
                                   />
                                 </div>
 
-                                <button
+                                <MagneticButton
                                   type="submit"
                                   disabled={interviewLoading || !userAnswer.trim()}
                                   className="bg-[#34d399] hover:bg-[#34d399]/85 text-[#020010] font-bold py-2.5 rounded-lg transition-colors w-full flex items-center justify-center space-x-1.5 font-mono cursor-none uppercase text-[11px]"
@@ -1095,7 +1156,7 @@ IMPLIED FAIR VALUATION SPOT: ₹2,580.40
                                       <span>TRANSMIT_RESPONSE_FOR_EVALUATION</span>
                                     </>
                                   )}
-                                </button>
+                                </MagneticButton>
                               </form>
                             ) : (
                               <div className="space-y-4">
@@ -1105,13 +1166,13 @@ IMPLIED FAIR VALUATION SPOT: ₹2,580.40
                                 </div>
 
                                 <div className="flex gap-3 font-mono">
-                                  <button
+                                  <MagneticButton
                                     onClick={handleStartInterview}
                                     className="flex-1 bg-[#a78bfa] hover:bg-[#a78bfa]/80 text-[#020010] font-bold py-2.5 rounded-lg text-xs transition-colors cursor-none uppercase"
                                   >
                                     NEXT_QUESTION
-                                  </button>
-                                  <button
+                                  </MagneticButton>
+                                  <MagneticButton
                                     onClick={() => {
                                       setInterviewStarted(false);
                                       setUserAnswer("");
@@ -1120,7 +1181,7 @@ IMPLIED FAIR VALUATION SPOT: ₹2,580.40
                                     className="flex-1 border border-white/10 hover:border-white/20 text-slate-300 py-2.5 rounded-lg text-xs transition-colors cursor-none"
                                   >
                                     [EXIT_SESSION]
-                                  </button>
+                                  </MagneticButton>
                                 </div>
                               </div>
                             )}
