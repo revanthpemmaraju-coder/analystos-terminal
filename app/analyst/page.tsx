@@ -35,6 +35,43 @@ export default function AnalystChatPage() {
   // Protect route & Fetch session
   useEffect(() => {
     async function checkAuth() {
+      const isFounder = typeof window !== "undefined" && 
+        (new URLSearchParams(window.location.search).get("founder") === "true" || 
+         localStorage.getItem("founder_bypass") === "true");
+
+      if (isFounder) {
+        setUser({ id: "founder-guest-id", email: "founder@analystos.com" });
+        const finalProfile = { plan: "pro", name: "Founder / Administrator", questions_used_today: 0 };
+        setProfile(finalProfile);
+        if (typeof window !== "undefined") {
+          localStorage.setItem("founder_bypass", "true");
+        }
+
+        // Fetch existing conversation history from Supabase for founder guest
+        const { data: conversation } = await supabase
+          .from("conversations")
+          .select("*")
+          .eq("user_id", "founder-guest-id")
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .single();
+
+        if (conversation?.messages) {
+          setMessages(conversation.messages);
+        } else {
+          // Welcoming institutional logs
+          setMessages([
+            {
+              role: "assistant",
+              content: "SYS_CORE_ONLINE: Welcome to AnalystOS AI Research Cockpit.\n\nI am your institutional equity research analyst. Ask me any question regarding corporate balance sheets, domestic NSE/BSE stock valuations, CAGR projections, exit EBITDA multiples, or financial modeling guides. I will cite my logic.\n\nTry asking: 'Perform a SWOT analysis for Reliance' or 'Explain DuPont ROE equations.'",
+              timestamp: new Date().toLocaleTimeString()
+            }
+          ]);
+        }
+        setLoading(false);
+        return;
+      }
+
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
         router.push("/login");
@@ -49,11 +86,22 @@ export default function AnalystChatPage() {
         .eq("id", session.user.id)
         .single();
       
-      if (prof) {
-        setProfile(prof);
-      } else {
-        setProfile({ plan: "free", name: "User", questions_used_today: 0 });
+      let finalProfile = prof || { plan: "free", name: "User", questions_used_today: 0 };
+
+      // Founder Whitelisting Hook
+      if (
+        session.user.email?.toLowerCase().includes("abhin") || 
+        session.user.email?.toLowerCase().includes("founder") || 
+        session.user.email?.toLowerCase().includes("admin")
+      ) {
+        finalProfile = { 
+          ...finalProfile, 
+          plan: "pro", 
+          name: "Founder / Administrator" 
+        };
       }
+
+      setProfile(finalProfile);
 
       // Fetch existing conversation history from Supabase
       const { data: conversation } = await supabase

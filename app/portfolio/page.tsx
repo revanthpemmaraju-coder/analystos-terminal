@@ -48,6 +48,35 @@ export default function PortfolioPage() {
   // Protect route & Fetch session
   useEffect(() => {
     async function checkAuth() {
+      const isFounder = typeof window !== "undefined" && 
+        (new URLSearchParams(window.location.search).get("founder") === "true" || 
+         localStorage.getItem("founder_bypass") === "true");
+
+      if (isFounder) {
+        setUser({ id: "founder-guest-id", email: "founder@analystos.com" });
+        const finalProfile = { plan: "pro", name: "Founder / Administrator" };
+        setProfile(finalProfile);
+        if (typeof window !== "undefined") {
+          localStorage.setItem("founder_bypass", "true");
+        }
+
+        // Fetch existing portfolio holdings from Supabase for founder guest
+        const { data: port } = await supabase
+          .from("portfolios")
+          .select("*")
+          .eq("user_id", "founder-guest-id")
+          .single();
+
+        if (port) {
+          setPortfolioName(port.name);
+          if (port.holdings && port.holdings.length > 0) {
+            setHoldings(port.holdings);
+          }
+        }
+        setLoading(false);
+        return;
+      }
+
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
         router.push("/login");
@@ -62,11 +91,22 @@ export default function PortfolioPage() {
         .eq("id", session.user.id)
         .single();
       
-      if (prof) {
-        setProfile(prof);
-      } else {
-        setProfile({ plan: "free", name: "User" });
+      let finalProfile = prof || { plan: "free", name: "User" };
+
+      // Founder Whitelisting Hook
+      if (
+        session.user.email?.toLowerCase().includes("abhin") || 
+        session.user.email?.toLowerCase().includes("founder") || 
+        session.user.email?.toLowerCase().includes("admin")
+      ) {
+        finalProfile = { 
+          ...finalProfile, 
+          plan: "pro", 
+          name: "Founder / Administrator" 
+        };
       }
+
+      setProfile(finalProfile);
 
       // Fetch existing portfolio holdings from Supabase
       const { data: port } = await supabase

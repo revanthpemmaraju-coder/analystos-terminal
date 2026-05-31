@@ -723,20 +723,9 @@ export default function LandingPage() {
   const smoothParX = useSpring(parallaxX, { stiffness: 40, damping: 20 });
   const smoothParY = useSpring(parallaxY, { stiffness: 40, damping: 20 });
 
-  // Premium Custom Spring Cursor coordinates
-  const [isHovered, setIsHovered] = useState(false);
-  const [isClicked, setIsClicked] = useState(false);
-  const mouseCursorX = useMotionValue(typeof window !== 'undefined' ? window.innerWidth / 2 : 0);
-  const mouseCursorY = useMotionValue(typeof window !== 'undefined' ? window.innerHeight / 2 : 0);
-  const cursorRingX = useSpring(mouseCursorX, { stiffness: 200, damping: 28 });
-  const cursorRingY = useSpring(mouseCursorY, { stiffness: 200, damping: 28 });
-
   useEffect(() => {
     let rafId: number | null = null;
     const moveCursor = (e: MouseEvent) => {
-      // Direct set — MotionValue bypasses React scheduler, no re-render
-      mouseCursorX.set(e.clientX);
-      mouseCursorY.set(e.clientY);
       // Parallax: throttle via RAF to avoid overloading
       if (rafId !== null) return;
       rafId = requestAnimationFrame(() => {
@@ -747,32 +736,11 @@ export default function LandingPage() {
         rafId = null;
       });
     };
-    const handleHoverTarget = (e: MouseEvent) => {
-      const target = e.target as HTMLElement;
-      if (!target) return;
-      const isInteractive = 
-        target.tagName === "BUTTON" || 
-        target.tagName === "A" || 
-        target.tagName === "INPUT" || 
-        target.tagName === "SELECT" || 
-        !!target.closest("button") || 
-        !!target.closest("a") || 
-        target.classList.contains("clickable");
-      setIsHovered(isInteractive);
-    };
-    const handleMouseDown = () => setIsClicked(true);
-    const handleMouseUp = () => setIsClicked(false);
 
     window.addEventListener("mousemove", moveCursor, { passive: true });
-    window.addEventListener("mouseover", handleHoverTarget, { passive: true });
-    window.addEventListener("mousedown", handleMouseDown, { passive: true });
-    window.addEventListener("mouseup", handleMouseUp, { passive: true });
     return () => {
       if (rafId !== null) cancelAnimationFrame(rafId);
       window.removeEventListener("mousemove", moveCursor);
-      window.removeEventListener("mouseover", handleHoverTarget);
-      window.removeEventListener("mousedown", handleMouseDown);
-      window.removeEventListener("mouseup", handleMouseUp);
     };
   }, []);
 
@@ -1066,37 +1034,6 @@ export default function LandingPage() {
         }}
       />
 
-      {/* 1. Spring Custom double-ring mouse cursor */}
-      <div className="hidden md:block">
-        <motion.div
-          className="fixed top-0 left-0 pointer-events-none z-[9999]"
-          style={{
-            x: mouseCursorX,
-            y: mouseCursorY,
-            translateX: "-50%",
-            translateY: "-50%",
-            width: isClicked ? "10px" : (isHovered ? "8px" : "12px"),
-            height: isClicked ? "10px" : (isHovered ? "8px" : "12px"),
-            borderRadius: "50%",
-            backgroundColor: isClicked ? "#34d399" : "#a78bfa",
-            boxShadow: isClicked ? "0 0 12px #34d399" : "0 0 8px #a78bfa",
-          }}
-        />
-        <motion.div
-          className="fixed top-0 left-0 pointer-events-none z-[9999] rounded-full border"
-          style={{
-            x: cursorRingX,
-            y: cursorRingY,
-            translateX: "-50%",
-            translateY: "-50%",
-            width: isHovered ? "48px" : "36px",
-            height: isHovered ? "48px" : "36px",
-            borderColor: isClicked ? "#34d399" : "rgba(167, 139, 250, 0.9)",
-            borderWidth: isClicked ? "2px" : "1.5px",
-            opacity: 0.9,
-          }}
-        />
-      </div>
 
       {/* 3. Global Top Navigation (Fixed, 72px transparent) */}
       <header className="w-full bg-transparent h-[72px] px-8 flex items-center justify-between font-sans fixed top-0 left-0 z-40 select-none">

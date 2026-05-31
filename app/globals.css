@@ -21,29 +21,23 @@ body {
   font-family: var(--font-sans);
   margin: 0;
   overflow-x: hidden;
-  cursor: none;
+  cursor: none !important;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeSpeed;
 }
 
-/* Restore default cursor on non-landing pages (dashboard, login, signup) */
-body.page-dashboard,
-body.page-login,
-body.page-signup,
-body.page-stocks,
-body.page-dcf,
-body.page-portfolio,
-body.page-analyst {
-  cursor: auto !important;
+/* Hide default cursor globally on all interactive elements for custom double-ring cursor experience */
+a, 
+button, 
+input, 
+select, 
+textarea,
+[role="button"],
+.clickable {
+  cursor: none !important;
 }
 
-/* Restore cursor for all interactive elements on non-landing pages */
-body.page-dashboard *,
-body.page-login *,
-body.page-signup * {
-  cursor: auto !important;
-}
 
 .terminal-font {
   font-family: var(--font-mono);

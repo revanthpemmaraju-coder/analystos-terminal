@@ -45,6 +45,21 @@ export default function StockDetailPage() {
   // Protect route & Fetch session
   useEffect(() => {
     async function checkAuth() {
+      const isFounder = typeof window !== "undefined" && 
+        (new URLSearchParams(window.location.search).get("founder") === "true" || 
+         localStorage.getItem("founder_bypass") === "true");
+
+      if (isFounder) {
+        setUser({ id: "founder-guest-id", email: "founder@analystos.com" });
+        const finalProfile = { plan: "pro", name: "Founder / Administrator" };
+        setProfile(finalProfile);
+        if (typeof window !== "undefined") {
+          localStorage.setItem("founder_bypass", "true");
+        }
+        setLoading(false);
+        return;
+      }
+
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
         router.push("/login");
@@ -59,7 +74,22 @@ export default function StockDetailPage() {
         .eq("id", session.user.id)
         .single();
       
-      if (prof) setProfile(prof);
+      let finalProfile = prof || { plan: "free", name: "User" };
+
+      // Founder Whitelisting Hook
+      if (
+        session.user.email?.toLowerCase().includes("abhin") || 
+        session.user.email?.toLowerCase().includes("founder") || 
+        session.user.email?.toLowerCase().includes("admin")
+      ) {
+        finalProfile = { 
+          ...finalProfile, 
+          plan: "pro", 
+          name: "Founder / Administrator" 
+        };
+      }
+
+      setProfile(finalProfile);
       setLoading(false);
     }
     checkAuth();

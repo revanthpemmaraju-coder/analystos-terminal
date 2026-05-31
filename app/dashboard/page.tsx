@@ -167,11 +167,17 @@ export default function DashboardPage() {
   // Protection & Session
   useEffect(() => {
     async function checkAuth() {
-      // Founder Backdoor Hook (Bypasses Supabase auth entirely if ?founder=true query is supplied)
+      // Founder Backdoor Hook (Bypasses Supabase auth entirely if ?founder=true query is supplied or bypassed in localStorage)
       const searchParams = new URLSearchParams(window.location.search);
-      if (searchParams.get("founder") === "true") {
+      const isFounder = searchParams.get("founder") === "true" || 
+        (typeof window !== "undefined" && localStorage.getItem("founder_bypass") === "true");
+
+      if (isFounder) {
         setUser({ id: "founder-guest-id", email: "founder@analystos.com" });
         setProfile({ plan: "pro", name: "Founder / Administrator" });
+        if (typeof window !== "undefined") {
+          localStorage.setItem("founder_bypass", "true");
+        }
         setLoading(false);
         return;
       }
