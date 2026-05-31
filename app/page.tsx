@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import TickerBar from "@/components/ticker-bar";
-import { motion, AnimatePresence, useMotionValue, useSpring } from "framer-motion";
+import { motion, AnimatePresence, useMotionValue, useSpring, useMotionTemplate } from "framer-motion";
 
 const formatIndianCurrency = (num: number) => {
   if (num >= 10000000) {
@@ -26,13 +26,24 @@ const formatIndianCurrency = (num: number) => {
 const TiltCard = ({ children, className, style }: { children: React.ReactNode; className?: string; style?: any }) => {
   const rotateX = useSpring(useMotionValue(0), { stiffness: 150, damping: 22 });
   const rotateY = useSpring(useMotionValue(0), { stiffness: 150, damping: 22 });
+  const spotlightX = useMotionValue(0);
+  const spotlightY = useMotionValue(0);
+  const [opacity, setOpacity] = useState(0);
+
+  const spotlightBg = useMotionTemplate`radial-gradient(350px circle at ${spotlightX}px ${spotlightY}px, rgba(167, 139, 250, 0.15), transparent 80%)`;
 
   function handleMouseMove(event: React.MouseEvent<HTMLDivElement>) {
     const rect = event.currentTarget.getBoundingClientRect();
     const width = rect.width;
     const height = rect.height;
-    const mouseX = event.clientX - rect.left - width / 2;
-    const mouseY = event.clientY - rect.top - height / 2;
+    const x = event.clientX - rect.left;
+    const y = event.clientY - rect.top;
+    spotlightX.set(x);
+    spotlightY.set(y);
+    setOpacity(1);
+
+    const mouseX = x - width / 2;
+    const mouseY = y - height / 2;
     rotateX.set(-(mouseY / (height / 2)) * 6);
     rotateY.set((mouseX / (width / 2)) * 6);
   }
@@ -40,6 +51,7 @@ const TiltCard = ({ children, className, style }: { children: React.ReactNode; c
   function handleMouseLeave() {
     rotateX.set(0);
     rotateY.set(0);
+    setOpacity(0);
   }
 
   return (
@@ -51,11 +63,21 @@ const TiltCard = ({ children, className, style }: { children: React.ReactNode; c
         rotateY,
         transformStyle: "preserve-3d",
         perspective: "1000px",
+        position: "relative",
         ...style
       }}
-      className={className}
+      className={`${className} overflow-hidden`}
     >
-      {children}
+      <motion.div
+        className="pointer-events-none absolute -inset-px rounded-inherit z-10 transition-opacity duration-300"
+        style={{
+          opacity,
+          background: spotlightBg,
+        }}
+      />
+      <div style={{ position: "relative", zIndex: 2 }}>
+        {children}
+      </div>
     </motion.div>
   );
 };
@@ -708,6 +730,7 @@ export default function LandingPage() {
 
   // Premium Custom Spring Cursor coordinates
   const [isHovered, setIsHovered] = useState(false);
+  const [isClicked, setIsClicked] = useState(false);
   const mouseCursorX = useMotionValue(-100);
   const mouseCursorY = useMotionValue(-100);
   const cursorRingX = useSpring(mouseCursorX, { stiffness: 120, damping: 18 });
@@ -733,11 +756,18 @@ export default function LandingPage() {
         setIsHovered(false);
       }
     };
+    const handleMouseDown = () => setIsClicked(true);
+    const handleMouseUp = () => setIsClicked(false);
+
     window.addEventListener("mousemove", moveCursor);
     window.addEventListener("mouseover", handleHoverTarget);
+    window.addEventListener("mousedown", handleMouseDown);
+    window.addEventListener("mouseup", handleMouseUp);
     return () => {
       window.removeEventListener("mousemove", moveCursor);
       window.removeEventListener("mouseover", handleHoverTarget);
+      window.removeEventListener("mousedown", handleMouseDown);
+      window.removeEventListener("mouseup", handleMouseUp);
     };
   }, []);
 
@@ -1040,17 +1070,21 @@ export default function LandingPage() {
             y: mouseCursorY,
             translateX: "-50%",
             translateY: "-50%",
-            scale: isHovered ? 0.66 : 1,
+            scale: isClicked ? 0.5 : (isHovered ? 0.66 : 1),
+            backgroundColor: isClicked ? "#34d399" : "#a78bfa",
           }}
         />
         <motion.div
-          className="fixed top-0 left-0 w-10 h-10 border border-[#a78bfa] border-opacity-40 rounded-full pointer-events-none z-[9999]"
+          className="fixed top-0 left-0 w-10 h-10 border rounded-full pointer-events-none z-[9999]"
           style={{
             x: cursorRingX,
             y: cursorRingY,
             translateX: "-50%",
             translateY: "-50%",
-            scale: isHovered ? 1.5 : 1,
+            scale: isClicked ? 0.8 : (isHovered ? 1.5 : 1),
+            borderColor: isClicked ? "#34d399" : "#a78bfa",
+            borderWidth: isClicked ? "2px" : "1px",
+            opacity: isClicked ? 0.8 : 0.4,
           }}
         />
       </div>
