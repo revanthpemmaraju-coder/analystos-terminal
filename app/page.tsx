@@ -1121,6 +1121,10 @@ export default function LandingPage() {
             </button>
           ))}
           <span className="text-white/20">|</span>
+          <Link href="/dashboard?founder=true" className="text-[13px] uppercase tracking-[0.08em] text-[#a78bfa] hover:text-[#a78bfa]/80 transition-colors font-sans font-bold cursor-none">
+            [FOUNDER_PORT]
+          </Link>
+          <span className="text-white/20">|</span>
           <Link href="/login" className="text-[13px] uppercase tracking-[0.08em] text-white/55 hover:text-white transition-colors font-sans font-normal cursor-none">
             [LOG_IN]
           </Link>

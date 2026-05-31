@@ -161,6 +161,15 @@ export default function DashboardPage() {
   // Protection & Session
   useEffect(() => {
     async function checkAuth() {
+      // Founder Backdoor Hook (Bypasses Supabase auth entirely if ?founder=true query is supplied)
+      const searchParams = new URLSearchParams(window.location.search);
+      if (searchParams.get("founder") === "true") {
+        setUser({ id: "founder-guest-id", email: "founder@analystos.com" });
+        setProfile({ plan: "pro", name: "Founder / Administrator" });
+        setLoading(false);
+        return;
+      }
+
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
         router.push("/login");
