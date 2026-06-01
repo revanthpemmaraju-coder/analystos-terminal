@@ -13,6 +13,7 @@ import {
 import { supabase } from "@/lib/supabase";
 import TickerBar from "@/components/ticker-bar";
 import { motion, AnimatePresence, useMotionValue, useSpring, useMotionTemplate } from "framer-motion";
+import PricingCoin from "@/components/pricing-coin";
 
 const formatIndianCurrency = (num: number) => {
   if (num >= 10000000) {
@@ -1662,87 +1663,9 @@ export default function LandingPage() {
               </button>
             </motion.div>
 
-            {/* Right Panel: 3 Pricing Plan Cards */}
-            <div className="lg:col-span-8 w-full grid grid-cols-3 gap-4 items-stretch relative">
-              
-              {/* Card 1: Core */}
-              <motion.div 
-                variants={alternatingRightVariants}
-                custom={0.25}
-                animate={activeSection === 3 ? "active" : "inactive"}
-                className="flex"
-              >
-                <TiltCard className="bg-[#0b0f19]/40 border border-white/[0.06] p-5 rounded-2xl flex flex-col justify-between text-left hover:border-white/20 transition-all select-none w-full">
-                  <div className="space-y-2">
-                    <span className="text-[9px] font-mono text-slate-500 uppercase tracking-widest">[CORE_LICENSE]</span>
-                    <h3 className="text-lg font-bold text-white font-display uppercase">STARTER NODE</h3>
-                    <div className="py-2">
-                      <span className="text-2xl font-bold text-white font-mono">₹2,500</span>
-                      <span className="text-[10px] text-slate-500 font-mono"> / mo</span>
-                    </div>
-                    <p className="text-white/40 text-[10px] font-sans leading-relaxed">
-                      Designed for independent analysts. Live EBITDA recalculations, local client databases, and static NSE indexes.
-                    </p>
-                  </div>
-                  <button onClick={() => scrollToSection(5)} className="w-full bg-white/[0.04] border border-white/10 hover:border-[#a78bfa] text-white hover:text-[#a78bfa] font-mono text-[10px] py-2 rounded mt-6 transition-all uppercase tracking-wider cursor-none">
-                    [SELECT_NODE]
-                  </button>
-                </TiltCard>
-              </motion.div>
-
-              {/* Card 2: Pro (Recommended, Glowing Border, Highlighted) */}
-              <motion.div 
-                variants={alternatingRightVariants}
-                custom={0.4}
-                animate={activeSection === 3 ? "active" : "inactive"}
-                className="flex relative scale-[1.03]"
-              >
-                <TiltCard className="bg-[#0e0f22]/85 border-2 border-[#a78bfa]/50 p-5 rounded-2xl flex flex-col justify-between text-left shadow-[0_0_30px_rgba(167,139,250,0.15)] select-none w-full relative">
-                  <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-[#a78bfa] text-[#020010] text-[8px] font-bold px-2 py-0.5 rounded font-mono uppercase tracking-widest select-none">
-                    RECOMMENDED_NODE
-                  </span>
-                  <div className="space-y-2 mt-1">
-                    <span className="text-[9px] font-mono text-[#a78bfa] uppercase tracking-widest font-bold">[TERMINAL_PRO]</span>
-                    <h3 className="text-lg font-bold text-white font-display uppercase">ANALYST CO-PILOT</h3>
-                    <div className="py-2">
-                      <span className="text-2xl font-bold text-white font-mono">₹7,500</span>
-                      <span className="text-[10px] text-[#a78bfa] font-mono"> / mo</span>
-                    </div>
-                    <p className="text-white/40 text-[10px] font-sans leading-relaxed">
-                      Our flagship terminal experience. 12ms WebSocket streams, real-time stock alerts, AI Chat Cockpit connection.
-                    </p>
-                  </div>
-                  <button onClick={() => scrollToSection(5)} className="w-full bg-[#a78bfa] hover:bg-[#a78bfa]/80 text-[#020010] font-bold font-sans text-[10px] py-2.5 rounded mt-6 transition-all uppercase tracking-wider cursor-none">
-                    [LAUNCH_PRO_NODE]
-                  </button>
-                </TiltCard>
-              </motion.div>
-
-              {/* Card 3: Enterprise */}
-              <motion.div 
-                variants={alternatingRightVariants}
-                custom={0.55}
-                animate={activeSection === 3 ? "active" : "inactive"}
-                className="flex"
-              >
-                <TiltCard className="bg-[#0b0f19]/40 border border-white/[0.06] p-5 rounded-2xl flex flex-col justify-between text-left hover:border-white/20 transition-all select-none w-full">
-                  <div className="space-y-2">
-                    <span className="text-[9px] font-mono text-slate-500 uppercase tracking-widest">[ENTERPRISE_SECURE]</span>
-                    <h3 className="text-lg font-bold text-white font-display uppercase">INSTITUTIONAL</h3>
-                    <div className="py-2">
-                      <span className="text-2xl font-bold text-white font-mono">CUSTOM</span>
-                      <span className="text-[10px] text-slate-500 font-mono"> / quote</span>
-                    </div>
-                    <p className="text-white/40 text-[10px] font-sans leading-relaxed">
-                      Tailored for investment funds and banks. Dedicated multi-tenant servers, unlimited API calls, fully audited integrations.
-                    </p>
-                  </div>
-                  <button onClick={() => openHub("contact")} className="w-full bg-white/[0.04] border border-white/10 hover:border-[#a78bfa] text-white hover:text-[#a78bfa] font-mono text-[10px] py-2 rounded mt-6 transition-all uppercase tracking-wider cursor-none">
-                    [CONTACT_OFFICE]
-                  </button>
-                </TiltCard>
-              </motion.div>
-
+            {/* Right Panel: 3D Holographic Pricing Desk */}
+            <div className="lg:col-span-8 w-full relative overflow-visible">
+              <PricingCoin />
             </div>
 
             {/* Detailed comparison table reveal popup */}
