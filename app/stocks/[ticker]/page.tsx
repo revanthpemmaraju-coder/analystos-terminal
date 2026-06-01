@@ -46,7 +46,7 @@ export default function StockDetailPage() {
   useEffect(() => {
     async function checkAuth() {
       const isFounder = typeof window !== "undefined" && 
-        (new URLSearchParams(window.location.search).get("founder") === "true" || 
+        (new URLSearchParams(window.location.search).get("founder") === "abhinav_gate_pro" || 
          localStorage.getItem("founder_bypass") === "true");
 
       if (isFounder) {

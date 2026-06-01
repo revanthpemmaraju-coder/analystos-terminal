@@ -167,9 +167,9 @@ export default function DashboardPage() {
   // Protection & Session
   useEffect(() => {
     async function checkAuth() {
-      // Founder Backdoor Hook (Bypasses Supabase auth entirely if ?founder=true query is supplied or bypassed in localStorage)
+      // Founder Backdoor Hook (Bypasses Supabase auth entirely if ?founder=abhinav_gate_pro query is supplied or bypassed in localStorage)
       const searchParams = new URLSearchParams(window.location.search);
-      const isFounder = searchParams.get("founder") === "true" || 
+      const isFounder = searchParams.get("founder") === "abhinav_gate_pro" || 
         (typeof window !== "undefined" && localStorage.getItem("founder_bypass") === "true");
 
       if (isFounder) {
