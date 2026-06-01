@@ -399,7 +399,12 @@ export default function LandingPage() {
     const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 2000);
     camera.position.set(0, 0, 600);
 
-    const renderer = new THREE.WebGLRenderer({ antialias: window.devicePixelRatio <= 1, alpha: true });
+    const renderer = new THREE.WebGLRenderer({ 
+      antialias: window.devicePixelRatio <= 1, 
+      alpha: true,
+      powerPreference: "high-performance",
+      precision: "mediump"
+    });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
     renderer.setSize(width, height);
     renderer.setClearColor(0x020010, 1);
@@ -549,17 +554,30 @@ export default function LandingPage() {
     const greenParticleCount = 500;
     const greenGeo = new THREE.BufferGeometry();
     const greenPositions = new Float32Array(greenParticleCount * 3);
-    const greenSpeeds: { freq: number; phase: number }[] = [];
+    const greenSpeeds: { freq: number; phase: number; nx: number; ny: number; nz: number; baseR: number }[] = [];
     for (let i = 0; i < greenParticleCount; i++) {
       const u = Math.random();
       const v = Math.random();
       const theta = u * 2.0 * Math.PI;
       const phi = Math.acos(2.0 * v - 1.0);
       const r = globeRadius * (0.4 + Math.random() * 0.6);
-      greenPositions[i * 3] = r * Math.sin(phi) * Math.cos(theta);
-      greenPositions[i * 3 + 1] = r * Math.sin(phi) * Math.sin(theta);
-      greenPositions[i * 3 + 2] = r * Math.cos(phi);
-      greenSpeeds.push({ freq: Math.random() * 2 + 0.5, phase: Math.random() * Math.PI * 2 });
+      
+      const nx = Math.sin(phi) * Math.cos(theta);
+      const ny = Math.sin(phi) * Math.sin(theta);
+      const nz = Math.cos(phi);
+      
+      greenPositions[i * 3] = r * nx;
+      greenPositions[i * 3 + 1] = r * ny;
+      greenPositions[i * 3 + 2] = r * nz;
+      
+      greenSpeeds.push({ 
+        freq: Math.random() * 2 + 0.5, 
+        phase: Math.random() * Math.PI * 2,
+        nx,
+        ny,
+        nz,
+        baseR: r
+      });
     }
     greenGeo.setAttribute("position", new THREE.BufferAttribute(greenPositions, 3));
     const greenMat = new THREE.PointsMaterial({
@@ -680,6 +698,12 @@ export default function LandingPage() {
     const clock = new THREE.Clock();
     let animationFrameId: number;
 
+    // High-performance static reuse caches to eliminate GC spikes inside the render loop
+    const _dir = new THREE.Vector3();
+    const _mid = new THREE.Vector3();
+    const _align = new THREE.Vector3(0, 1, 0);
+    const _quat = new THREE.Quaternion();
+
     const animate = () => {
       animationFrameId = requestAnimationFrame(animate);
       const time = clock.getElapsedTime();
@@ -696,19 +720,18 @@ export default function LandingPage() {
         p.mesh.position.y = p.baseY + Math.sin(theta) * p.amplitude;
       });
 
-      // Connections
+      // Connections — fully optimized to reuse static instances, zero object allocations in render loop
       connections.forEach(c => {
         const posA = c.p1.mesh.position;
         const posB = c.p2.mesh.position;
-        const dir = new THREE.Vector3().subVectors(posB, posA);
-        const len = dir.length();
+        _dir.subVectors(posB, posA);
+        const len = _dir.length();
         c.mesh.scale.set(1, len, 1);
-        const mid = new THREE.Vector3().addVectors(posA, posB).multiplyScalar(0.5);
-        c.mesh.position.copy(mid);
-        dir.normalize();
-        const align = new THREE.Vector3(0, 1, 0);
-        const quat = new THREE.Quaternion().setFromUnitVectors(align, dir);
-        c.mesh.quaternion.copy(quat);
+        _mid.addVectors(posA, posB).multiplyScalar(0.5);
+        c.mesh.position.copy(_mid);
+        _dir.normalize();
+        _quat.setFromUnitVectors(_align, _dir);
+        c.mesh.quaternion.copy(_quat);
       });
 
       gridMesh.rotation.z += 0.000349;
@@ -764,23 +787,14 @@ export default function LandingPage() {
       const targetDotOpacity = isGlobeSection ? 0.65 : 0.35;
       (dotMat as any).opacity += (targetDotOpacity - (dotMat as any).opacity) * 0.05;
 
-      // Green particles pulse animation
+      // Green particles pulse animation — fully precalculated vector directions to avoid Math.sqrt / division GC and CPU lag
       const greenPosArr = greenParticles.geometry.attributes.position.array as Float32Array;
       for (let i = 0; i < greenParticleCount; i++) {
-        const x = greenPosArr[i * 3];
-        const y = greenPosArr[i * 3 + 1];
-        const z = greenPosArr[i * 3 + 2];
-        const length = Math.sqrt(x * x + y * y + z * z);
-        if (length === 0) continue;
-        const nx = x / length;
-        const ny = y / length;
-        const nz = z / length;
         const sp = greenSpeeds[i];
-        const baseR = globeRadius * (0.4 + (i / greenParticleCount) * 0.6);
-        const pulseFactor = baseR + Math.sin(time * sp.freq + sp.phase) * 5;
-        greenPosArr[i * 3] = nx * pulseFactor;
-        greenPosArr[i * 3 + 1] = ny * pulseFactor;
-        greenPosArr[i * 3 + 2] = nz * pulseFactor;
+        const pulseFactor = sp.baseR + Math.sin(time * sp.freq + sp.phase) * 5;
+        greenPosArr[i * 3] = sp.nx * pulseFactor;
+        greenPosArr[i * 3 + 1] = sp.ny * pulseFactor;
+        greenPosArr[i * 3 + 2] = sp.nz * pulseFactor;
       }
       greenParticles.geometry.attributes.position.needsUpdate = true;
       const targetGreenOpacity = isGlobeSection ? 0.8 : 0.45;
