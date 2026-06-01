@@ -15,6 +15,7 @@ import TickerBar from "@/components/ticker-bar";
 import { motion, AnimatePresence, useMotionValue, useSpring, useMotionTemplate } from "framer-motion";
 import PricingCoin from "@/components/pricing-coin";
 
+
 const formatIndianCurrency = (num: number) => {
   if (num >= 10000000) {
     return '₹' + (num / 10000000).toFixed(2) + ' Cr';
@@ -264,21 +265,24 @@ export default function LandingPage() {
   
   // Custom 2D Grid Page Navigation
   const [activeSection, setActiveSection] = useState(0);
+  // Globe drag rotation refs (updated in Three.js animation, no React re-renders)
+  const globeDragRef = useRef({ isDragging: false, prevX: 0, prevY: 0, rotX: 0, rotY: 0 });
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [infoHubActive, setInfoHubActive] = useState(false);
   const [pricingTableOpen, setPricingTableOpen] = useState(false);
 
   const sectionCoordinates = [
-    { x: 0,   y: 0 },   // 01. HERO
-    { x: 100, y: 0 },   // 02. FEATURES (slides sideways right)
-    { x: 100, y: 100 }, // 03. METRICS (slides downward down)
-    { x: 200, y: 100 }, // 04. PRICING (slides sideways right)
-    { x: 200, y: 200 }, // 05. ROADMAP (slides downward down)
-    { x: 100, y: 200 }, // 06. SECURE VAULT (slides sideways left)
+    { x: 0,   y: 0 },   // 01. HERO (x: 0, y: 0)
+    { x: 100, y: 0 },   // 02. GLOBAL INTELLIGENCE (x: 100, y: 0)
+    { x: 200, y: 0 },   // 03. FEATURES (x: 200, y: 0)
+    { x: 200, y: 100 }, // 04. METRICS (x: 200, y: 100)
+    { x: 100, y: 100 }, // 05. PRICING (x: 100, y: 100)
+    { x: 100, y: 200 }, // 06. ROADMAP (x: 100, y: 200)
+    { x: 0,   y: 200 }, // 07. SECURE VAULT (x: 0, y: 200)
   ];
 
   const scrollLeft = typeof window !== "undefined" ? activeSection * window.innerWidth : 0;
-  const scrollProgress = activeSection / 5;
+  const scrollProgress = activeSection / 6;
 
   const scrollToSection = (idx: number) => {
     if (isTransitioning) return;
@@ -307,7 +311,7 @@ export default function LandingPage() {
 
       setIsTransitioning(true);
       if (e.deltaY > 0 || e.deltaX > 0) {
-        setActiveSection(prev => Math.min(5, prev + 1));
+        setActiveSection(prev => Math.min(6, prev + 1));
       } else if (e.deltaY < 0 || e.deltaX < 0) {
         setActiveSection(prev => Math.max(0, prev - 1));
       }
@@ -321,7 +325,7 @@ export default function LandingPage() {
       if (pricingTableOpen || infoHubActive) return;
       if (["ArrowDown", "ArrowRight", "Space"].includes(e.key)) {
         e.preventDefault();
-        scrollToSection(Math.min(5, activeSection + 1));
+        scrollToSection(Math.min(6, activeSection + 1));
       } else if (["ArrowUp", "ArrowLeft"].includes(e.key)) {
         e.preventDefault();
         scrollToSection(Math.max(0, activeSection - 1));
@@ -344,13 +348,13 @@ export default function LandingPage() {
       if (Math.abs(dx) > swipeThreshold || Math.abs(dy) > swipeThreshold) {
         if (Math.abs(dx) > Math.abs(dy)) {
           if (dx > 0) {
-            scrollToSection(Math.min(5, activeSection + 1));
+            scrollToSection(Math.min(6, activeSection + 1));
           } else {
             scrollToSection(Math.max(0, activeSection - 1));
           }
         } else {
           if (dy > 0) {
-            scrollToSection(Math.min(5, activeSection + 1));
+            scrollToSection(Math.min(6, activeSection + 1));
           } else {
             scrollToSection(Math.max(0, activeSection - 1));
           }
@@ -614,9 +618,33 @@ export default function LandingPage() {
       mouseY = (event.clientY - window.innerHeight / 2) / (window.innerHeight / 2);
       targetRotX = -mouseY * (10 * Math.PI / 180);
       targetRotY = -mouseX * (12 * Math.PI / 180);
+
+      // Globe drag rotation
+      const drag = globeDragRef.current;
+      if (drag.isDragging) {
+        const dx = event.clientX - drag.prevX;
+        const dy = event.clientY - drag.prevY;
+        drag.rotY += dx * 0.005;
+        drag.rotX += dy * 0.005;
+        drag.prevX = event.clientX;
+        drag.prevY = event.clientY;
+      }
+    };
+
+    const handleMouseDown = (event: MouseEvent) => {
+      const drag = globeDragRef.current;
+      drag.isDragging = true;
+      drag.prevX = event.clientX;
+      drag.prevY = event.clientY;
+    };
+
+    const handleMouseUp = () => {
+      globeDragRef.current.isDragging = false;
     };
 
     window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mousedown", handleMouseDown);
+    window.addEventListener("mouseup", handleMouseUp);
 
     const clock = new THREE.Clock();
     let animationFrameId: number;
@@ -627,7 +655,7 @@ export default function LandingPage() {
       const dt = Math.min(clock.getDelta(), 0.1);
 
       // Scroll progress mapping driven smoothly by activeSectionRef coordinate Z interpolation
-      const currProgress = activeSectionRef.current / 5;
+      const currProgress = activeSectionRef.current / 6;
       const targetZ = 600 - currProgress * (600 - 350);
       camera.position.z += (targetZ - camera.position.z) * 0.05;
 
@@ -666,9 +694,29 @@ export default function LandingPage() {
       camera.rotation.x = camRot.x;
       camera.rotation.y = camRot.y;
 
-      // Globe centerpiece
-      globeGroup.rotation.y = time * 0.05;
-      globeGroup.rotation.x = time * 0.02;
+      // Globe centerpiece — drag overrides auto-rotate
+      const drag = globeDragRef.current;
+      if (drag.isDragging || (Math.abs(drag.rotX) > 0.01 || Math.abs(drag.rotY) > 0.01)) {
+        // Lerp towards drag rotation
+        globeGroup.rotation.y += (drag.rotY - globeGroup.rotation.y) * 0.08 + 0.003;
+        globeGroup.rotation.x += (drag.rotX - globeGroup.rotation.x) * 0.08;
+      } else {
+        globeGroup.rotation.y = time * 0.05;
+        globeGroup.rotation.x = time * 0.02;
+      }
+
+      // Scale globe up when on Section 1 (Global Intelligence)
+      const isGlobeSection = activeSectionRef.current === 1;
+      const targetGlobeScale = isGlobeSection ? 1.6 : 1.0;
+      const currentGlobeScale = globeGroup.scale.x;
+      const newGlobeScale = currentGlobeScale + (targetGlobeScale - currentGlobeScale) * 0.04;
+      globeGroup.scale.setScalar(newGlobeScale);
+
+      // Increase globe opacity when active
+      const targetWireOpacity = isGlobeSection ? 0.18 : 0.08;
+      (wireMat as any).opacity += (targetWireOpacity - (wireMat as any).opacity) * 0.05;
+      const targetDotOpacity = isGlobeSection ? 0.65 : 0.35;
+      (dotMat as any).opacity += (targetDotOpacity - (dotMat as any).opacity) * 0.05;
 
       const positionsArr = aiSphereParticles.geometry.attributes.position.array as Float32Array;
       for (let i = 0; i < particleCount; i++) {
@@ -708,6 +756,8 @@ export default function LandingPage() {
 
     return () => {
       window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mousedown", handleMouseDown);
+      window.removeEventListener("mouseup", handleMouseUp);
       window.removeEventListener("resize", handleResize);
       cancelAnimationFrame(animationFrameId);
       
@@ -1101,7 +1151,7 @@ export default function LandingPage() {
 
       {/* 4. Right side dot navigation indicators */}
       <div className="fixed right-8 top-1/2 -translate-y-1/2 flex flex-col space-y-4 z-40 select-none">
-        {[0, 1, 2, 3, 4, 5].map((idx) => {
+        {[0, 1, 2, 3, 4, 5, 6].map((idx) => {
           const isActive = activeSection === idx;
           return (
             <button
@@ -1109,17 +1159,18 @@ export default function LandingPage() {
               onClick={() => scrollToSection(idx)}
               className={`w-3 h-3 rounded-full border transition-all duration-300 relative group cursor-none bg-transparent`}
               style={{
-                borderColor: isActive ? "#a78bfa" : "rgba(255,255,255,0.2)",
-                backgroundColor: isActive ? "#a78bfa" : "transparent",
+                borderColor: isActive ? "#00d4ff" : "rgba(255,255,255,0.2)",
+                backgroundColor: isActive ? "#00d4ff" : "transparent",
               }}
             >
               <span className="absolute right-6 top-1/2 -translate-y-1/2 bg-black/90 border border-white/10 px-2 py-0.5 rounded text-[10px] font-mono opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap text-slate-400">
                 {idx === 0 && "01. HERO COCKPIT"}
-                {idx === 1 && "02. FEATURE GRID"}
-                {idx === 2 && "03. DCF SANDBOX"}
-                {idx === 3 && "04. PRICING PLANS"}
-                {idx === 4 && "05. ABOUT TIMELINE"}
-                {idx === 5 && "06. SECURE VAULT"}
+                {idx === 1 && "02. GLOBAL INTELLIGENCE"}
+                {idx === 2 && "03. FEATURE GRID"}
+                {idx === 3 && "04. DCF SANDBOX"}
+                {idx === 4 && "05. PRICING PLANS"}
+                {idx === 5 && "06. ABOUT TIMELINE"}
+                {idx === 6 && "07. SECURE VAULT"}
               </span>
             </button>
           );
@@ -1258,16 +1309,73 @@ export default function LandingPage() {
         </section>
 
           {/* ==========================================
-          * SECTION 2: FEATURE GRID & STAT CARDS
+          * SECTION 2: GLOBAL INTELLIGENCE (ORBITING TEXT OVER EXISTING GLOBE)
+          * ========================================== */}
+          <section 
+            className="absolute w-screen h-screen overflow-hidden flex items-center justify-center transition-all duration-1000"
+            style={{
+              left: "100vw",
+              top: "0vh",
+              transform: `scale(${activeSection === 1 ? 1 : 0.95})`,
+              filter: `blur(${activeSection === 1 ? 0 : 2}px)`,
+              opacity: activeSection === 1 ? 1 : 0.6,
+              perspective: "1200px",
+              transition: "transform 1.2s cubic-bezier(0.16, 1, 0.3, 1), filter 1.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 1.2s cubic-bezier(0.16, 1, 0.3, 1)"
+            }}
+          >
+            {/* Center text content */}
+            <motion.div 
+              initial={{ opacity: 0, y: 30 }}
+              animate={activeSection === 1 ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
+              transition={{ duration: 1.0, ease: [0.16, 1, 0.3, 1] }}
+              className="relative z-10 w-full max-w-4xl px-6 text-center space-y-6 flex flex-col items-center"
+            >
+              <span className="text-[10px] font-bold tracking-[0.25em] font-mono text-[#00d4ff] uppercase block">
+                02 — GLOBAL INTELLIGENCE
+              </span>
+
+              <h2 className="text-3xl md:text-[56px] font-[800] font-display text-white uppercase tracking-tight leading-none max-w-2xl text-center select-none mt-2">
+                Markets move at the speed of light. So do we.
+              </h2>
+
+              <p className="text-white/40 text-sm md:text-[16px] font-sans max-w-lg leading-relaxed">
+                Drag the globe to explore. Our intelligence network spans every exchange, every feed, every model.
+              </p>
+
+              {/* Orbiting stat pills — spin once on entrance */}
+              <motion.div
+                initial={{ rotateY: -180, opacity: 0 }}
+                animate={activeSection === 1 ? { rotateY: 0, opacity: 1 } : { rotateY: -180, opacity: 0 }}
+                transition={{ duration: 2.0, ease: [0.16, 1, 0.3, 1], delay: 0.3 }}
+                style={{ transformStyle: "preserve-3d", perspective: "800px" }}
+                className="flex flex-wrap items-center justify-center gap-3 pt-4"
+              >
+                {["12ms Latency", "1,200+ Models", "99.4% Accuracy", "340+ Dashboards"].map((stat, idx) => (
+                  <motion.span
+                    key={idx}
+                    initial={{ scale: 0.8, opacity: 0, rotateX: 45 }}
+                    animate={activeSection === 1 ? { scale: 1, opacity: 1, rotateX: 0 } : { scale: 0.8, opacity: 0, rotateX: 45 }}
+                    transition={{ duration: 0.8, delay: 0.5 + idx * 0.15, ease: [0.16, 1, 0.3, 1] }}
+                    className="border border-[#00d4ff]/15 bg-[#00d4ff]/5 hover:bg-[#00d4ff]/10 hover:border-[#00d4ff]/35 transition-colors px-4 py-1.5 rounded-full text-[11px] font-mono text-[#00d4ff] font-bold shadow-lg backdrop-blur-sm"
+                  >
+                    {stat}
+                  </motion.span>
+                ))}
+              </motion.div>
+            </motion.div>
+          </section>
+
+          {/* ==========================================
+          * SECTION 3: FEATURE GRID & STAT CARDS
           * ========================================== */}
           <section 
             className="absolute w-screen h-screen overflow-hidden flex items-center justify-center px-12 md:px-20 pt-16 transition-all duration-1000"
             style={{
-              left: "100vw",
+              left: "200vw",
               top: "0vh",
-              transform: `scale(${activeSection === 1 ? 1 : 0.94}) rotateY(${activeSection === 1 ? 0 : 12}deg)`,
-              filter: `blur(${activeSection === 1 ? 0 : 2}px)`,
-              opacity: activeSection === 1 ? 1 : 0.6,
+              transform: `scale(${activeSection === 2 ? 1 : 0.94}) rotateY(${activeSection === 2 ? 0 : 12}deg)`,
+              filter: `blur(${activeSection === 2 ? 0 : 2}px)`,
+              opacity: activeSection === 2 ? 1 : 0.6,
               perspective: "1200px",
               transition: "transform 1.2s cubic-bezier(0.16, 1, 0.3, 1), filter 1.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 1.2s cubic-bezier(0.16, 1, 0.3, 1)"
             }}
@@ -1278,7 +1386,7 @@ export default function LandingPage() {
             <motion.div 
               variants={alternatingLeftVariants}
               custom={0.15}
-              animate={activeSection === 1 ? "active" : "inactive"}
+              animate={activeSection === 2 ? "active" : "inactive"}
               className="lg:col-span-7 text-left space-y-4"
             >
               <span className="terminal-badge">02. FEATURES GRIDS</span>
@@ -1340,7 +1448,7 @@ export default function LandingPage() {
             <motion.div 
               variants={alternatingRightVariants}
               custom={0.35}
-              animate={activeSection === 1 ? "active" : "inactive"}
+              animate={activeSection === 2 ? "active" : "inactive"}
               className="lg:col-span-5 flex justify-center"
             >
               <div className="grid grid-cols-2 gap-4">
@@ -1379,16 +1487,16 @@ export default function LandingPage() {
         </section>
 
           {/* ==========================================
-          * SECTION 3: METRICS 2×3 DCF SANDBOX
+          * SECTION 4: METRICS 2×3 DCF SANDBOX
           * ========================================== */}
           <section 
             className="absolute w-screen h-screen overflow-hidden flex items-center justify-center px-12 md:px-20 pt-16 transition-all duration-1000"
             style={{
-              left: "100vw",
+              left: "200vw",
               top: "100vh",
-              transform: `scale(${activeSection === 2 ? 1 : 0.93}) rotateX(${activeSection === 2 ? 0 : -10}deg)`,
-              filter: `blur(${activeSection === 2 ? 0 : 2}px)`,
-              opacity: activeSection === 2 ? 1 : 0.6,
+              transform: `scale(${activeSection === 3 ? 1 : 0.93}) rotateX(${activeSection === 3 ? 0 : -10}deg)`,
+              filter: `blur(${activeSection === 3 ? 0 : 2}px)`,
+              opacity: activeSection === 3 ? 1 : 0.6,
               perspective: "1200px",
               transition: "transform 1.2s cubic-bezier(0.16, 1, 0.3, 1), filter 1.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 1.2s cubic-bezier(0.16, 1, 0.3, 1)"
             }}
@@ -1399,7 +1507,7 @@ export default function LandingPage() {
             <motion.div 
               variants={downwardVariants}
               custom={0.15}
-              animate={activeSection === 2 ? "active" : "inactive"}
+              animate={activeSection === 3 ? "active" : "inactive"}
               className="lg:col-span-5 text-left space-y-4"
             >
               <span className="terminal-badge">03. METRICS SANDBOX</span>
@@ -1526,7 +1634,7 @@ export default function LandingPage() {
                 <motion.div 
                   variants={downwardVariants}
                   custom={0.3}
-                  animate={activeSection === 2 ? "active" : "inactive"}
+                  animate={activeSection === 3 ? "active" : "inactive"}
                   className="col-span-2"
                 >
                   <TiltCard className="bg-white/[0.02] border border-white/[0.08] p-4 rounded-xl flex flex-col justify-between h-[95px] text-left hover:border-[#34d399]/20 transition-colors">
@@ -1543,7 +1651,7 @@ export default function LandingPage() {
                 <motion.div 
                   variants={downwardVariants}
                   custom={0.45}
-                  animate={activeSection === 2 ? "active" : "inactive"}
+                  animate={activeSection === 3 ? "active" : "inactive"}
                   className="col-span-1"
                 >
                   <TiltCard className="bg-white/[0.02] border border-white/[0.08] p-4 rounded-xl flex flex-col justify-between h-[95px] text-left hover:border-[#a78bfa]/20 transition-colors">
@@ -1560,7 +1668,7 @@ export default function LandingPage() {
                 <motion.div
                   variants={downwardVariants}
                   custom={0.5}
-                  animate={activeSection === 2 ? "active" : "inactive"}
+                  animate={activeSection === 3 ? "active" : "inactive"}
                   className="col-span-3 bg-white/[0.01] border border-white/[0.05] p-4 rounded-xl text-left"
                 >
                   <span className="text-[9px] uppercase tracking-wider text-[#a78bfa] font-mono block mb-2">PRO-FORMA EBITDA CASH FLOW GRAPH PROJECTION</span>
@@ -1589,7 +1697,7 @@ export default function LandingPage() {
                 <motion.div 
                   variants={downwardVariants}
                   custom={0.6}
-                  animate={activeSection === 2 ? "active" : "inactive"}
+                  animate={activeSection === 3 ? "active" : "inactive"}
                   className="col-span-3"
                 >
                   <TiltCard className="bg-slate-950/60 border border-white/[0.05] p-3 rounded-xl hover:border-[#60a5fa]/20 transition-colors">
@@ -1624,16 +1732,16 @@ export default function LandingPage() {
         </section>
 
           {/* ==========================================
-          * SECTION 4: PRICING PLANS MATRIX
+          * SECTION 5: PRICING PLANS MATRIX
           * ========================================== */}
           <section 
             className="absolute w-screen h-screen overflow-hidden flex items-center justify-center px-12 md:px-20 pt-16 transition-all duration-1000"
             style={{
-              left: "200vw",
+              left: "100vw",
               top: "100vh",
-              transform: `scale(${activeSection === 3 ? 1 : 0.92}) translateZ(${activeSection === 3 ? 0 : -80}px)`,
-              filter: `blur(${activeSection === 3 ? 0 : 2}px)`,
-              opacity: activeSection === 3 ? 1 : 0.6,
+              transform: `scale(${activeSection === 4 ? 1 : 0.92}) translateZ(${activeSection === 4 ? 0 : -80}px)`,
+              filter: `blur(${activeSection === 4 ? 0 : 2}px)`,
+              opacity: activeSection === 4 ? 1 : 0.6,
               perspective: "1200px",
               transition: "transform 1.2s cubic-bezier(0.16, 1, 0.3, 1), filter 1.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 1.2s cubic-bezier(0.16, 1, 0.3, 1)"
             }}
@@ -1644,7 +1752,7 @@ export default function LandingPage() {
             <motion.div 
               variants={alternatingLeftVariants}
               custom={0.1}
-              animate={activeSection === 3 ? "active" : "inactive"}
+              animate={activeSection === 4 ? "active" : "inactive"}
               className="lg:col-span-4 text-left space-y-4"
             >
               <span className="terminal-badge">04. LICENSE DESK</span>
@@ -1721,16 +1829,16 @@ export default function LandingPage() {
         </section>
 
           {/* ==========================================
-          * SECTION 5: ABOUT ROADMAP TIMELINE
+          * SECTION 6: ABOUT ROADMAP TIMELINE
           * ========================================== */}
           <section 
             className="absolute w-screen h-screen overflow-hidden flex items-center justify-center px-12 md:px-20 pt-16 transition-all duration-1000"
             style={{
-              left: "200vw",
+              left: "100vw",
               top: "200vh",
-              transform: `scale(${activeSection === 4 ? 1 : 0.94}) skewX(${activeSection === 4 ? 0 : 3}deg)`,
-              filter: `blur(${activeSection === 4 ? 0 : 2}px)`,
-              opacity: activeSection === 4 ? 1 : 0.6,
+              transform: `scale(${activeSection === 5 ? 1 : 0.94}) skewX(${activeSection === 5 ? 0 : 3}deg)`,
+              filter: `blur(${activeSection === 5 ? 0 : 2}px)`,
+              opacity: activeSection === 5 ? 1 : 0.6,
               perspective: "1200px",
               transition: "transform 1.2s cubic-bezier(0.16, 1, 0.3, 1), filter 1.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 1.2s cubic-bezier(0.16, 1, 0.3, 1)"
             }}
@@ -1741,7 +1849,7 @@ export default function LandingPage() {
             <motion.div 
               variants={downwardVariants}
               custom={0.15}
-              animate={activeSection === 4 ? "active" : "inactive"}
+              animate={activeSection === 5 ? "active" : "inactive"}
               className="lg:col-span-5 text-left space-y-4"
             >
               <span className="terminal-badge">05. STAGES ROADMAP</span>
@@ -1798,7 +1906,7 @@ export default function LandingPage() {
                     key={idx}
                     variants={downwardVariants}
                     custom={step.delay}
-                    animate={activeSection === 4 ? "active" : "inactive"}
+                    animate={activeSection === 5 ? "active" : "inactive"}
                     className={`bg-[#0b0f19]/30 border ${step.border} p-4 rounded-xl text-left relative hover:bg-white/[0.03] transition-colors`}
                   >
                     {/* Timeline bullet node */}
@@ -1817,16 +1925,16 @@ export default function LandingPage() {
         </section>
 
           {/* ==========================================
-          * SECTION 6: FINAL CTA & LOCKED VALUATION VAULT
+          * SECTION 7: FINAL CTA & LOCKED VALUATION VAULT
           * ========================================== */}
           <section 
             className="absolute w-screen h-screen overflow-hidden flex items-center justify-center px-12 md:px-20 pt-16 transition-all duration-1000"
             style={{
-              left: "100vw",
+              left: "0vw",
               top: "200vh",
-              transform: `scale(${activeSection === 5 ? 1 : 0.91}) rotate(${activeSection === 5 ? 0 : 2}deg) translateY(${activeSection === 5 ? 0 : 30}px)`,
-              filter: `blur(${activeSection === 5 ? 0 : 2}px)`,
-              opacity: activeSection === 5 ? 1 : 0.6,
+              transform: `scale(${activeSection === 6 ? 1 : 0.91}) rotate(${activeSection === 6 ? 0 : 2}deg) translateY(${activeSection === 6 ? 0 : 30}px)`,
+              filter: `blur(${activeSection === 6 ? 0 : 2}px)`,
+              opacity: activeSection === 6 ? 1 : 0.6,
               perspective: "1200px",
               transition: "transform 1.2s cubic-bezier(0.16, 1, 0.3, 1), filter 1.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 1.2s cubic-bezier(0.16, 1, 0.3, 1)"
             }}
@@ -1837,7 +1945,7 @@ export default function LandingPage() {
             <motion.div 
               variants={cardVariants}
               custom={0.15}
-              animate={activeSection === 5 ? "active" : "inactive"}
+              animate={activeSection === 6 ? "active" : "inactive"}
               className="lg:col-span-6 text-left space-y-4"
             >
               {/* Interactive Padlock Vector */}
@@ -1905,7 +2013,7 @@ export default function LandingPage() {
             <motion.div 
               variants={cardVariants}
               custom={0.35}
-              animate={activeSection === 5 ? "active" : "inactive"}
+              animate={activeSection === 6 ? "active" : "inactive"}
               className="lg:col-span-6 w-full"
             >
               <TiltCard className="w-full font-mono text-[11px] text-left bg-slate-950/60 border border-white/[0.05] p-5 rounded-2xl">
@@ -1969,7 +2077,7 @@ export default function LandingPage() {
           {/* Premium Smooth Fade-in Footer Reveal */}
           <motion.footer 
             initial={{ opacity: 0, y: 15 }}
-            animate={activeSection === 5 ? { opacity: 1, y: 0 } : { opacity: 0, y: 15 }}
+            animate={activeSection === 6 ? { opacity: 1, y: 0 } : { opacity: 0, y: 15 }}
             transition={{ duration: 0.8, delay: 0.5, ease: "easeOut" }}
             className="absolute bottom-6 left-0 right-0 px-12 md:px-20 flex flex-col md:flex-row items-center justify-between text-[11px] font-mono text-slate-500 select-none pointer-events-auto border-t border-white/[0.03] pt-4"
           >
