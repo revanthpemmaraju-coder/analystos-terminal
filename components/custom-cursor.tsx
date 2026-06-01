@@ -12,8 +12,14 @@ export default function CustomCursor() {
 
   const mouseCursorX = useMotionValue(0);
   const mouseCursorY = useMotionValue(0);
-  const cursorRingX = useSpring(mouseCursorX, { stiffness: 220, damping: 26 });
-  const cursorRingY = useSpring(mouseCursorY, { stiffness: 220, damping: 26 });
+  
+  // Highly-damped hyper-smooth spring for the inner dot to eliminate harsh pixel jumps
+  const cursorDotX = useSpring(mouseCursorX, { stiffness: 850, damping: 38 });
+  const cursorDotY = useSpring(mouseCursorY, { stiffness: 850, damping: 38 });
+
+  // Floppy trailing liquid spring for the outer ring
+  const cursorRingX = useSpring(mouseCursorX, { stiffness: 130, damping: 20 });
+  const cursorRingY = useSpring(mouseCursorY, { stiffness: 130, damping: 20 });
 
   useEffect(() => {
     setIsMounted(true);
@@ -65,34 +71,47 @@ export default function CustomCursor() {
 
   return (
     <div className="hidden md:block">
-      {/* Inner Dot */}
+      {/* Inner Dot — Silky smooth spring trailing */}
       <motion.div
         className="fixed top-0 left-0 pointer-events-none z-[9999]"
         style={{
-          x: mouseCursorX,
-          y: mouseCursorY,
+          x: cursorDotX,
+          y: cursorDotY,
           translateX: "-50%",
           translateY: "-50%",
-          width: isClicked ? "10px" : (isHovered ? "8px" : "12px"),
-          height: isClicked ? "10px" : (isHovered ? "8px" : "12px"),
+          width: isClicked ? "8px" : (isHovered ? "6px" : "10px"),
+          height: isClicked ? "8px" : (isHovered ? "6px" : "10px"),
           borderRadius: "50%",
-          backgroundColor: isClicked ? "#34d399" : "#a78bfa",
-          boxShadow: isClicked ? "0 0 12px #34d399" : "0 0 8px #a78bfa",
+          backgroundColor: isClicked ? "#34d399" : (isHovered ? "#00d4ff" : "#a78bfa"),
+          boxShadow: isClicked 
+            ? "0 0 16px 4px rgba(52, 211, 153, 0.8)" 
+            : (isHovered 
+                ? "0 0 12px 2px rgba(0, 212, 255, 0.7)" 
+                : "0 0 8px rgba(167, 139, 250, 0.5)"),
           willChange: "transform",
         }}
       />
-      {/* Outer Ring */}
+      {/* Outer Ring — Floppy trailing liquid spring with glow and hover expansion */}
       <motion.div
-        className="fixed top-0 left-0 pointer-events-none z-[9999] rounded-full border"
+        className="fixed top-0 left-0 pointer-events-none z-[9999] rounded-full border transition-all duration-300"
         style={{
           x: cursorRingX,
           y: cursorRingY,
           translateX: "-50%",
           translateY: "-50%",
-          width: isHovered ? "48px" : "36px",
-          height: isHovered ? "48px" : "36px",
-          borderColor: isClicked ? "#34d399" : "rgba(167, 139, 250, 0.9)",
-          borderWidth: isClicked ? "2px" : "1.5px",
+          width: isClicked ? "24px" : (isHovered ? "56px" : "36px"),
+          height: isClicked ? "24px" : (isHovered ? "56px" : "36px"),
+          borderColor: isClicked 
+            ? "#34d399" 
+            : (isHovered ? "rgba(0, 212, 255, 0.85)" : "rgba(167, 139, 250, 0.6)"),
+          borderWidth: isClicked ? "2px" : (isHovered ? "1.5px" : "1.0px"),
+          backgroundColor: isClicked 
+            ? "rgba(52, 211, 153, 0.08)" 
+            : (isHovered ? "rgba(0, 212, 255, 0.05)" : "rgba(167, 139, 250, 0.02)"),
+          boxShadow: isHovered 
+            ? "0 0 15px rgba(0, 212, 255, 0.12), inset 0 0 10px rgba(0, 212, 255, 0.05)" 
+            : "none",
+          backdropFilter: isHovered ? "blur(2px)" : "none",
           opacity: 0.9,
           willChange: "transform",
         }}
