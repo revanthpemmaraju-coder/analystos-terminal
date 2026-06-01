@@ -641,8 +641,8 @@ export default function LandingPage() {
     };
 
     const handleMouseDown = (event: MouseEvent) => {
-      // Don't drag on pricing section (interferes with coin)
-      if (activeSectionRef.current === 4) return;
+      // Don't drag on Metrics Sandbox (3) or Pricing Plans (4) sections as it interferes with sliders and the coin
+      if (activeSectionRef.current === 3 || activeSectionRef.current === 4) return;
       // Don't drag if clicking interactive elements
       const target = event.target as HTMLElement;
       if (
