@@ -544,6 +544,32 @@ export default function LandingPage() {
       globeGroup.add(routeLine);
     });
 
+    // Green particles INSIDE the globe (rotate with drag)
+    const greenParticleCount = 500;
+    const greenGeo = new THREE.BufferGeometry();
+    const greenPositions = new Float32Array(greenParticleCount * 3);
+    const greenSpeeds: { freq: number; phase: number }[] = [];
+    for (let i = 0; i < greenParticleCount; i++) {
+      const u = Math.random();
+      const v = Math.random();
+      const theta = u * 2.0 * Math.PI;
+      const phi = Math.acos(2.0 * v - 1.0);
+      const r = globeRadius * (0.4 + Math.random() * 0.6);
+      greenPositions[i * 3] = r * Math.sin(phi) * Math.cos(theta);
+      greenPositions[i * 3 + 1] = r * Math.sin(phi) * Math.sin(theta);
+      greenPositions[i * 3 + 2] = r * Math.cos(phi);
+      greenSpeeds.push({ freq: Math.random() * 2 + 0.5, phase: Math.random() * Math.PI * 2 });
+    }
+    greenGeo.setAttribute("position", new THREE.BufferAttribute(greenPositions, 3));
+    const greenMat = new THREE.PointsMaterial({
+      color: 0x34d399,
+      size: 2.5,
+      transparent: true,
+      opacity: 0.6,
+      blending: THREE.AdditiveBlending
+    });
+    const greenParticles = new THREE.Points(greenGeo, greenMat);
+    globeGroup.add(greenParticles);
 
 
     // 60 connecting lines
@@ -615,6 +641,8 @@ export default function LandingPage() {
     };
 
     const handleMouseDown = (event: MouseEvent) => {
+      // Don't drag on pricing section (interferes with coin)
+      if (activeSectionRef.current === 4) return;
       // Don't drag if clicking interactive elements
       const target = event.target as HTMLElement;
       if (
@@ -724,7 +752,27 @@ export default function LandingPage() {
       const targetDotOpacity = isGlobeSection ? 0.65 : 0.35;
       (dotMat as any).opacity += (targetDotOpacity - (dotMat as any).opacity) * 0.05;
 
-
+      // Green particles pulse animation
+      const greenPosArr = greenParticles.geometry.attributes.position.array as Float32Array;
+      for (let i = 0; i < greenParticleCount; i++) {
+        const x = greenPosArr[i * 3];
+        const y = greenPosArr[i * 3 + 1];
+        const z = greenPosArr[i * 3 + 2];
+        const length = Math.sqrt(x * x + y * y + z * z);
+        if (length === 0) continue;
+        const nx = x / length;
+        const ny = y / length;
+        const nz = z / length;
+        const sp = greenSpeeds[i];
+        const baseR = globeRadius * (0.4 + (i / greenParticleCount) * 0.6);
+        const pulseFactor = baseR + Math.sin(time * sp.freq + sp.phase) * 5;
+        greenPosArr[i * 3] = nx * pulseFactor;
+        greenPosArr[i * 3 + 1] = ny * pulseFactor;
+        greenPosArr[i * 3 + 2] = nz * pulseFactor;
+      }
+      greenParticles.geometry.attributes.position.needsUpdate = true;
+      const targetGreenOpacity = isGlobeSection ? 0.8 : 0.45;
+      (greenMat as any).opacity += (targetGreenOpacity - (greenMat as any).opacity) * 0.05;
 
       renderer.render(scene, camera);
     };
