@@ -265,11 +265,12 @@ export default function LandingPage() {
   
   // Custom 2D Grid Page Navigation
   const [activeSection, setActiveSection] = useState(0);
-  // Globe drag rotation refs (updated in Three.js animation, no React re-renders)
   const globeDragRef = useRef({
     isDragging: false,
     prevX: 0,
     prevY: 0,
+    targetRotX: 0,
+    targetRotY: 0,
     spinX: 0,      // current momentum speed X
     spinY: 0.003   // current momentum speed Y (starts as auto-rotate)
   });
@@ -627,13 +628,13 @@ export default function LandingPage() {
         const dx = event.clientX - drag.prevX;
         const dy = event.clientY - drag.prevY;
         
-        // Directly rotate the globe group based on drag delta
-        globeGroup.rotation.y += dx * 0.005;
-        globeGroup.rotation.x += dy * 0.005;
+        // Softly increment target rotation values instead of direct harsh updates
+        drag.targetRotY += dx * 0.007;
+        drag.targetRotX += dy * 0.007;
         
         // Track momentum speed
-        drag.spinY = dx * 0.005;
-        drag.spinX = dy * 0.005;
+        drag.spinY = dx * 0.007;
+        drag.spinX = dy * 0.007;
         
         drag.prevX = event.clientX;
         drag.prevY = event.clientY;
@@ -662,6 +663,10 @@ export default function LandingPage() {
       drag.prevY = event.clientY;
       drag.spinX = 0;
       drag.spinY = 0;
+      
+      // Initialize targets to current rotation so there are no sudden jumps
+      drag.targetRotX = globeGroup.rotation.x;
+      drag.targetRotY = globeGroup.rotation.y;
     };
 
     const handleMouseUp = () => {
@@ -720,23 +725,30 @@ export default function LandingPage() {
       camera.rotation.x = camRot.x;
       camera.rotation.y = camRot.y;
 
-      // Globe centerpiece — drag momentum and smooth return to auto-rotate
+      // Globe centerpiece — buttery-smooth target damping and inertia decay physics
       const drag = globeDragRef.current;
       if (drag.isDragging) {
-        // Directly handled in handleMouseMove
+        // Smoothly interpolate towards the target coordinates using a damping factor
+        const damping = 0.12;
+        globeGroup.rotation.y += (drag.targetRotY - globeGroup.rotation.y) * damping;
+        globeGroup.rotation.x += (drag.targetRotX - globeGroup.rotation.x) * damping;
       } else {
-        // Apply inertia decay
+        // Apply physics inertia decay
         drag.spinY *= 0.95;
         drag.spinX *= 0.95;
         
-        // Blend in baseline auto-rotation so it never stops completely
-        const targetAutoY = 0.003;
-        const targetAutoX = 0.001;
-        drag.spinY += (targetAutoY - drag.spinY) * 0.05;
-        drag.spinX += (targetAutoX - drag.spinX) * 0.05;
+        // Blend in baseline slow auto-rotation so it stays active
+        const targetAutoY = 0.0022;
+        const targetAutoX = 0.0006;
+        drag.spinY += (targetAutoY - drag.spinY) * 0.04;
+        drag.spinX += (targetAutoX - drag.spinX) * 0.04;
         
         globeGroup.rotation.y += drag.spinY;
         globeGroup.rotation.x += drag.spinX;
+        
+        // Keep the drag target aligned with active auto-rotation to prevent jumpy snaps when clicking again
+        drag.targetRotY = globeGroup.rotation.y;
+        drag.targetRotX = globeGroup.rotation.x;
       }
 
       // Scale globe up when on Section 1 (Global Intelligence)
