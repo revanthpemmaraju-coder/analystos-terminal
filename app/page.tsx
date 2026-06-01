@@ -544,37 +544,7 @@ export default function LandingPage() {
       globeGroup.add(routeLine);
     });
 
-    // Pulse core
-    const particleCount = 700;
-    const particleGeo = new THREE.BufferGeometry();
-    const particlePositions = new Float32Array(particleCount * 3);
-    const particleSpeeds: { freq: number; phase: number }[] = [];
-    const coreRadius = 85;
 
-    for (let i = 0; i < particleCount; i++) {
-      const u = Math.random();
-      const v = Math.random();
-      const theta = u * 2.0 * Math.PI;
-      const phi = Math.acos(2.0 * v - 1.0);
-      particlePositions[i * 3] = coreRadius * Math.sin(phi) * Math.cos(theta);
-      particlePositions[i * 3 + 1] = coreRadius * Math.sin(phi) * Math.sin(theta);
-      particlePositions[i * 3 + 2] = coreRadius * Math.cos(phi);
-      particleSpeeds.push({
-        freq: Math.random() * 2 + 1,
-        phase: Math.random() * Math.PI * 2
-      });
-    }
-
-    particleGeo.setAttribute("position", new THREE.BufferAttribute(particlePositions, 3));
-    const particleMat = new THREE.PointsMaterial({
-      color: 0x34d399,
-      size: 3.0,
-      transparent: true,
-      opacity: 0.7,
-      blending: THREE.AdditiveBlending
-    });
-    const aiSphereParticles = new THREE.Points(particleGeo, particleMat);
-    scene.add(aiSphereParticles);
 
     // 60 connecting lines
     const connections: Array<{
@@ -754,25 +724,7 @@ export default function LandingPage() {
       const targetDotOpacity = isGlobeSection ? 0.65 : 0.35;
       (dotMat as any).opacity += (targetDotOpacity - (dotMat as any).opacity) * 0.05;
 
-      const positionsArr = aiSphereParticles.geometry.attributes.position.array as Float32Array;
-      for (let i = 0; i < particleCount; i++) {
-        const x = positionsArr[i * 3];
-        const y = positionsArr[i * 3 + 1];
-        const z = positionsArr[i * 3 + 2];
-        const length = Math.sqrt(x*x + y*y + z*z);
-        if (length === 0) continue;
-        const nx = x / length;
-        const ny = y / length;
-        const nz = z / length;
-        const speed = particleSpeeds[i];
-        const pulseFactor = 85 + Math.sin(time * speed.freq + speed.phase) * 4.5;
-        positionsArr[i * 3] = nx * pulseFactor;
-        positionsArr[i * 3 + 1] = ny * pulseFactor;
-        positionsArr[i * 3 + 2] = nz * pulseFactor;
-      }
-      aiSphereParticles.geometry.attributes.position.needsUpdate = true;
-      aiSphereParticles.rotation.y = -time * 0.03;
-      aiSphereParticles.rotation.z = time * 0.01;
+
 
       renderer.render(scene, camera);
     };
