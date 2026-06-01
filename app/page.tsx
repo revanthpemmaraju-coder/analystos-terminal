@@ -709,6 +709,21 @@ export default function LandingPage() {
       window.removeEventListener("mousemove", handleMouseMove);
       window.removeEventListener("resize", handleResize);
       cancelAnimationFrame(animationFrameId);
+      
+      // Pro GPU Memory (VRAM) Disposal: Traverse and release WebGL objects
+      scene.traverse((obj: any) => {
+        if (obj.geometry) {
+          obj.geometry.dispose();
+        }
+        if (obj.material) {
+          if (Array.isArray(obj.material)) {
+            obj.material.forEach((mat: any) => mat.dispose());
+          } else {
+            obj.material.dispose();
+          }
+        }
+      });
+
       if (container && renderer.domElement) {
         container.removeChild(renderer.domElement);
       }
@@ -989,7 +1004,8 @@ export default function LandingPage() {
         className="fixed inset-0 pointer-events-none z-0 overflow-hidden"
         style={{ 
           transform: `translate3d(${-sectionCoordinates[activeSection].x * 0.25}vw, ${-sectionCoordinates[activeSection].y * 0.25}vh, 0)`,
-          transition: "transform 1.2s cubic-bezier(0.16, 1, 0.3, 1)"
+          transition: "transform 1.2s cubic-bezier(0.16, 1, 0.3, 1)",
+          willChange: "transform"
         }}
       >
         <div className="absolute w-[400px] h-[400px] rounded-full bg-[#a78bfa] opacity-[0.12] blur-[120px]" style={{ left: "60vw", top: "20vh" }} />
@@ -1003,7 +1019,8 @@ export default function LandingPage() {
         className="fixed inset-0 pointer-events-none z-0 overflow-hidden"
         style={{ 
           transform: `translate3d(${-sectionCoordinates[activeSection].x * 0.18}vw, ${-sectionCoordinates[activeSection].y * 0.18}vh, 0)`,
-          transition: "transform 1.2s cubic-bezier(0.16, 1, 0.3, 1)" 
+          transition: "transform 1.2s cubic-bezier(0.16, 1, 0.3, 1)",
+          willChange: "transform"
         }}
       >
         <div className="absolute inset-y-0 w-[500vw] opacity-[0.03]" style={{ backgroundImage: "radial-gradient(rgba(255,255,255,0.15) 1px, transparent 1px)", backgroundSize: "24px 24px" }} />
@@ -1014,7 +1031,8 @@ export default function LandingPage() {
         className="fixed inset-0 pointer-events-none z-20 overflow-hidden"
         style={{ 
           transform: `translate3d(${-sectionCoordinates[activeSection].x * 0.05}vw, ${-sectionCoordinates[activeSection].y * 0.05}vh, 0)`,
-          transition: "transform 1.2s cubic-bezier(0.16, 1, 0.3, 1)" 
+          transition: "transform 1.2s cubic-bezier(0.16, 1, 0.3, 1)",
+          willChange: "transform"
         }}
       >
         <div className="absolute text-[#a78bfa]/20 font-mono text-sm" style={{ left: "110vw", top: "25vh" }}>+</div>
@@ -1030,7 +1048,8 @@ export default function LandingPage() {
         className="fixed inset-0 z-0 pointer-events-none" 
         style={{
           transform: `translate3d(${-sectionCoordinates[activeSection].x * 0.12}vw, ${-sectionCoordinates[activeSection].y * 0.12}vh, 0)`,
-          transition: "transform 1.2s cubic-bezier(0.16, 1, 0.3, 1)"
+          transition: "transform 1.2s cubic-bezier(0.16, 1, 0.3, 1)",
+          willChange: "transform"
         }}
       />
 
@@ -1123,6 +1142,7 @@ export default function LandingPage() {
             duration: 1.2,
             ease: [0.16, 1, 0.3, 1] // Premium ultra-smooth bezier curve!
           }}
+          style={{ willChange: "transform" }}
           className="absolute inset-0 w-[300vw] h-[300vh]"
         >
         

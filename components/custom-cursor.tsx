@@ -78,6 +78,7 @@ export default function CustomCursor() {
           borderRadius: "50%",
           backgroundColor: isClicked ? "#34d399" : "#a78bfa",
           boxShadow: isClicked ? "0 0 12px #34d399" : "0 0 8px #a78bfa",
+          willChange: "transform",
         }}
       />
       {/* Outer Ring */}
@@ -93,6 +94,7 @@ export default function CustomCursor() {
           borderColor: isClicked ? "#34d399" : "rgba(167, 139, 250, 0.9)",
           borderWidth: isClicked ? "2px" : "1.5px",
           opacity: 0.9,
+          willChange: "transform",
         }}
       />
     </div>

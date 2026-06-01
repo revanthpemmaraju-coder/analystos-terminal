@@ -22,7 +22,7 @@ export async function GET(req: NextRequest) {
         "anthropic-version": "2023-06-01"
       },
       body: JSON.stringify({
-        model: "claude-sonnet-4-20250514",
+        model: "claude-3-5-sonnet-20241022",
         max_tokens: 500,
         system: "You are the AnalystOS Morning bulletin editor. Compile a highly structured financial briefing representing the daily NSE/BSE and global indices outlook. Include: 1. domestic index ticks, 2. top 3 sector movers, 3. global macro news (crude, currency), 4. key stock to watch with intrinsic PE ratios. Keep answers strictly professional and formatted with short line breaks for terminal readability.",
         messages: [{ role: "user", content: "Generate the morning brief for India trading desk" }]
