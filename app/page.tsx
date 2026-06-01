@@ -266,7 +266,13 @@ export default function LandingPage() {
   // Custom 2D Grid Page Navigation
   const [activeSection, setActiveSection] = useState(0);
   // Globe drag rotation refs (updated in Three.js animation, no React re-renders)
-  const globeDragRef = useRef({ isDragging: false, prevX: 0, prevY: 0, rotX: 0, rotY: 0 });
+  const globeDragRef = useRef({
+    isDragging: false,
+    prevX: 0,
+    prevY: 0,
+    spinX: 0,      // current momentum speed X
+    spinY: 0.003   // current momentum speed Y (starts as auto-rotate)
+  });
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [infoHubActive, setInfoHubActive] = useState(false);
   const [pricingTableOpen, setPricingTableOpen] = useState(false);
@@ -624,18 +630,40 @@ export default function LandingPage() {
       if (drag.isDragging) {
         const dx = event.clientX - drag.prevX;
         const dy = event.clientY - drag.prevY;
-        drag.rotY += dx * 0.005;
-        drag.rotX += dy * 0.005;
+        
+        // Directly rotate the globe group based on drag delta
+        globeGroup.rotation.y += dx * 0.005;
+        globeGroup.rotation.x += dy * 0.005;
+        
+        // Track momentum speed
+        drag.spinY = dx * 0.005;
+        drag.spinX = dy * 0.005;
+        
         drag.prevX = event.clientX;
         drag.prevY = event.clientY;
       }
     };
 
     const handleMouseDown = (event: MouseEvent) => {
+      // Don't drag if clicking interactive elements
+      const target = event.target as HTMLElement;
+      if (
+        target.tagName === "BUTTON" || 
+        target.tagName === "INPUT" || 
+        target.tagName === "A" || 
+        target.tagName === "TEXTAREA" ||
+        target.closest("button") ||
+        target.closest("a") ||
+        target.closest("input")
+      ) {
+        return;
+      }
       const drag = globeDragRef.current;
       drag.isDragging = true;
       drag.prevX = event.clientX;
       drag.prevY = event.clientY;
+      drag.spinX = 0;
+      drag.spinY = 0;
     };
 
     const handleMouseUp = () => {
@@ -694,15 +722,23 @@ export default function LandingPage() {
       camera.rotation.x = camRot.x;
       camera.rotation.y = camRot.y;
 
-      // Globe centerpiece — drag overrides auto-rotate
+      // Globe centerpiece — drag momentum and smooth return to auto-rotate
       const drag = globeDragRef.current;
-      if (drag.isDragging || (Math.abs(drag.rotX) > 0.01 || Math.abs(drag.rotY) > 0.01)) {
-        // Lerp towards drag rotation
-        globeGroup.rotation.y += (drag.rotY - globeGroup.rotation.y) * 0.08 + 0.003;
-        globeGroup.rotation.x += (drag.rotX - globeGroup.rotation.x) * 0.08;
+      if (drag.isDragging) {
+        // Directly handled in handleMouseMove
       } else {
-        globeGroup.rotation.y = time * 0.05;
-        globeGroup.rotation.x = time * 0.02;
+        // Apply inertia decay
+        drag.spinY *= 0.95;
+        drag.spinX *= 0.95;
+        
+        // Blend in baseline auto-rotation so it never stops completely
+        const targetAutoY = 0.003;
+        const targetAutoX = 0.001;
+        drag.spinY += (targetAutoY - drag.spinY) * 0.05;
+        drag.spinX += (targetAutoX - drag.spinX) * 0.05;
+        
+        globeGroup.rotation.y += drag.spinY;
+        globeGroup.rotation.x += drag.spinX;
       }
 
       // Scale globe up when on Section 1 (Global Intelligence)
@@ -1098,7 +1134,7 @@ export default function LandingPage() {
         id="hero-canvas-container" 
         className="fixed inset-0 z-0 pointer-events-none" 
         style={{
-          transform: `translate3d(${-sectionCoordinates[activeSection].x * 0.12}vw, ${-sectionCoordinates[activeSection].y * 0.12}vh, 0)`,
+          transform: `translate3d(${activeSection <= 1 ? 0 : -sectionCoordinates[activeSection].x * 0.12}vw, ${-sectionCoordinates[activeSection].y * 0.12}vh, 0)`,
           transition: "transform 1.2s cubic-bezier(0.16, 1, 0.3, 1)",
           willChange: "transform"
         }}
