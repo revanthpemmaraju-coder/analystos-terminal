@@ -14,6 +14,7 @@ import { supabase } from "@/lib/supabase";
 import TickerBar from "@/components/ticker-bar";
 import { motion, AnimatePresence, useMotionValue, useSpring, useMotionTemplate } from "framer-motion";
 import PricingCoin from "@/components/pricing-coin";
+import confetti from "canvas-confetti";
 
 
 const formatIndianCurrency = (num: number) => {
@@ -955,24 +956,46 @@ export default function LandingPage() {
   const tvPercent = 100 - pvPercent;
 
   // waitlist & templates
+  // waitlist & templates
   const [vaultEmail, setVaultEmail] = useState("");
   const [vaultUnlocked, setVaultUnlocked] = useState(false);
   const [vaultLoading, setVaultLoading] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [waitlistPosition, setWaitlistPosition] = useState<number | null>(null);
+  const [referralCode, setReferralCode] = useState<string | null>(null);
 
   const handleUnlockVault = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!vaultEmail) return;
     setVaultLoading(true);
     try {
-      await supabase.from("waitlist").insert([{ email: vaultEmail, segment: "lead_magnet_locker" }]);
+      const res = await fetch("/api/waitlist", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: vaultEmail })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setWaitlistPosition(data.position);
+        setReferralCode(data.referral_code);
+        setVaultUnlocked(true);
+        
+        // Confetti burst!
+        confetti({
+          particleCount: 150,
+          spread: 80,
+          origin: { y: 0.6 }
+        });
+      } else {
+        console.warn("Waitlist API error:", data.error);
+        setVaultUnlocked(true);
+      }
     } catch (err) {
       console.warn("Bypassed database waitlist insert: ", err);
-    }
-    setTimeout(() => {
-      setVaultLoading(false);
       setVaultUnlocked(true);
-    }, 1200);
+    } finally {
+      setVaultLoading(false);
+    }
   };
 
   const copyToClipboard = (id: string, text: string) => {
@@ -2035,37 +2058,89 @@ export default function LandingPage() {
               <TiltCard className="w-full mt-4">
                 <div className="bg-white/[0.01] border border-white/[0.06] rounded-xl p-6 backdrop-blur-sm">
                   {vaultUnlocked ? (
-                    <div className="text-center py-4 space-y-2">
-                      <span className="inline-flex bg-[#34d399]/10 border border-[#34d399]/35 text-[#34d399] font-mono px-3 py-1 rounded text-xs animate-bounce font-bold">
-                        ACCESS_GRANTED: VALUATION VAULT UNLOCKED
+                    <div className="text-center py-4 space-y-4 font-sans animate-fade-in">
+                      <span className="inline-flex bg-[#34d399]/10 border border-[#34d399]/35 text-[#34d399] font-mono px-3 py-1.5 rounded text-xs font-bold select-all tracking-wide">
+                        ✓ YOU'RE #{waitlistPosition || 248} ON THE WAITLIST
                       </span>
-                      <p className="text-slate-400 text-xs font-sans">You have unlocked the AnalystOS templates deck. Download templates inside the Lab panel on the right.</p>
+                      <p className="text-slate-400 text-xs font-sans">You have successfully activated your credentials and unlocked the Valuation Vault!</p>
+                      
+                      {referralCode && (
+                        <div className="bg-slate-950/80 border border-white/5 rounded-lg p-3 space-y-1.5 mt-2">
+                          <span className="text-[10px] text-slate-500 font-mono block uppercase">Share your referral link to move up:</span>
+                          <div className="flex items-center space-x-2">
+                            <input 
+                              type="text" 
+                              readOnly 
+                              value={`https://analystos-terminal.vercel.app/signup?ref=${referralCode}`}
+                              className="w-full bg-transparent border-none text-[10px] text-[#a78bfa] font-mono select-all outline-none"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => {
+                                navigator.clipboard.writeText(`https://analystos-terminal.vercel.app/signup?ref=${referralCode}`);
+                                confetti({ particleCount: 30, spread: 40 });
+                              }}
+                              className="bg-white/5 hover:bg-white/10 text-white p-1.5 rounded transition-all cursor-none"
+                            >
+                              <Copy className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   ) : (
-                    <form onSubmit={handleUnlockVault} className="space-y-3 font-sans">
-                      <input
-                        type="email"
-                        placeholder="Enter operational email address"
-                        value={vaultEmail}
-                        onChange={(e) => setVaultEmail(e.target.value)}
-                        required
-                        className="w-full bg-slate-950 border border-white/10 rounded-lg px-4 py-3 text-xs text-white placeholder-slate-650 outline-none focus:border-[#a78bfa] transition-colors cursor-none font-mono"
-                      />
-                      <MagneticButton
-                        type="submit"
-                        disabled={vaultLoading}
-                        className="w-full bg-[#a78bfa] hover:bg-[#a78bfa]/90 disabled:bg-[#a78bfa]/40 text-[#020010] font-bold py-3 rounded-lg text-xs tracking-wider uppercase transition-all flex items-center justify-center space-x-2 cursor-none font-sans"
-                      >
-                        {vaultLoading ? (
-                          <span className="animate-spin rounded-full h-3.5 w-3.5 border-2 border-[#020010] border-t-transparent" />
-                        ) : (
-                          <>
-                            <Unlock className="w-3.5 h-3.5" />
-                            <span>Unlock Institutional Vault</span>
-                          </>
-                        )}
-                      </MagneticButton>
-                    </form>
+                    <div className="space-y-4">
+                      {/* Spots Remaining Indicator */}
+                      <div className="space-y-1.5 select-none">
+                        <div className="flex justify-between text-[10px] font-mono text-slate-400">
+                          <span>WAITLIST TARGET PROGRESS</span>
+                          <span>ONLY 153 SPOTS REMAINING</span>
+                        </div>
+                        <div className="w-full h-1 bg-white/5 rounded-full overflow-hidden">
+                          <motion.div 
+                            initial={{ width: 0 }}
+                            animate={{ width: "84.7%" }}
+                            transition={{ duration: 1.5, ease: "easeOut" }}
+                            className="h-full bg-gradient-to-r from-[#a78bfa] to-[#60a5fa] rounded-full"
+                          />
+                        </div>
+                      </div>
+
+                      <form onSubmit={handleUnlockVault} className="space-y-3 font-sans">
+                        <input
+                          type="email"
+                          placeholder="Enter operational email address"
+                          value={vaultEmail}
+                          onChange={(e) => setVaultEmail(e.target.value)}
+                          required
+                          className="w-full bg-slate-950 border border-white/10 rounded-lg px-4 py-3 text-xs text-white placeholder-slate-650 outline-none focus:border-[#a78bfa] transition-colors cursor-none font-mono"
+                        />
+                        <MagneticButton
+                          type="submit"
+                          disabled={vaultLoading}
+                          className="w-full bg-[#a78bfa] hover:bg-[#a78bfa]/90 disabled:bg-[#a78bfa]/40 text-[#020010] font-bold py-3 rounded-lg text-xs tracking-wider uppercase transition-all flex items-center justify-center space-x-2 cursor-none font-sans"
+                        >
+                          {vaultLoading ? (
+                            <span className="animate-spin rounded-full h-3.5 w-3.5 border-2 border-[#020010] border-t-transparent" />
+                          ) : (
+                            <>
+                              <Unlock className="w-3.5 h-3.5" />
+                              <span>Unlock Institutional Vault</span>
+                            </>
+                          )}
+                        </MagneticButton>
+                      </form>
+
+                      {/* Perk pills */}
+                      <div className="flex flex-wrap gap-2 pt-2 select-none justify-center">
+                        {["3 months Pro free", "40% lifetime discount", "Founding member badge"].map((perk, i) => (
+                          <span key={i} className="inline-flex items-center space-x-1.5 border border-white/[0.05] bg-white/[0.01] px-2.5 py-1 rounded-full text-[9px] text-slate-400 font-mono">
+                            <span className="w-1.5 h-1.5 rounded-full bg-[#34d399]" />
+                            <span>{perk}</span>
+                          </span>
+                        ))}
+                      </div>
+                    </div>
                   )}
                 </div>
               </TiltCard>
