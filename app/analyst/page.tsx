@@ -109,7 +109,7 @@ Comparable Company Analysis (Comps) is a relative valuation method comparing the
   // Dynamic Asset Parser — handles ANY stock, crypto, or commodity query
   const cleanMsg = message.replace(/[^\w\s-]/g, "");
   const stopWords = [
-    "analyze", "analysis", "opinion", "on", "what", "is", "the", "about", "for",
+    "analyze", "analysis", "review", "opinion", "on", "what", "is", "the", "about", "for",
     "perform", "run", "do", "how", "compare", "vs", "versus", "and", "or", "dcf",
     "valuation", "of", "swot", "dupont", "roe", "comps", "earnings", "transcript",
     "summarize", "stock", "stocks", "crypto", "commodity", "commodities", "price",
@@ -131,6 +131,18 @@ Comparable Company Analysis (Comps) is a relative valuation method comparing the
     }
   }
   
+  const companyAliases: Record<string, string> = {
+    hdfc: "HDFCBANK", icici: "ICICIBANK", sbi: "SBIN", tcs: "TCS", reliance: "RELIANCE",
+    infosys: "INFY", infy: "INFY", wipro: "WIPRO", apple: "AAPL", nvidia: "NVDA",
+  };
+  const lowerMsg = message.toLowerCase();
+  for (const [name, ticker] of Object.entries(companyAliases)) {
+    if (lowerMsg.includes(name)) {
+      target = ticker;
+      break;
+    }
+  }
+
   if (!target && pinnedSymbol) {
     target = pinnedSymbol.replace(/\.(NS|BO)$/i, "");
   }

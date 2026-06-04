@@ -43,17 +43,50 @@ const INDIAN_NSE = new Set([
   "M&M", "TECHM", "ULTRACEMCO", "NESTLEIND", "TITAN", "JSWSTEEL",
 ]);
 
+/** Shorthand / colloquial names → NSE/BSE ticker */
+const TICKER_ALIASES: Record<string, string> = {
+  HDFC: "HDFCBANK",
+  ICICI: "ICICIBANK",
+  SBI: "SBIN",
+  INFOSYS: "INFY",
+  TATAMOTORS: "TATAMOTORS",
+  "TATA MOTORS": "TATAMOTORS",
+  WIPRO: "WIPRO",
+  BHARTI: "BHARTIARTL",
+  AIRTEL: "BHARTIARTL",
+  HUL: "HINDUNILVR",
+  HINDUNILEVER: "HINDUNILVR",
+  ASIANPAINT: "ASIANPAINT",
+  BAJAJ: "BAJFINANCE",
+  MARUTI: "MARUTI",
+  ADANI: "ADANIENT",
+  GOOGLE: "GOOGL",
+  FACEBOOK: "META",
+  BERKSHIRE: "BRK-B",
+};
+
 const COMPANY_ALIASES: Record<string, string> = {
   "tata consultancy": "TCS",
   tcs: "TCS",
   reliance: "RELIANCE",
   "reliance industries": "RELIANCE",
   infosys: "INFY",
+  infy: "INFY",
+  hdfc: "HDFCBANK",
   "hdfc bank": "HDFCBANK",
+  hdfcbank: "HDFCBANK",
+  icici: "ICICIBANK",
+  "icici bank": "ICICIBANK",
+  sbi: "SBIN",
+  "state bank": "SBIN",
+  wipro: "WIPRO",
+  airtel: "BHARTIARTL",
+  bharti: "BHARTIARTL",
+  maruti: "MARUTI",
+  tesla: "TSLA",
   apple: "AAPL",
   microsoft: "MSFT",
   nvidia: "NVDA",
-  tesla: "TSLA",
   amazon: "AMZN",
   google: "GOOGL",
   alphabet: "GOOGL",
@@ -61,8 +94,24 @@ const COMPANY_ALIASES: Record<string, string> = {
   facebook: "META",
 };
 
+const QUERY_STOP_WORDS = new Set([
+  "analyze", "analysis", "review", "stock", "stocks", "share", "shares",
+  "should", "invest", "buy", "sell", "hold", "now", "today", "please",
+  "tell", "me", "what", "about", "the", "is", "it", "good", "bad", "for",
+  "and", "or", "vs", "give", "show", "explain", "report", "opinion",
+  "perform", "run", "do", "how", "can", "you", "this", "that", "will",
+  "would", "could", "want", "need", "like", "my", "i", "a", "an", "in",
+  "on", "at", "to", "of", "with", "price", "target", "verdict",
+]);
+
+export function normalizeTicker(input: string): string {
+  const raw = input.trim().toUpperCase().replace(/\.(NS|BO|NSE|BSE)$/i, "");
+  if (!raw) return "";
+  return TICKER_ALIASES[raw] || raw;
+}
+
 export function toYahooSymbol(input: string): string {
-  const raw = input.trim().toUpperCase();
+  const raw = normalizeTicker(input.trim());
   if (!raw) return "";
   if (raw.includes(".")) return raw;
   if (INDIAN_NSE.has(raw)) return `${raw}.NS`;
@@ -100,13 +149,117 @@ export function extractTickers(message: string): string[] {
     if (!stop.has(token) && token.length >= 2) found.add(token);
   }
 
-  const lowerTokens = message.match(/\b[a-z]{2,6}\b/g) || [];
+  const lowerTokens = message.match(/\b[a-z][a-z0-9&.-]{1,24}\b/gi) || [];
   for (const token of lowerTokens) {
-    const mapped = COMPANY_ALIASES[token];
+    const key = token.toLowerCase();
+    const mapped = COMPANY_ALIASES[key];
     if (mapped) found.add(mapped);
+    else if (key.length >= 2 && key.length <= 6 && !QUERY_STOP_WORDS.has(key)) {
+      found.add(normalizeTicker(key));
+    }
   }
 
   return Array.from(found).slice(0, 5);
+}
+
+/** Best search phrase from a natural-language question */
+export function extractSearchQuery(message: string): string {
+  const lower = message.toLowerCase();
+
+  const aliasKeys = Object.keys(COMPANY_ALIASES).sort((a, b) => b.length - a.length);
+  for (const alias of aliasKeys) {
+    if (lower.includes(alias)) return COMPANY_ALIASES[alias];
+  }
+
+  for (const [shorthand, ticker] of Object.entries(TICKER_ALIASES)) {
+    if (lower.includes(shorthand.toLowerCase())) return ticker;
+  }
+
+  const words = lower
+    .replace(/[^\w\s&.-]/g, " ")
+    .split(/\s+/)
+    .filter((w) => w.length >= 2 && !QUERY_STOP_WORDS.has(w));
+
+  if (words.length === 0) return message.trim().slice(0, 32);
+  const joined = words.slice(0, 3).join(" ");
+  return normalizeTicker(words[0]) || joined;
+}
+
+function pickBestSearchResult(
+  results: SearchResult[],
+  query: string
+): SearchResult | null {
+  const equities = results.filter((r) => r.type === "EQUITY");
+  if (!equities.length) return results[0] || null;
+
+  const q = normalizeTicker(query);
+  const qLower = query.toLowerCase();
+
+  const exact = equities.find(
+    (r) =>
+      fromYahooSymbol(r.symbol) === q ||
+      r.symbol.toUpperCase() === `${q}.NS` ||
+      r.name.toLowerCase().includes(qLower)
+  );
+  if (exact) return exact;
+
+  const nse = equities.find(
+    (r) => r.symbol.endsWith(".NS") && fromYahooSymbol(r.symbol).startsWith(q.slice(0, 4))
+  );
+  if (nse) return nse;
+
+  const indian = equities.find((r) => r.symbol.endsWith(".NS") || r.exchange === "NSI");
+  if (indian && (qLower.includes("hdfc") || qLower.includes("tcs") || qLower.includes("reliance"))) {
+    return indian;
+  }
+
+  return equities[0];
+}
+
+/** Resolve symbols and fetch live quotes — aliases + Yahoo search fallback */
+export async function resolveQuotesFromMessage(
+  message: string,
+  explicitSymbols: string[] = []
+): Promise<{ quotes: StockQuote[]; symbols: string[] }> {
+  const candidates = new Set<string>([
+    ...explicitSymbols.map((s) => normalizeTicker(fromYahooSymbol(s))),
+    ...extractTickers(message).map((s) => normalizeTicker(s)),
+  ]);
+
+  const quotes: StockQuote[] = [];
+  const symbols: string[] = [];
+
+  for (const sym of candidates) {
+    if (!sym) continue;
+    try {
+      const q = await fetchQuote(sym);
+      if (q && !quotes.some((x) => x.displaySymbol === q.displaySymbol)) {
+        quotes.push(q);
+        symbols.push(q.displaySymbol);
+      }
+    } catch {
+      /* try next candidate */
+    }
+  }
+
+  if (quotes.length === 0) {
+    const searchQuery = extractSearchQuery(message);
+    try {
+      const results = await searchStocks(searchQuery);
+      const best = pickBestSearchResult(results, searchQuery);
+      if (best) {
+        const q = await fetchQuote(best.symbol);
+        if (q) {
+          quotes.push(q);
+          symbols.push(q.displaySymbol);
+        }
+      }
+    } catch {
+      /* search failed */
+    }
+  }
+
+  return { quotes, symbols };
 }
 
 async function yahooFetch(url: string) {
@@ -142,11 +295,31 @@ export async function searchStocks(query: string): Promise<SearchResult[]> {
 }
 
 export async function fetchQuote(symbolInput: string): Promise<StockQuote | null> {
-  const yahooSymbol = toYahooSymbol(symbolInput);
+  const candidates = [
+    toYahooSymbol(symbolInput),
+    symbolInput.trim().toUpperCase(),
+  ].filter(Boolean);
+
+  const unique = [...new Set(candidates)];
+
+  for (const yahooSymbol of unique) {
+    const quote = await fetchQuoteRaw(yahooSymbol);
+    if (quote) return quote;
+  }
+
+  return null;
+}
+
+async function fetchQuoteRaw(yahooSymbol: string): Promise<StockQuote | null> {
   if (!yahooSymbol) return null;
 
   const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(yahooSymbol)}?interval=1d&range=5d`;
-  const data = await yahooFetch(url);
+  let data: Awaited<ReturnType<typeof yahooFetch>>;
+  try {
+    data = await yahooFetch(url);
+  } catch {
+    return null;
+  }
   const result = data?.chart?.result?.[0];
   if (!result) return null;
 

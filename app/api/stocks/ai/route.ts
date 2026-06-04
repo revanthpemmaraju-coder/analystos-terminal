@@ -1,11 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import {
-  extractTickers,
-  fetchQuote,
   formatMarketContext,
   fromYahooSymbol,
-  toYahooSymbol,
+  resolveQuotesFromMessage,
   type StockQuote,
 } from "@/lib/market-data";
 
@@ -43,7 +41,7 @@ function buildStockAnalysis(
 
   const liveBlock = quotes.length
     ? `**Live market data (Yahoo Finance, ${new Date().toISOString().slice(0, 16)} UTC):**\n${formatMarketContext(quotes)}`
-    : `Could not resolve a valid ticker from: "${symbols.join(", ") || message}". Try a symbol like TCS, RELIANCE, AAPL, or search by company name.`;
+    : `No live quote returned yet for "${symbols.join(", ") || message}". Re-try with the search box (e.g. HDFC Bank, TCS) or a full ticker like HDFCBANK.`;
 
   return `### Quick Answer
 ${ticker} is currently at **${price}** (${changeStr}). Based on live price action and fundamentals context, the desk rating is **${rating}** with a rough 12-month reference target near **${target}**. This is research commentary, not investment advice.
@@ -126,19 +124,7 @@ export async function POST(req: NextRequest) {
       plan = "pro";
     }
 
-    const extracted = extractTickers(message);
-    const symbolSet = new Set([...explicitSymbols, ...extracted]);
-    const symbols = Array.from(symbolSet).slice(0, 3);
-
-    const quotes: StockQuote[] = [];
-    for (const sym of symbols) {
-      try {
-        const q = await fetchQuote(toYahooSymbol(sym));
-        if (q) quotes.push(q);
-      } catch {
-        /* try next */
-      }
-    }
+    const { quotes, symbols } = await resolveQuotesFromMessage(message, explicitSymbols);
 
     if (!anthropicKey || anthropicKey === "your-api-key-here") {
       return NextResponse.json({
