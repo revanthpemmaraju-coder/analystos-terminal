@@ -78,7 +78,8 @@ export default function StockSearchInput({
   }, [query]);
 
   const pick = (item: StockSearchSelection) => {
-    setQuery(item.name);
+    // Keep input useful for future searches (symbol + name)
+    setQuery(`${item.symbol} — ${item.name}`);
     setOpen(false);
     onSelect(item);
   };

@@ -2125,6 +2125,7 @@ IMPLIED FAIR VALUATION SPOT: ₹2,580.40
 
                     <div className="mb-6">
                       <LiveStockChart
+                        key={selectedChartTicker}
                         initialSymbol={selectedChartTicker}
                         symbolOptions={stocks
                           .filter((s) => s.type === "equity" && s.region === selectedRegion)

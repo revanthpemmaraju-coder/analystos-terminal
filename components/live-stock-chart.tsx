@@ -55,6 +55,14 @@ export default function LiveStockChart({
   >("connecting");
   const [lastTick, setLastTick] = useState<string>("");
 
+  // Keep internal symbol synced when parent changes initialSymbol (Dashboard selector, etc.)
+  useEffect(() => {
+    const next = (initialSymbol || "").trim();
+    if (!next) return;
+    const t = setTimeout(() => setSymbol(next), 0);
+    return () => clearTimeout(t);
+  }, [initialSymbol]);
+
   const loadChart = useCallback(async () => {
     if (!symbol) return;
     setLoading(true);
