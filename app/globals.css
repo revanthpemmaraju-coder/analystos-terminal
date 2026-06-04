@@ -31,11 +31,16 @@ body {
 a, 
 button, 
 input, 
-select, 
 textarea,
 [role="button"],
 .clickable {
   cursor: none !important;
+}
+
+/* Restore native cursor on select and option elements to prevent OS/browser layout glitches inside native option popups */
+select, 
+option {
+  cursor: default !important;
 }
 
 

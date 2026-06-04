@@ -8,13 +8,14 @@ import {
   Terminal, Shield, ArrowRight, Lock, Unlock, Copy, Check, 
   ExternalLink, Search, BarChart3, LineChart, Cpu, BookOpen, 
   DollarSign, FileText, ChevronRight, RefreshCw, Send, CheckSquare,
-  Sparkles, Plus, Award, TrendingUp, AlertTriangle
+  Sparkles, Plus, Award, TrendingUp, AlertTriangle, Command
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import TickerBar from "@/components/ticker-bar";
 import { motion, AnimatePresence, useMotionValue, useSpring, useMotionTemplate } from "framer-motion";
 import PricingCoin from "@/components/pricing-coin";
 import confetti from "canvas-confetti";
+import { useRouter } from "next/navigation";
 
 
 const formatIndianCurrency = (num: number) => {
@@ -239,9 +240,55 @@ const AnimatedTerminalPreview = () => {
 };
 
 export default function LandingPage() {
+  const router = useRouter();
+
   // Navigation countdown target date (June 14, 2026)
   const [countdown, setCountdown] = useState("");
   const LAUNCH_DATE = new Date("2026-06-14T09:00:00+05:30");
+
+  // Cmd+K Command Palette states
+  const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
+  const [commandQuery, setCommandQuery] = useState("");
+
+  // Onboarding Tour Guide states
+  const [tourActive, setTourActive] = useState(false);
+  const [tourStep, setTourStep] = useState(1);
+  const [showTourInvite, setShowTourInvite] = useState(false);
+
+  // Mobile viewport detection
+  const [isMobileDevice, setIsMobileDevice] = useState(false);
+  const [showMobileBanner, setShowMobileBanner] = useState(true);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const checkMobile = () => {
+        setIsMobileDevice(window.innerWidth < 768);
+      };
+      checkMobile();
+      window.addEventListener("resize", checkMobile);
+      return () => window.removeEventListener("resize", checkMobile);
+    }
+  }, []);
+
+  // Show a welcome tour invite card on first load
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const tourCompleted = localStorage.getItem("aos_landing_tour_completed") === "true";
+      if (!tourCompleted) {
+        const timer = setTimeout(() => {
+          setShowTourInvite(true);
+        }, 1500);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, []);
+
+  // Sync Tour Step 4 with opening Command Palette
+  useEffect(() => {
+    if (tourActive && tourStep === 4) {
+      setCommandPaletteOpen(true);
+    }
+  }, [tourActive, tourStep]);
 
   useEffect(() => {
     const updateCountdown = () => {
@@ -330,6 +377,18 @@ export default function LandingPage() {
     };
 
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Listen for Cmd+K / Ctrl+K
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        setCommandPaletteOpen(prev => !prev);
+        return;
+      }
+      if (e.key === "Escape") {
+        setCommandPaletteOpen(false);
+        return;
+      }
+
+      if (commandPaletteOpen) return;
       if (pricingTableOpen || infoHubActive) return;
       if (["ArrowDown", "ArrowRight", "Space"].includes(e.key)) {
         e.preventDefault();
@@ -382,7 +441,7 @@ export default function LandingPage() {
       window.removeEventListener("touchstart", handleTouchStart);
       window.removeEventListener("touchend", handleTouchEnd);
     };
-  }, [isTransitioning, activeSection, pricingTableOpen, infoHubActive]);
+  }, [isTransitioning, activeSection, pricingTableOpen, infoHubActive, commandPaletteOpen]);
 
   // Three.js interactive background setup
   useEffect(() => {
@@ -1132,8 +1191,75 @@ export default function LandingPage() {
     })
   };
 
+  const executeCommand = (cmd: string) => {
+    const formatted = cmd.trim().toLowerCase();
+    setCommandPaletteOpen(false);
+    setCommandQuery("");
+    
+    if (formatted === "tour" || formatted === "onboarding") {
+      setTourActive(true);
+      setTourStep(1);
+      scrollToSection(0);
+    } else if (formatted === "login") {
+      router.push("/login");
+    } else if (formatted === "signup") {
+      router.push("/signup");
+    } else if (formatted === "founder" || formatted === "backdoor") {
+      router.push("/dashboard?founder=true");
+    } else if (formatted === "mobile" || formatted === "lite") {
+      router.push("/mobile");
+    } else if (formatted === "hero" || formatted === "sec1") {
+      scrollToSection(0);
+    } else if (formatted === "globe" || formatted === "sec2") {
+      scrollToSection(1);
+    } else if (formatted === "features" || formatted === "sec3") {
+      scrollToSection(2);
+    } else if (formatted === "sandbox" || formatted === "sec4") {
+      scrollToSection(3);
+    } else if (formatted === "pricing" || formatted === "sec5") {
+      scrollToSection(4);
+    } else if (formatted === "roadmap" || formatted === "sec6") {
+      scrollToSection(5);
+    } else if (formatted === "vault" || formatted === "sec7") {
+      scrollToSection(6);
+    }
+  };
+
   return (
     <div className="flex flex-col h-screen w-screen overflow-hidden bg-[#020010] text-slate-100 font-sans selection:bg-[#a78bfa]/30 selection:text-white relative">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@graph": [
+              {
+                "@type": "SoftwareApplication",
+                "@id": "https://analystos-terminal.vercel.app/#software",
+                "name": "AnalystOS",
+                "url": "https://analystos-terminal.vercel.app",
+                "applicationCategory": "FinanceApplication",
+                "operatingSystem": "All",
+                "description": "Next-generation AI-powered financial research terminal for investors, hedge funds, and analysts.",
+                "image": "https://analystos-terminal.vercel.app/app-icon.png",
+                "offers": {
+                  "@type": "Offer",
+                  "price": "0.00",
+                  "priceCurrency": "USD"
+                }
+              },
+              {
+                "@type": "FinancialService",
+                "@id": "https://analystos-terminal.vercel.app/#service",
+                "name": "AnalystOS Equity Research Services",
+                "url": "https://analystos-terminal.vercel.app",
+                "logo": "https://analystos-terminal.vercel.app/app-icon.png",
+                "description": "Interactive financial operating system delivering live DCF models, AI Investment Committee scores, and multi-asset metrics."
+              }
+            ]
+          })
+        }}
+      />
       
       {/* Parallax Layer 1: Ambient Glow Orbs — section offset via CSS transition */}
       <div 
@@ -1221,6 +1347,10 @@ export default function LandingPage() {
               {link.label}
             </button>
           ))}
+          <span className="text-white/20">|</span>
+          <Link href="/mobile" className="text-[13px] uppercase tracking-[0.08em] text-[#34d399] hover:text-[#34d399]/80 transition-colors font-sans font-normal cursor-none font-bold">
+            [MOBILE_LITE]
+          </Link>
           <span className="text-white/20">|</span>
           <Link href="/login" className="text-[13px] uppercase tracking-[0.08em] text-white/55 hover:text-white transition-colors font-sans font-normal cursor-none">
             [LOG_IN]
@@ -2350,7 +2480,7 @@ export default function LandingPage() {
                           <select
                             value={contactFirm}
                             onChange={e => setContactFirm(e.target.value)}
-                            className="w-full bg-slate-950 border border-white/10 rounded px-3 py-2 text-white outline-none focus:border-[#a78bfa] cursor-none"
+                            className="w-full bg-slate-950 border border-white/10 rounded px-3 py-2 text-white outline-none focus:border-[#a78bfa] cursor-default"
                           >
                             <option value="student">Student / CFA Candidate</option>
                             <option value="analyst">Buy-side or Sell-side Analyst</option>
@@ -2424,6 +2554,287 @@ export default function LandingPage() {
                 )}
               </div>
             </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Mobile Lite Redirect Banner */}
+      <AnimatePresence>
+        {isMobileDevice && showMobileBanner && (
+          <motion.div
+            initial={{ opacity: 0, y: -50 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -50 }}
+            className="fixed top-4 left-4 right-4 md:hidden border border-[#a78bfa]/25 bg-[#0b0f19]/95 p-4 rounded-xl text-[10px] font-mono select-none text-left space-y-1.5 backdrop-blur-md z-[100] shadow-[0_10px_30px_rgba(0,0,0,0.8)]"
+          >
+            <div className="flex justify-between items-center">
+              <span className="text-[#a78bfa] font-bold uppercase tracking-wider flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-[#a78bfa] animate-pulse" />
+                <span>[MOBILE_DETECTOR: ON-THE-GO_VIEW]</span>
+              </span>
+              <button 
+                onClick={() => setShowMobileBanner(false)}
+                className="text-slate-500 hover:text-white cursor-none font-bold bg-transparent border-none animate-none p-0"
+              >
+                [X]
+              </button>
+            </div>
+            <p className="text-slate-400 text-[9px] font-sans">We detected a mobile device. Switch to AnalystOS Mobile Lite for an optimized touchscreen terminal experience.</p>
+            <Link href="/mobile" className="inline-block text-[#34d399] hover:text-[#34d399]/85 uppercase mt-1 cursor-none font-bold">
+              ⚡ LAUNCH MOBILE LITE CONSOLE &gt;&gt;
+            </Link>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Cmd+K Command Center HUD Overlay */}
+      <AnimatePresence>
+        {commandPaletteOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-slate-950/85 backdrop-blur-md z-[100] flex items-center justify-center p-6 select-none"
+            onClick={() => setCommandPaletteOpen(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.95, y: 20 }}
+              transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+              className="w-full max-w-lg bg-[#070b13]/95 border border-[#a78bfa]/20 rounded-3xl p-6 shadow-[0_20px_50px_rgba(0,0,0,0.85),_inset_0_0_20px_rgba(255,255,255,0.01)] relative space-y-4 text-left"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between border-b border-white/[0.06] pb-3">
+                <div className="flex items-center gap-2 text-xs text-slate-400 font-mono">
+                  <Command className="w-4 h-4 text-[#a78bfa] animate-pulse" />
+                  <span className="font-bold">ANALYST_OS_COMMAND_CONSOLE</span>
+                </div>
+                <span className="text-[9px] bg-[#a78bfa]/10 text-[#a78bfa] border border-[#a78bfa]/20 px-2 py-0.5 rounded font-mono font-bold">[ESC TO CLOSE]</span>
+              </div>
+
+              <div className="relative flex items-center">
+                <Search className="absolute left-3 w-4 h-4 text-slate-500" />
+                <input
+                  type="text"
+                  autoFocus
+                  placeholder="Search layout, pricing, auth, or jump sections (e.g. sandbox, pricing, login)..."
+                  value={commandQuery}
+                  onChange={(e) => setCommandQuery(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      executeCommand(commandQuery);
+                    }
+                  }}
+                  className="w-full pl-10 pr-4 py-3 text-xs bg-slate-950/80 border border-white/10 focus:outline-none focus:border-[#a78bfa]/40 rounded-xl text-white font-mono placeholder:text-slate-600 outline-none"
+                />
+              </div>
+
+              {/* Categories & options list */}
+              <div className="space-y-4 max-h-[300px] overflow-y-auto pr-1 scrollbar-thin text-xs">
+                <div className="space-y-1">
+                  <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest block font-mono pl-1">Jump to Section</span>
+                  {[
+                    { name: "01. Cockpit Hero Desk", desc: "Jump to Cockpit preview", cmd: "hero" },
+                    { name: "02. Wireframe Globe", desc: "Jump to 3D Globe section", cmd: "globe" },
+                    { name: "03. Features Specifications", desc: "Jump to Features specs grid", cmd: "features" },
+                    { name: "04. Sensitivities Sandbox", desc: "Jump to DCF model recalculator", cmd: "sandbox" },
+                    { name: "05. Subscription Tiers", desc: "Jump to pricing modules", cmd: "pricing" },
+                    { name: "06. Roadmap Progress", desc: "Jump to development timeline", cmd: "roadmap" },
+                    { name: "07. Secure Database Locker", desc: "Jump to gate credentials locker", cmd: "vault" },
+                  ].map((item, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => executeCommand(item.cmd)}
+                      className="w-full text-left p-2 rounded-lg hover:bg-white/[0.03] border border-transparent hover:border-white/[0.04] transition-all flex items-center justify-between text-slate-400 hover:text-white cursor-none bg-transparent"
+                    >
+                      <span className="font-mono text-[#a78bfa]">{item.name}</span>
+                      <span className="text-[10px] text-slate-500 font-mono">{item.desc}</span>
+                    </button>
+                  ))}
+                </div>
+
+                <div className="space-y-1">
+                  <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest block font-mono pl-1">Gateway Operations</span>
+                  {[
+                    { name: "Launch Terminal Console (Founder)", desc: "Direct dashboard access with full PRO privileges", cmd: "founder" },
+                    { name: "Launch Mobile Lite Terminal", desc: "Go to touchscreen-optimized console", cmd: "mobile" },
+                    { name: "Verification Gateway", desc: "Go to Sign In credentials validation", cmd: "login" },
+                    { name: "Registration Port", desc: "Go to Sign Up subscriptions", cmd: "signup" },
+                    { name: "Restart Site Onboarding Tour", desc: "Start guided overview", cmd: "tour" },
+                  ].map((item, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => executeCommand(item.cmd)}
+                      className="w-full text-left p-2 rounded-lg hover:bg-[#34d399]/5 border border-transparent hover:border-[#34d399]/20 transition-all flex items-center justify-between text-slate-400 hover:text-white cursor-none bg-transparent"
+                    >
+                      <span className="font-mono text-[#34d399] font-bold">{item.name}</span>
+                      <span className="text-[10px] text-slate-500 font-mono">{item.desc}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Onboarding Tour Guide Overlay */}
+      <AnimatePresence>
+        {tourActive && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9, y: 50 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.9, y: 50 }}
+            className="fixed bottom-6 right-6 max-w-sm w-full bg-[#0b0f19]/95 border border-[#a78bfa]/25 p-6 rounded-2xl shadow-[0_15px_40px_rgba(0,0,0,0.8),_inset_0_0_10px_rgba(255,255,255,0.02)] z-[90] text-left backdrop-blur-md font-mono text-xs"
+          >
+            <div className="space-y-4">
+              <div className="flex justify-between items-center border-b border-white/5 pb-2">
+                <span className="text-[10px] text-[#a78bfa] font-bold tracking-widest flex items-center space-x-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-[#a78bfa] animate-pulse" />
+                  <span>LANDING_TOUR ({tourStep}/4)</span>
+                </span>
+                <button 
+                  onClick={() => setTourActive(false)} 
+                  className="text-slate-500 hover:text-white text-[9px] cursor-none border-none bg-transparent"
+                >
+                  [SKIP_TOUR]
+                </button>
+              </div>
+
+              <div className="space-y-2">
+                {tourStep === 1 && (
+                  <div className="space-y-2">
+                    <h4 className="text-white text-xs font-bold font-mono">1. SEC-COMPLIANT TERMINAL COCKPIT</h4>
+                    <p className="text-slate-400 font-sans text-xs leading-relaxed">
+                      This interactive preview simulates high-speed network scans, ratio calculations, and valuation matrices in real-time. It displays the raw power of AnalystOS.
+                    </p>
+                  </div>
+                )}
+
+                {tourStep === 2 && (
+                  <div className="space-y-2">
+                    <h4 className="text-white text-xs font-bold font-mono">2. THREE.JS 3D GLOBAL INTELLIGENCE GLOBE</h4>
+                    <p className="text-slate-400 font-sans text-xs leading-relaxed">
+                      Visualize global capital flows, server metrics, and macro signals on our customized WebGL globe. Drag or scroll to orbit and inspect live NSE server nodes.
+                    </p>
+                  </div>
+                )}
+
+                {tourStep === 3 && (
+                  <div className="space-y-2">
+                    <h4 className="text-white text-xs font-bold font-mono">3. INTERACTIVE DCF MODEL SANDBOX</h4>
+                    <p className="text-slate-400 font-sans text-xs leading-relaxed">
+                      Drag discount rates and Perpetual Growth parameters to watch valuation multiples and equity fair value update instantly with zero latency.
+                    </p>
+                  </div>
+                )}
+
+                {tourStep === 4 && (
+                  <div className="space-y-2">
+                    <h4 className="text-white text-xs font-bold font-mono">4. KEYBOARD SHORTCUT COMMAND BAR</h4>
+                    <p className="text-slate-400 font-sans text-xs leading-relaxed">
+                      Press <strong>Cmd+K</strong> or <strong>Ctrl+K</strong> anywhere on the platform to summon the Command Console. Navigate, search tickers, or jump workspaces instantly.
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex justify-between items-center pt-2 border-t border-white/5 font-mono text-[10px]">
+                <button
+                  disabled={tourStep === 1}
+                  onClick={() => {
+                    const nextStep = tourStep - 1;
+                    setTourStep(nextStep);
+                    if (nextStep === 1) scrollToSection(0);
+                    if (nextStep === 2) scrollToSection(1);
+                    if (nextStep === 3) scrollToSection(3);
+                  }}
+                  className="text-slate-500 hover:text-white disabled:opacity-30 disabled:hover:text-slate-500 cursor-none bg-transparent border-none"
+                >
+                  &lt; PREV
+                </button>
+                {tourStep < 4 ? (
+                  <button
+                    onClick={() => {
+                      const nextStep = tourStep + 1;
+                      setTourStep(nextStep);
+                      if (nextStep === 1) scrollToSection(0);
+                      if (nextStep === 2) scrollToSection(1);
+                      if (nextStep === 3) scrollToSection(3);
+                    }}
+                    className="text-[#a78bfa] hover:text-white font-bold cursor-none bg-transparent border-none"
+                  >
+                    NEXT &gt;
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => {
+                      setTourActive(false);
+                      localStorage.setItem("aos_landing_tour_completed", "true");
+                    }}
+                    className="text-[#34d399] hover:text-white font-bold cursor-none bg-transparent border-none"
+                  >
+                    [COMPLETE_TOUR]
+                  </button>
+                )}
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Onboarding Tour Invite Card */}
+      <AnimatePresence>
+        {showTourInvite && !tourActive && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9, y: 50 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.9, y: 50 }}
+            className="fixed bottom-6 right-6 max-w-sm w-full bg-[#0b0f19]/95 border border-[#34d399]/25 p-6 rounded-2xl shadow-[0_15px_40px_rgba(0,0,0,0.8),_inset_0_0_10px_rgba(255,255,255,0.02)] z-[90] text-left backdrop-blur-md font-mono text-xs"
+          >
+            <div className="space-y-4">
+              <div className="flex justify-between items-center border-b border-white/5 pb-2">
+                <span className="text-[10px] text-[#34d399] font-bold tracking-widest flex items-center space-x-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-[#34d399] animate-pulse" />
+                  <span>SYSTEM_INTRO: TOUR_AVAILABLE</span>
+                </span>
+                <button 
+                  onClick={() => {
+                    setShowTourInvite(false);
+                    localStorage.setItem("aos_landing_tour_completed", "true");
+                  }} 
+                  className="text-slate-500 hover:text-white text-[9px] cursor-none border-none bg-transparent"
+                >
+                  [DISMISS]
+                </button>
+              </div>
+              <p className="text-slate-400 font-sans text-xs leading-relaxed">
+                Welcome to the <strong>AnalystOS Cockpit</strong>. Would you like a quick 4-step tour to guide you through the interactive DCF sandbox, 3D globe servers, and keyboard shortcuts?
+              </p>
+              <div className="flex space-x-3 pt-2">
+                <button
+                  onClick={() => {
+                    setShowTourInvite(false);
+                    setTourActive(true);
+                    setTourStep(1);
+                    scrollToSection(0);
+                  }}
+                  className="flex-1 bg-[#34d399] hover:bg-[#34d399]/85 text-[#020010] font-bold py-2 rounded text-center cursor-none border-none transition-all"
+                >
+                  START QUICK TOUR
+                </button>
+                <button
+                  onClick={() => {
+                    setShowTourInvite(false);
+                    localStorage.setItem("aos_landing_tour_completed", "true");
+                  }}
+                  className="px-4 py-2 border border-white/10 hover:border-white/20 text-slate-400 hover:text-white rounded cursor-none bg-transparent transition-all"
+                >
+                  SKIP
+                </button>
+              </div>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>

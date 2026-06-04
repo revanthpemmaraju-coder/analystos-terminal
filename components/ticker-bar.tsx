@@ -36,7 +36,7 @@ export default function TickerBar() {
           };
         })
       );
-    }, 3000);
+    }, 600);
 
     return () => clearInterval(interval);
   }, []);

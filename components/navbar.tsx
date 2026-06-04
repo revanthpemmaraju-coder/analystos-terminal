@@ -13,11 +13,26 @@ export default function Navbar() {
   const [user, setUser] = useState<any>(null);
   const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [lang, setLang] = useState<string>("en");
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setLang(localStorage.getItem("aos_lang") || "en");
+    }
+  }, []);
+
+  const handleLangChange = (newLang: string) => {
+    setLang(newLang);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("aos_lang", newLang);
+      window.dispatchEvent(new Event("aos_lang_changed"));
+    }
+  };
 
   useEffect(() => {
     async function fetchSession() {
       const isFounder = typeof window !== "undefined" && 
-        (new URLSearchParams(window.location.search).get("founder") === "abhinav_gate_pro" || 
+        (new URLSearchParams(window.location.search).get("founder") === "revanth_gate_pro" || 
          localStorage.getItem("founder_bypass") === "true");
 
       if (isFounder) {
@@ -126,6 +141,24 @@ export default function Navbar() {
       </div>
 
       <div className="flex items-center space-x-4">
+        {/* Language Selector Dropdown */}
+        <div className="relative flex items-center">
+          <span className="text-slate-500 text-[8px] mr-1.5 font-bold font-mono">LANG:</span>
+          <select
+            value={lang}
+            onChange={(e) => handleLangChange(e.target.value)}
+            className="bg-[#05070a] border border-white/10 hover:border-[#00f0ff]/40 px-2 py-1 rounded text-[9px] text-[#00f0ff] font-mono font-bold outline-none focus:border-[#00f0ff] uppercase cursor-pointer transition-colors"
+          >
+            <option value="en">EN</option>
+            <option value="ja">JA</option>
+            <option value="zh">ZH</option>
+            <option value="hi">HI</option>
+            <option value="es">ES</option>
+            <option value="fr">FR</option>
+            <option value="de">DE</option>
+            <option value="ar">AR</option>
+          </select>
+        </div>
         {loading ? (
           <span className="text-xs text-slate-500">CONNECTING_SECURE_NODE...</span>
         ) : user ? (

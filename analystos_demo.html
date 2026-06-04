@@ -1,0 +1,1192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AnalystOS — Interactive Demo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #070b10;
+  --bg2: #0c1118;
+  --bg3: #111820;
+  --border: #1c2535;
+  --border2: #243045;
+  --green: #00e676;
+  --green-dim: #00b85a;
+  --green-dark: #003d1f;
+  --green-glow: rgba(0,230,118,0.12);
+  --teal: #00bcd4;
+  --amber: #ffc107;
+  --red: #ff5252;
+  --text: #e2e8f0;
+  --text2: #8896a8;
+  --text3: #4a5a6e;
+  --mono: 'IBM Plex Mono', monospace;
+  --sans: 'IBM Plex Sans', sans-serif;
+}
+
+html, body {
+  width: 100%; height: 100%; overflow: hidden;
+  background: var(--bg);
+  font-family: var(--mono);
+  color: var(--text);
+}
+
+/* ── SCANLINES overlay ── */
+body::after {
+  content: '';
+  position: fixed; inset: 0; pointer-events: none; z-index: 999;
+  background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.03) 2px, rgba(0,0,0,0.03) 4px);
+}
+
+/* ── LAYOUT ── */
+.shell {
+  display: flex; flex-direction: column;
+  width: 100vw; height: 100vh;
+  border: 1px solid var(--border2);
+}
+
+/* ── TOPBAR ── */
+.topbar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 20px; height: 44px;
+  background: var(--bg2);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.topbar-left { display: flex; align-items: center; gap: 16px; }
+.dots { display: flex; gap: 7px; }
+.dot { width: 11px; height: 11px; border-radius: 50%; }
+.dot-r { background: #ff5f57; }
+.dot-y { background: #febc2e; }
+.dot-g { background: #28c840; }
+.brand { font-size: 11px; color: var(--green-dim); letter-spacing: 3px; font-weight: 500; }
+.topbar-right { display: flex; align-items: center; gap: 14px; }
+.sys-badge {
+  font-size: 9px; color: var(--green); letter-spacing: 2px;
+  border: 1px solid rgba(0,230,118,0.3); padding: 3px 10px; border-radius: 2px;
+  background: var(--green-glow);
+  animation: pulse-badge 2s ease-in-out infinite;
+}
+@keyframes pulse-badge { 0%,100% { opacity:1; } 50% { opacity:0.6; } }
+.latency { font-size: 10px; color: var(--text3); }
+.latency span { color: var(--green); }
+
+/* ── MAIN AREA ── */
+.main {
+  display: grid;
+  grid-template-columns: 220px 1fr 260px;
+  flex: 1; overflow: hidden;
+}
+
+/* ── LEFT SIDEBAR ── */
+.sidebar {
+  background: var(--bg2);
+  border-right: 1px solid var(--border);
+  display: flex; flex-direction: column;
+  overflow: hidden;
+}
+.sidebar-header {
+  font-size: 8px; color: var(--text3); letter-spacing: 2px;
+  padding: 14px 16px 8px; border-bottom: 1px solid var(--border);
+  text-transform: uppercase;
+}
+.nav-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 16px; font-size: 10px; color: var(--text3);
+  letter-spacing: 1px; border-left: 2px solid transparent;
+  transition: all 0.3s; cursor: default;
+  text-transform: uppercase;
+}
+.nav-item.active {
+  color: var(--green); border-left-color: var(--green);
+  background: var(--green-glow);
+}
+.nav-item .nav-dot {
+  width: 5px; height: 5px; border-radius: 50%;
+  background: var(--text3); flex-shrink: 0;
+}
+.nav-item.active .nav-dot { background: var(--green); box-shadow: 0 0 6px var(--green); }
+.nav-item.done .nav-dot { background: var(--green-dim); }
+.nav-item.done { color: var(--text3); }
+
+.ticker-panel { flex: 1; overflow: hidden; padding: 0; }
+.ticker-header {
+  font-size: 8px; color: var(--text3); letter-spacing: 2px;
+  padding: 12px 16px 6px; text-transform: uppercase;
+}
+.ticker-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 7px 16px; border-bottom: 1px solid var(--border);
+  font-size: 10px;
+}
+.ticker-sym { color: var(--teal); font-weight: 500; letter-spacing: 0.5px; }
+.ticker-price { color: var(--text2); }
+.ticker-chg { font-size: 9px; }
+.up { color: var(--green); }
+.dn { color: var(--red); }
+
+.sidebar-footer {
+  padding: 10px 16px; border-top: 1px solid var(--border);
+  font-size: 9px; color: var(--text3); line-height: 1.6;
+}
+
+/* ── CENTER STAGE ── */
+.stage {
+  background: var(--bg);
+  display: flex; flex-direction: column;
+  overflow: hidden; position: relative;
+}
+.stage-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 20px 10px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.stage-title { font-size: 9px; color: var(--text3); letter-spacing: 2px; text-transform: uppercase; }
+.stage-id { font-size: 9px; color: var(--green); letter-spacing: 1px; }
+
+.screen { display: none; flex: 1; padding: 20px; overflow: hidden; flex-direction: column; }
+.screen.active { display: flex; }
+
+/* ── HERO SCREEN ── */
+.hero-headline {
+  font-family: var(--sans);
+  font-size: 36px; font-weight: 300; line-height: 1.15;
+  color: var(--text); margin-bottom: 6px;
+  overflow: hidden;
+}
+.hero-headline .accent { color: var(--green); font-weight: 500; }
+.hero-sub {
+  font-size: 11px; color: var(--text3); margin-bottom: 24px; line-height: 1.6;
+  max-width: 520px;
+}
+.hero-stats { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; margin-bottom: 20px; }
+.hstat {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 4px; padding: 12px 14px;
+}
+.hstat-val { font-size: 22px; color: var(--green); font-weight: 600; margin-bottom: 2px; }
+.hstat-label { font-size: 9px; color: var(--text3); letter-spacing: 1px; text-transform: uppercase; }
+.hstat-sub { font-size: 9px; color: var(--text3); margin-top: 3px; }
+.hero-bar {
+  display: flex; align-items: center; gap: 8px;
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: 4px; padding: 10px 14px;
+  font-size: 10px; color: var(--text3);
+}
+.hero-bar-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); animation: pulse-badge 1.5s infinite; flex-shrink: 0; }
+
+/* ── MARKET SCREEN ── */
+.market-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+.mcard {
+  background: var(--bg2); border: 1px solid var(--border); border-radius: 4px; padding: 12px 14px;
+}
+.mcard-sym { font-size: 11px; color: var(--teal); font-weight: 500; letter-spacing: 1px; margin-bottom: 2px; }
+.mcard-name { font-size: 9px; color: var(--text3); margin-bottom: 8px; }
+.mcard-price { font-size: 18px; color: var(--text); font-weight: 500; }
+.mcard-chg { font-size: 10px; margin-top: 2px; }
+.mini-bar { height: 3px; background: var(--border); border-radius: 2px; margin-top: 8px; overflow: hidden; }
+.mini-fill { height: 100%; border-radius: 2px; background: var(--green); transition: width 1s ease; }
+.mini-fill.red { background: var(--red); }
+.index-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 12px; background: var(--bg2);
+  border: 1px solid var(--border); border-radius: 4px; margin-bottom: 6px;
+  font-size: 10px;
+}
+.index-name { color: var(--text2); min-width: 90px; }
+.index-track { flex: 1; height: 3px; background: var(--border); border-radius: 2px; overflow: hidden; }
+.index-fill { height: 100%; border-radius: 2px; background: var(--green); }
+.index-val { color: var(--green); min-width: 45px; text-align: right; font-size: 10px; }
+
+/* ── COPILOT SCREEN ── */
+.terminal-win {
+  background: #050810; border: 1px solid var(--border2);
+  border-radius: 4px; overflow: hidden; flex: 1; display: flex; flex-direction: column;
+}
+.tw-bar {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 14px; background: var(--bg3); border-bottom: 1px solid var(--border);
+  font-size: 9px; color: var(--text3); letter-spacing: 1px;
+}
+.tw-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); animation: pulse-badge 1.5s infinite; }
+.tw-body { flex: 1; padding: 14px 16px; overflow-y: auto; font-size: 11px; line-height: 1.7; }
+.t-line { margin-bottom: 2px; }
+.t-prompt { color: var(--green-dim); }
+.t-cmd { color: var(--teal); }
+.t-out { color: var(--text2); }
+.t-num { color: var(--green); font-weight: 500; }
+.t-warn { color: var(--amber); }
+.t-err { color: var(--red); }
+.cursor-blink {
+  display: inline-block; width: 8px; height: 13px;
+  background: var(--green); vertical-align: middle;
+  animation: blink 1s step-end infinite; margin-left: 1px;
+}
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+
+/* ── DCF SCREEN ── */
+.dcf-layout { display: grid; grid-template-columns: 1fr 180px; gap: 16px; flex:1; }
+.dcf-controls { display: flex; flex-direction: column; gap: 14px; }
+.dcf-row { display: flex; flex-direction: column; gap: 5px; }
+.dcf-label { font-size: 9px; color: var(--text3); letter-spacing: 1.5px; text-transform: uppercase; }
+.dcf-slider-row { display: flex; align-items: center; gap: 10px; }
+.dcf-slider {
+  flex: 1; height: 3px; -webkit-appearance: none; appearance: none;
+  background: var(--border2); border-radius: 2px; outline: none;
+}
+.dcf-slider::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 14px; height: 14px;
+  border-radius: 50%; background: var(--green);
+  box-shadow: 0 0 8px rgba(0,230,118,0.5);
+  cursor: pointer;
+}
+.dcf-val { font-size: 11px; color: var(--green); min-width: 40px; text-align: right; }
+.dcf-result-col {
+  display: flex; flex-direction: column; gap: 10px;
+}
+.dcf-result-box {
+  background: var(--bg2); border: 1px solid var(--green-dim);
+  border-radius: 4px; padding: 14px 10px; text-align: center;
+}
+.dcf-result-label { font-size: 8px; color: var(--green-dim); letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 6px; }
+.dcf-result-val { font-size: 26px; color: var(--green); font-weight: 600; }
+.dcf-result-sub { font-size: 9px; color: var(--text3); margin-top: 4px; }
+.sensitivity-table { width: 100%; border-collapse: collapse; font-size: 9px; }
+.sensitivity-table th {
+  color: var(--text3); letter-spacing: 1px; text-transform: uppercase;
+  padding: 4px 6px; border-bottom: 1px solid var(--border); text-align: center;
+}
+.sensitivity-table td {
+  padding: 5px 6px; text-align: center; color: var(--text2);
+  border-bottom: 1px solid var(--border);
+}
+.sensitivity-table td.highlight { color: var(--green); font-weight: 500; }
+.sensitivity-table td.low { color: var(--red); }
+.mini-bars { margin-top: 14px; }
+.mb-row { display: flex; align-items: center; gap: 8px; margin-bottom: 7px; }
+.mb-label { font-size: 9px; color: var(--text3); min-width: 55px; }
+.mb-track { flex:1; height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; }
+.mb-fill { height: 100%; background: var(--green); border-radius: 2px; transition: width 0.8s ease; }
+.mb-val { font-size: 9px; color: var(--green); min-width: 30px; text-align: right; }
+
+/* ── PRICING SCREEN ── */
+.pricing-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; margin-bottom: 14px; }
+.pcard {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: 4px; padding: 12px 10px;
+}
+.pcard.featured { border-color: var(--green-dim); background: #071210; }
+.pcard-tier { font-size: 8px; color: var(--text3); text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 6px; }
+.pcard.featured .pcard-tier { color: var(--green-dim); }
+.pcard-price { font-size: 15px; color: var(--text); font-weight: 500; margin-bottom: 8px; }
+.pcard-price .psmall { font-size: 9px; color: var(--text3); font-weight: 400; }
+.pcard-feature { font-size: 9px; color: var(--text3); margin-bottom: 3px; padding-left: 10px; position: relative; line-height: 1.4; }
+.pcard-feature::before { content:'›'; position: absolute; left:0; color: var(--green-dim); }
+.vault-row {
+  display: flex; align-items: center; gap: 12px;
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: 4px; padding: 9px 12px; margin-bottom: 6px;
+}
+.vault-icon { font-size: 14px; }
+.vault-name { font-size: 10px; color: var(--text2); flex: 1; }
+.vault-badge-free { font-size: 8px; color: var(--green); background: var(--green-glow); border: 1px solid rgba(0,230,118,0.25); padding: 2px 7px; border-radius: 2px; letter-spacing: 1px; }
+.vault-badge-locked { font-size: 8px; color: var(--text3); background: var(--bg3); border: 1px solid var(--border); padding: 2px 7px; border-radius: 2px; letter-spacing: 1px; }
+
+/* ── RIGHT PANEL ── */
+.rpanel {
+  background: var(--bg2);
+  border-left: 1px solid var(--border);
+  display: flex; flex-direction: column; overflow: hidden;
+}
+.rp-section { padding: 12px 14px; border-bottom: 1px solid var(--border); }
+.rp-header { font-size: 8px; color: var(--text3); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 10px; }
+.rp-stat-row { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 7px; }
+.rp-stat-label { font-size: 9px; color: var(--text3); }
+.rp-stat-val { font-size: 11px; color: var(--green); font-weight: 500; }
+.rp-stat-val.amber { color: var(--amber); }
+.rp-stat-val.red { color: var(--red); }
+
+.log-area { flex: 1; overflow-y: auto; padding: 10px 14px; }
+.log-entry { font-size: 9px; color: var(--text3); padding: 4px 0; border-bottom: 1px solid var(--border); line-height: 1.5; }
+.log-entry .le-time { color: var(--text3); margin-right: 6px; }
+.log-entry .le-type { letter-spacing: 1px; text-transform: uppercase; margin-right: 6px; }
+.log-entry .le-type.ok { color: var(--green); }
+.log-entry .le-type.warn { color: var(--amber); }
+.log-entry .le-type.info { color: var(--teal); }
+.log-entry .le-msg { color: var(--text2); }
+
+/* ── BOTTOM BAR (progress + controls) ── */
+.bottombar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 20px; height: 44px;
+  background: var(--bg2); border-top: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.progress-track {
+  flex: 1; max-width: 400px; height: 3px;
+  background: var(--border); border-radius: 2px; overflow: hidden; margin: 0 16px;
+}
+.progress-fill {
+  height: 100%; background: var(--green);
+  border-radius: 2px; transition: width 0.5s ease;
+  box-shadow: 0 0 8px rgba(0,230,118,0.4);
+}
+.controls { display: flex; gap: 8px; }
+.ctrl-btn {
+  font-family: var(--mono); font-size: 9px; letter-spacing: 1.5px;
+  padding: 5px 14px; border-radius: 2px; cursor: pointer;
+  text-transform: uppercase; border: 1px solid var(--border2);
+  background: transparent; color: var(--text2);
+  transition: all 0.2s;
+}
+.ctrl-btn:hover { border-color: var(--green-dim); color: var(--green-dim); }
+.ctrl-btn.primary { border-color: var(--green); color: var(--green); background: var(--green-glow); }
+.ctrl-btn.primary:hover { background: rgba(0,230,118,0.2); }
+
+.step-label { font-size: 9px; color: var(--text3); letter-spacing: 1px; min-width: 100px; }
+.time-remaining { font-size: 9px; color: var(--text3); min-width: 70px; text-align: right; }
+
+/* ── NARRATION BOX ── */
+.narration {
+  position: absolute; bottom: 54px; left: 20px; right: 20px;
+  background: rgba(7,11,16,0.92);
+  border: 1px solid var(--border2);
+  border-radius: 4px; padding: 10px 14px;
+  font-size: 11px; color: var(--text2); line-height: 1.6;
+  pointer-events: none; z-index: 10;
+  min-height: 38px;
+  display: flex; align-items: center; gap: 8px;
+}
+.narration-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); flex-shrink: 0; animation: pulse-badge 1s infinite; }
+.narration-text { flex: 1; }
+
+/* ── CTA SCREEN ── */
+.cta-screen {
+  display: none; flex: 1; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 30px;
+}
+.cta-screen.active { display: flex; }
+.cta-title { font-family: var(--sans); font-size: 28px; font-weight: 300; color: var(--text); text-align: center; margin-bottom: 10px; }
+.cta-sub { font-size: 11px; color: var(--text3); text-align: center; margin-bottom: 28px; line-height: 1.7; max-width: 360px; }
+.cta-btn {
+  font-family: var(--mono); font-size: 11px; letter-spacing: 2px;
+  padding: 12px 32px; border: 1px solid var(--green);
+  background: var(--green-glow); color: var(--green);
+  border-radius: 3px; cursor: pointer; text-decoration: none;
+  transition: background 0.2s; text-transform: uppercase;
+  display: inline-block; margin-bottom: 14px;
+}
+.cta-btn:hover { background: rgba(0,230,118,0.22); }
+.cta-stats { display: flex; gap: 30px; margin-top: 20px; }
+.cta-stat { text-align: center; }
+.cta-stat-val { font-size: 20px; color: var(--green); font-weight: 500; }
+.cta-stat-label { font-size: 9px; color: var(--text3); letter-spacing: 1.5px; text-transform: uppercase; margin-top: 2px; }
+
+/* ── ANIMATIONS ── */
+@keyframes fadeSlide { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+.anim { animation: fadeSlide 0.4s ease forwards; }
+
+/* ── MOBILE STYLES & DRAWER ── */
+.menu-btn {
+  display: none;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text2);
+  font-size: 16px;
+  padding: 4px 10px;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: var(--mono);
+}
+.menu-btn:hover {
+  border-color: var(--green-dim);
+  color: var(--green);
+}
+.dots-desktop {
+  display: block;
+}
+.drawer-backdrop {
+  position: fixed;
+  inset: 44px 0 44px 0;
+  background: rgba(5, 8, 16, 0.7);
+  backdrop-filter: blur(4px);
+  z-index: 98;
+  display: none;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+.drawer-backdrop.active {
+  display: block;
+  opacity: 1;
+}
+
+@media (max-width: 768px) {
+  .dots-desktop {
+    display: none;
+  }
+  .menu-btn {
+    display: block;
+  }
+  .main {
+    grid-template-columns: 1fr;
+  }
+  .sidebar {
+    position: fixed;
+    top: 44px;
+    bottom: 44px;
+    left: -240px;
+    width: 240px;
+    z-index: 99;
+    transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 5px 0 25px rgba(0,0,0,0.8);
+    border-right: 1px solid var(--border2);
+  }
+  .sidebar.mobile-open {
+    left: 0;
+  }
+  .rpanel {
+    position: fixed;
+    top: 44px;
+    bottom: 44px;
+    right: -280px;
+    width: 280px;
+    z-index: 99;
+    transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: -5px 0 25px rgba(0,0,0,0.8);
+    border-left: 1px solid var(--border2);
+  }
+  .rpanel.mobile-open {
+    right: 0;
+  }
+  
+  /* Hero screen responsive */
+  .hero-headline {
+    font-size: 26px;
+  }
+  .hero-stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  /* Markets screen responsive */
+  .market-grid {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  .mcard-price {
+    font-size: 16px;
+  }
+  
+  /* DCF screen responsive */
+  .dcf-layout {
+    grid-template-columns: 1fr;
+    gap: 12px;
+    overflow-y: auto;
+    padding-bottom: 20px;
+  }
+  .dcf-result-col {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .dcf-result-box {
+    flex: 1;
+    min-width: 130px;
+    padding: 8px;
+  }
+  .dcf-result-val {
+    font-size: 20px;
+  }
+  
+  /* Pricing screen responsive */
+  .pricing-grid {
+    grid-template-columns: 1fr;
+    gap: 8px;
+    overflow-y: auto;
+  }
+  .pcard {
+    padding: 10px;
+  }
+  .pcard-price {
+    font-size: 14px;
+    margin-bottom: 4px;
+  }
+  
+  /* CTA responsive */
+  .cta-title {
+    font-size: 22px;
+  }
+  .cta-sub {
+    margin-bottom: 16px;
+  }
+  .cta-stats {
+    gap: 15px;
+    margin-top: 10px;
+  }
+  .cta-stat-val {
+    font-size: 16px;
+  }
+  
+  /* Bottom bar responsive progress indicators */
+  .bottombar {
+    position: relative;
+    padding: 0 10px;
+  }
+  .progress-track {
+    position: absolute;
+    top: 0; left: 0; right: 0; height: 3px;
+    margin: 0;
+    max-width: none;
+    border-radius: 0;
+  }
+  .step-label {
+    min-width: auto;
+    font-size: 8px;
+  }
+  .time-remaining {
+    min-width: auto;
+    font-size: 8px;
+  }
+  .ctrl-btn {
+    padding: 4px 8px;
+    font-size: 8px;
+    letter-spacing: 1px;
+  }
+  
+  /* Narration responsive adjustment */
+  .narration {
+    bottom: 50px;
+    left: 10px;
+    right: 10px;
+    min-height: 44px;
+    font-size: 9px;
+  }
+}
+</style>
+</head>
+<body>
+
+<div class="shell">
+  <div class="drawer-backdrop" id="drawer-backdrop" onclick="closeDrawers()"></div>
+
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div class="topbar-left">
+      <button class="menu-btn" id="menu-btn-left" onclick="toggleLeftDrawer()">☰</button>
+      <div class="dots-desktop">
+        <div class="dots">
+          <div class="dot dot-r"></div>
+          <div class="dot dot-y"></div>
+          <div class="dot dot-g"></div>
+        </div>
+      </div>
+      <div class="brand">ANALYST.OS</div>
+    </div>
+    <div class="topbar-right">
+      <div class="latency">NSE_PING <span id="latency-val">12ms</span></div>
+      <div class="sys-badge">SYSTEMS ONLINE</div>
+      <button class="menu-btn" id="menu-btn-right" onclick="toggleRightDrawer()">⚡</button>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main">
+
+    <!-- LEFT SIDEBAR -->
+    <div class="sidebar">
+      <div class="sidebar-header">Navigation</div>
+      <div id="nav-items">
+        <div class="nav-item active" id="nav-0"><div class="nav-dot"></div>01 · Hero</div>
+        <div class="nav-item" id="nav-1"><div class="nav-dot"></div>02 · Markets</div>
+        <div class="nav-item" id="nav-2"><div class="nav-dot"></div>03 · AI Co-Pilot</div>
+        <div class="nav-item" id="nav-3"><div class="nav-dot"></div>04 · DCF Model</div>
+        <div class="nav-item" id="nav-4"><div class="nav-dot"></div>05 · Pricing</div>
+        <div class="nav-item" id="nav-5"><div class="nav-dot"></div>06 · Launch</div>
+      </div>
+      <div class="ticker-header">Live Tickers</div>
+      <div class="ticker-panel">
+        <div class="ticker-row"><span class="ticker-sym">RELIANCE</span><span class="ticker-price">₹2,891</span><span class="ticker-chg up" id="t0">+1.84%</span></div>
+        <div class="ticker-row"><span class="ticker-sym">TCS</span><span class="ticker-price">₹3,744</span><span class="ticker-chg up" id="t1">+0.62%</span></div>
+        <div class="ticker-row"><span class="ticker-sym">INFY</span><span class="ticker-price">₹1,512</span><span class="ticker-chg dn" id="t2">-0.39%</span></div>
+        <div class="ticker-row"><span class="ticker-sym">HDFC</span><span class="ticker-price">₹1,765</span><span class="ticker-chg up" id="t3">+0.91%</span></div>
+        <div class="ticker-row"><span class="ticker-sym">WIPRO</span><span class="ticker-price">₹468</span><span class="ticker-chg dn" id="t4">-1.14%</span></div>
+        <div class="ticker-row"><span class="ticker-sym">BAJFIN</span><span class="ticker-price">₹7,230</span><span class="ticker-chg up" id="t5">+2.31%</span></div>
+        <div class="ticker-row"><span class="ticker-sym">ITC</span><span class="ticker-price">₹458</span><span class="ticker-chg up" id="t6">+0.55%</span></div>
+      </div>
+      <div class="sidebar-footer">
+        v1.0.4 · NSE NODE LIVE<br>
+        JWT AUTH · SEC-17A COMPLIANT
+      </div>
+    </div>
+
+    <!-- CENTER STAGE -->
+    <div class="stage">
+      <div class="stage-header">
+        <div class="stage-title" id="stage-title">01 · HERO COCKPIT</div>
+        <div class="stage-id" id="stage-id">analystos-terminal.vercel.app</div>
+      </div>
+
+      <!-- SCREEN 0: HERO -->
+      <div class="screen active" id="s0">
+        <div class="hero-headline anim">
+          Analyze beyond<br><span class="accent">intelligence.</span>
+        </div>
+        <div class="hero-sub anim" style="animation-delay:0.2s">
+          A 3D-first analyst operating system where data, motion, and intelligence merge into one living interface.
+        </div>
+        <div class="hero-stats">
+          <div class="hstat anim" style="animation-delay:0.3s">
+            <div class="hstat-val" id="h-models">0</div>
+            <div class="hstat-label">Active Models</div>
+            <div class="hstat-sub">↑ Live pipelines</div>
+          </div>
+          <div class="hstat anim" style="animation-delay:0.4s">
+            <div class="hstat-val">12ms</div>
+            <div class="hstat-label">Data Latency</div>
+            <div class="hstat-sub">↑ Real-time NSE</div>
+          </div>
+          <div class="hstat anim" style="animation-delay:0.5s">
+            <div class="hstat-val">99.4%</div>
+            <div class="hstat-label">ML Accuracy</div>
+            <div class="hstat-sub">↑ ML inference</div>
+          </div>
+          <div class="hstat anim" style="animation-delay:0.6s">
+            <div class="hstat-val" id="h-dash">0</div>
+            <div class="hstat-label">Dashboards</div>
+            <div class="hstat-sub">↑ Auto-generated</div>
+          </div>
+        </div>
+        <div class="hero-bar anim" style="animation-delay:0.7s">
+          <div class="hero-bar-dot"></div>
+          Live intelligence engine · Bloomberg-grade terminal for next-gen investors · NSE WebSocket feed active
+        </div>
+      </div>
+
+      <!-- SCREEN 1: MARKETS -->
+      <div class="screen" id="s1">
+        <div class="market-grid">
+          <div class="mcard"><div class="mcard-sym">RELIANCE</div><div class="mcard-name">Reliance Industries Ltd.</div><div class="mcard-price">₹2,891.40</div><div class="mcard-chg up">+1.84% ▲</div><div class="mini-bar"><div class="mini-fill" id="mb0" style="width:0%"></div></div></div>
+          <div class="mcard"><div class="mcard-sym">TCS</div><div class="mcard-name">Tata Consultancy Services</div><div class="mcard-price">₹3,744.10</div><div class="mcard-chg up">+0.62% ▲</div><div class="mini-bar"><div class="mini-fill" id="mb1" style="width:0%"></div></div></div>
+          <div class="mcard"><div class="mcard-sym">INFY</div><div class="mcard-name">Infosys Ltd.</div><div class="mcard-price">₹1,512.85</div><div class="mcard-chg dn">-0.39% ▼</div><div class="mini-bar"><div class="mini-fill red" id="mb2" style="width:0%"></div></div></div>
+          <div class="mcard"><div class="mcard-sym">HDFC</div><div class="mcard-name">HDFC Bank Ltd.</div><div class="mcard-price">₹1,765.20</div><div class="mcard-chg up">+0.91% ▲</div><div class="mini-bar"><div class="mini-fill" id="mb3" style="width:0%"></div></div></div>
+        </div>
+        <div class="index-row"><div class="index-name">NIFTY 50</div><div class="index-track"><div class="index-fill" id="idx0" style="width:0%"></div></div><div class="index-val">+0.74%</div></div>
+        <div class="index-row"><div class="index-name">BSE SENSEX</div><div class="index-track"><div class="index-fill" id="idx1" style="width:0%"></div></div><div class="index-val">+0.58%</div></div>
+        <div class="index-row"><div class="index-name">NIFTY BANK</div><div class="index-track"><div class="index-fill" id="idx2" style="width:0%"></div></div><div class="index-val">+1.12%</div></div>
+      </div>
+
+      <!-- SCREEN 2: CO-PILOT -->
+      <div class="screen" id="s2">
+        <div class="terminal-win">
+          <div class="tw-bar">
+            <div class="tw-dot"></div>
+            ANALYST.OS CO-PILOT · NSE NODE CONNECTED · PIPELINE READY
+          </div>
+          <div class="tw-body" id="term-body">
+            <div class="t-line"><span class="t-prompt">ANALYST.OS &gt;&gt; </span><span class="t-out">RESEARCH PIPELINE INITIALIZED [CONNECTED NSE NODE]</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SCREEN 3: DCF -->
+      <div class="screen" id="s3">
+        <div style="font-size:9px;color:var(--text3);letter-spacing:2px;text-transform:uppercase;margin-bottom:12px;">LIVE DCF SANDBOX — REAL-TIME SENSITIVITY</div>
+        <div class="dcf-layout">
+          <div class="dcf-controls">
+            <div class="dcf-row">
+              <div class="dcf-label">Base EBITDA (₹ Lakhs)</div>
+              <div class="dcf-slider-row">
+                <input type="range" class="dcf-slider" id="sl-ebitda" min="50" max="300" value="120" step="10" oninput="updateDCF()">
+                <div class="dcf-val" id="dv-ebitda">₹120L</div>
+              </div>
+            </div>
+            <div class="dcf-row">
+              <div class="dcf-label">5-Yr EBITDA Growth</div>
+              <div class="dcf-slider-row">
+                <input type="range" class="dcf-slider" id="sl-growth" min="5" max="35" value="15" step="1" oninput="updateDCF()">
+                <div class="dcf-val" id="dv-growth">15%</div>
+              </div>
+            </div>
+            <div class="dcf-row">
+              <div class="dcf-label">WACC Discount Rate</div>
+              <div class="dcf-slider-row">
+                <input type="range" class="dcf-slider" id="sl-wacc" min="6" max="15" value="9" step="0.5" oninput="updateDCF()">
+                <div class="dcf-val" id="dv-wacc">9.0%</div>
+              </div>
+            </div>
+            <div class="dcf-row">
+              <div class="dcf-label">Exit EBITDA Multiple</div>
+              <div class="dcf-slider-row">
+                <input type="range" class="dcf-slider" id="sl-mult" min="8" max="22" value="14" step="1" oninput="updateDCF()">
+                <div class="dcf-val" id="dv-mult">14x</div>
+              </div>
+            </div>
+            <div style="font-size:9px;color:var(--text3);letter-spacing:1.5px;text-transform:uppercase;margin-top:4px;margin-bottom:6px;">EBITDA Sensitivity (WACC × Multiple)</div>
+            <table class="sensitivity-table">
+              <tr><th>WACC\Mult</th><th>12x</th><th>14x</th><th>16x</th></tr>
+              <tr><td>8.0%</td><td>₹27.0</td><td class="highlight">₹30.3</td><td>₹33.6</td></tr>
+              <tr><td>9.0%</td><td class="low">₹25.9</td><td class="highlight" id="base-cell">₹29.0</td><td>₹32.2</td></tr>
+              <tr><td>10.0%</td><td class="low">₹24.9</td><td>₹27.9</td><td class="low">₹30.8</td></tr>
+            </table>
+            <div class="mini-bars" style="margin-top:10px;">
+              <div class="mb-row"><div class="mb-label">YR 01</div><div class="mb-track"><div class="mb-fill" id="yr1" style="width:25%"></div></div><div class="mb-val" id="yr1v">₹138L</div></div>
+              <div class="mb-row"><div class="mb-label">YR 02</div><div class="mb-track"><div class="mb-fill" id="yr2" style="width:35%"></div></div><div class="mb-val" id="yr2v">₹159L</div></div>
+              <div class="mb-row"><div class="mb-label">YR 03</div><div class="mb-track"><div class="mb-fill" id="yr3" style="width:47%"></div></div><div class="mb-val" id="yr3v">₹183L</div></div>
+              <div class="mb-row"><div class="mb-label">YR 04</div><div class="mb-track"><div class="mb-fill" id="yr4" style="width:60%"></div></div><div class="mb-val" id="yr4v">₹210L</div></div>
+              <div class="mb-row"><div class="mb-label">YR 05</div><div class="mb-track"><div class="mb-fill" id="yr5" style="width:74%"></div></div><div class="mb-val" id="yr5v">₹241L</div></div>
+            </div>
+          </div>
+          <div class="dcf-result-col">
+            <div class="dcf-result-box">
+              <div class="dcf-result-label">Intrinsic Fair Price</div>
+              <div class="dcf-result-val" id="dcf-price">₹29.03</div>
+              <div class="dcf-result-sub" id="dcf-scenario">Base scenario</div>
+            </div>
+            <div class="dcf-result-box" style="border-color:var(--teal);">
+              <div class="dcf-result-label" style="color:var(--teal);">Implied EV</div>
+              <div class="dcf-result-val" style="font-size:18px;color:var(--teal);" id="dcf-ev">₹1,854Cr</div>
+              <div class="dcf-result-sub">Pro-forma 5yr</div>
+            </div>
+            <div class="dcf-result-box" style="border-color:var(--border);">
+              <div class="dcf-result-label">Bull / Bear</div>
+              <div style="display:flex;justify-content:space-between;margin-top:4px;">
+                <div style="text-align:center;"><div style="font-size:13px;color:var(--green);font-weight:500;" id="dcf-bull">₹34.1</div><div style="font-size:8px;color:var(--text3);margin-top:2px;">BULL</div></div>
+                <div style="text-align:center;"><div style="font-size:13px;color:var(--red);font-weight:500;" id="dcf-bear">₹24.0</div><div style="font-size:8px;color:var(--text3);margin-top:2px;">BEAR</div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SCREEN 4: PRICING -->
+      <div class="screen" id="s4">
+        <div style="font-size:9px;color:var(--text3);letter-spacing:2px;text-transform:uppercase;margin-bottom:12px;">INSTITUTIONAL ACCESS LICENSING</div>
+        <div class="pricing-grid">
+          <div class="pcard"><div class="pcard-tier">Free Vault</div><div class="pcard-price">₹0 <span class="psmall">forever</span></div><div class="pcard-feature">5 static NSE indexes</div><div class="pcard-feature">DuPont models</div><div class="pcard-feature">Local workspace</div></div>
+          <div class="pcard featured"><div class="pcard-tier">Starter Node</div><div class="pcard-price">₹2,500 <span class="psmall">/mo</span></div><div class="pcard-feature">Live recalculations</div><div class="pcard-feature">Client database</div><div class="pcard-feature">Fundamental screening</div></div>
+          <div class="pcard"><div class="pcard-tier">AI Co-Pilot</div><div class="pcard-price">₹7,500 <span class="psmall">/mo</span></div><div class="pcard-feature">Flagship terminal</div><div class="pcard-feature">12ms WebSocket</div><div class="pcard-feature">AI chat connections</div></div>
+          <div class="pcard"><div class="pcard-tier">Institutional</div><div class="pcard-price">Custom <span class="psmall">pricing</span></div><div class="pcard-feature">Multi-tenant API</div><div class="pcard-feature">Dedicated servers</div><div class="pcard-feature">Fund compliance</div></div>
+        </div>
+        <div style="font-size:9px;color:var(--text3);letter-spacing:2px;text-transform:uppercase;margin-bottom:8px;">FREE VALUATION VAULT</div>
+        <div class="vault-row"><span class="vault-icon">📊</span><span class="vault-name">Corporate DCF Model Template (.xlsx)</span><span class="vault-badge-free">FREE</span></div>
+        <div class="vault-row"><span class="vault-icon">📋</span><span class="vault-name">Wall Street Excel Shortcuts Guide (.pdf)</span><span class="vault-badge-locked">LOCKED</span></div>
+        <div class="vault-row"><span class="vault-icon">📈</span><span class="vault-name">Financial Ratios & Valuation Cheat Sheet (.pdf)</span><span class="vault-badge-locked">LOCKED</span></div>
+      </div>
+
+      <!-- SCREEN 5: CTA -->
+      <div class="cta-screen" id="s5">
+        <div class="cta-title">Ready to launch?</div>
+        <div class="cta-sub">AnalystOS gives you Bloomberg-grade intelligence at a fraction of the price. Built for Indian markets, powered by AI.</div>
+        <a class="cta-btn" href="https://analystos-terminal.vercel.app/signup" target="_blank">Launch AnalystOS ↗</a>
+        <div class="cta-stats">
+          <div class="cta-stat"><div class="cta-stat-val">153</div><div class="cta-stat-label">Spots Left</div></div>
+          <div class="cta-stat"><div class="cta-stat-val">3 mo</div><div class="cta-stat-label">Free Pro</div></div>
+          <div class="cta-stat"><div class="cta-stat-val">40%</div><div class="cta-stat-label">Lifetime Off</div></div>
+        </div>
+      </div>
+
+      <!-- NARRATION -->
+      <div class="narration" id="narration">
+        <div class="narration-dot"></div>
+        <div class="narration-text" id="narration-text">Welcome to AnalystOS — the Bloomberg alternative built for the next generation.</div>
+      </div>
+    </div>
+
+    <!-- RIGHT PANEL -->
+    <div class="rpanel">
+      <div class="rp-section">
+        <div class="rp-header">System Metrics</div>
+        <div class="rp-stat-row"><span class="rp-stat-label">NSE Latency</span><span class="rp-stat-val" id="rp-lat">12ms</span></div>
+        <div class="rp-stat-row"><span class="rp-stat-label">Models Active</span><span class="rp-stat-val">1,247</span></div>
+        <div class="rp-stat-row"><span class="rp-stat-label">Accuracy</span><span class="rp-stat-val">99.4%</span></div>
+        <div class="rp-stat-row"><span class="rp-stat-label">Dashboards</span><span class="rp-stat-val">342</span></div>
+        <div class="rp-stat-row"><span class="rp-stat-label">Auth</span><span class="rp-stat-val">JWT ✓</span></div>
+      </div>
+      <div class="rp-section">
+        <div class="rp-header">Pipeline Status</div>
+        <div class="rp-stat-row"><span class="rp-stat-label">NSE Socket</span><span class="rp-stat-val">LIVE</span></div>
+        <div class="rp-stat-row"><span class="rp-stat-label">DCF Engine</span><span class="rp-stat-val">READY</span></div>
+        <div class="rp-stat-row"><span class="rp-stat-label">AI Co-Pilot</span><span class="rp-stat-val">ONLINE</span></div>
+        <div class="rp-stat-row"><span class="rp-stat-label">Risk Monitor</span><span class="rp-stat-val amber">WATCH</span></div>
+      </div>
+      <div class="log-area" id="log-area">
+        <div class="rp-header" style="margin-bottom:8px;">Event Log</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- BOTTOM BAR -->
+  <div class="bottombar">
+    <div class="step-label" id="step-label">STEP 1 / 6</div>
+    <div class="progress-track">
+      <div class="progress-fill" id="progress-fill" style="width:0%"></div>
+    </div>
+    <div class="controls">
+      <button class="ctrl-btn" id="btn-prev" onclick="manualStep(-1)">‹ PREV</button>
+      <button class="ctrl-btn primary" id="btn-play" onclick="togglePlay()">⏸ PAUSE</button>
+      <button class="ctrl-btn" id="btn-next" onclick="manualStep(1)">NEXT ›</button>
+    </div>
+    <div class="time-remaining" id="time-remaining">~2:00 left</div>
+  </div>
+
+</div>
+
+<script>
+// ── STATE ──
+let cur = 0, playing = true, masterTimer = null, stepTimer = null;
+const TOTAL = 6;
+
+// ── MOBILE DRAWER FUNCTIONS ──
+function toggleLeftDrawer() {
+  const sidebar = document.querySelector('.sidebar');
+  const rpanel = document.querySelector('.rpanel');
+  const backdrop = document.getElementById('drawer-backdrop');
+  sidebar.classList.toggle('mobile-open');
+  rpanel.classList.remove('mobile-open');
+  backdrop.classList.toggle('active', sidebar.classList.contains('mobile-open'));
+}
+
+function toggleRightDrawer() {
+  const sidebar = document.querySelector('.sidebar');
+  const rpanel = document.querySelector('.rpanel');
+  const backdrop = document.getElementById('drawer-backdrop');
+  rpanel.classList.toggle('mobile-open');
+  sidebar.classList.remove('mobile-open');
+  backdrop.classList.toggle('active', rpanel.classList.contains('mobile-open'));
+}
+
+function closeDrawers() {
+  const sidebar = document.querySelector('.sidebar');
+  const rpanel = document.querySelector('.rpanel');
+  const backdrop = document.getElementById('drawer-backdrop');
+  if (sidebar) sidebar.classList.remove('mobile-open');
+  if (rpanel) rpanel.classList.remove('mobile-open');
+  if (backdrop) backdrop.classList.remove('active');
+}
+
+// ── NARRATION LINES (per screen) ──
+const narrations = [
+  [
+    "Welcome to AnalystOS — a Bloomberg-grade financial terminal built for next-gen investors.",
+    "Sub-12ms NSE latency. 1,200+ AI models. 99.4% ML accuracy. 340+ auto-generated dashboards.",
+    "This is what institutional-grade equity research looks like when it's built from scratch in 2024."
+  ],
+  [
+    "The Global Intelligence layer pulls live data from every major NSE-listed equity — in real time.",
+    "Reliance, TCS, Infosys, HDFC — all updating at 12 milliseconds. Not delayed. Not simulated.",
+    "Nifty 50, Sensex, and Bank Nifty indexes are streamed via direct multicast TCP connections."
+  ],
+  [
+    "This is the AI Co-Pilot — it talks directly to the NSE node via a secured JWT pipeline.",
+    "Watch: I ask it to compile a Q3 FY26 valuation on Reliance. EBITDA, WACC, exit multiple — instant.",
+    "Implied intrinsic share price: ₹1,854. This is quantitative research in seconds, not hours."
+  ],
+  [
+    "The live DCF sandbox recalculates implied valuations instantly as you drag the assumption sliders.",
+    "Push growth to 20%, drop WACC to 8% — the bull case price updates live at 60 FPS.",
+    "The sensitivity table maps every WACC × multiple combination. What used to take an Excel day takes seconds."
+  ],
+  [
+    "Pricing is designed for every stage — from early analysts to hedge funds at institutional scale.",
+    "Free Vault gets you 5 NSE models and DuPont templates. Starter Node is ₹2,500/month.",
+    "Sign up today to unlock the Valuation Vault: DCF templates, ratio cheat sheets, and founding member pricing."
+  ],
+  [
+    "That's AnalystOS — the living, breathing financial OS for the next generation of investors.",
+    "Only 153 founding spots remaining. Get 3 months Pro free and 40% lifetime discount.",
+    "Click Launch AnalystOS to get started — it's free."
+  ]
+];
+
+const screenTitles = [
+  "01 · HERO COCKPIT",
+  "02 · GLOBAL INTELLIGENCE",
+  "03 · AI CO-PILOT",
+  "04 · DCF SANDBOX",
+  "05 · PRICING PLANS",
+  "06 · LAUNCH ACCESS"
+];
+
+// ── SCREEN DURATIONS (ms) ──
+const durations = [7000, 7000, 11000, 9000, 8000, 6000];
+const total_ms = durations.reduce((a,b) => a+b, 0);
+let elapsed_ms = 0;
+
+// ── LOGS ──
+const logMessages = [
+  ["info","NSE_SOCKET","Connected — multicast TCP"],
+  ["ok","AUTH","JWT token validated"],
+  ["ok","PIPELINE","DCF engine loaded"],
+  ["info","DATA","1,247 tickers streaming"],
+  ["ok","AI","Co-pilot node online"],
+  ["warn","RISK","WIPRO: vol spike +14%"],
+  ["ok","CACHE","Dashboard cache warm"],
+  ["info","MODEL","RELIANCE valuation ready"],
+  ["ok","DCF","Sensitivity grid compiled"],
+  ["info","VAULT","3 resources unlocked"],
+  ["ok","NSE","Ping 11ms — optimal"],
+  ["warn","MARGIN","INFY margin: -2.1pts"],
+];
+let logIdx = 0;
+function addLog() {
+  const l = logMessages[logIdx % logMessages.length]; logIdx++;
+  const now = new Date(); const t = now.getHours().toString().padStart(2,'0')+':'+now.getMinutes().toString().padStart(2,'0')+':'+now.getSeconds().toString().padStart(2,'0');
+  const el = document.createElement('div'); el.className='log-entry';
+  el.innerHTML = `<span class="le-time">${t}</span><span class="le-type ${l[0]}">${l[0].toUpperCase()}</span><span class="le-msg">${l[1]}: ${l[2]}</span>`;
+  const la = document.getElementById('log-area');
+  la.appendChild(el);
+  if (la.children.length > 12) la.removeChild(la.children[1]);
+  la.scrollTop = la.scrollHeight;
+}
+
+// ── TICKER FLICKER ──
+const tickers = ['t0','t1','t2','t3','t4','t5','t6'];
+const tickerUp = ['+1.84%','+0.62%','+0.91%','+2.31%','+0.55%','+1.20%','+0.33%'];
+const tickerDn = ['-0.39%','-1.14%','-0.72%','-0.22%','-1.45%','-0.88%','-0.14%'];
+function flickerTicker() {
+  const i = Math.floor(Math.random()*tickers.length);
+  const el = document.getElementById(tickers[i]);
+  const goUp = Math.random() > 0.35;
+  el.textContent = goUp ? tickerUp[i] : tickerDn[i];
+  el.className = 'ticker-chg ' + (goUp ? 'up' : 'dn');
+}
+function flickerLatency() {
+  const v = (10 + Math.floor(Math.random()*5)) + 'ms';
+  document.getElementById('latency-val').textContent = v;
+  document.getElementById('rp-lat').textContent = v;
+}
+
+// ── COUNTER ANIMATION ──
+function countUp(el, target, duration) {
+  let start = 0, step = target / (duration / 50);
+  let t = setInterval(() => {
+    start = Math.min(start + step, target);
+    el.textContent = Math.floor(start).toLocaleString() + (target > 100 ? '+' : '');
+    if (start >= target) clearInterval(t);
+  }, 50);
+}
+
+// ── TERMINAL TYPING ──
+let termLines = [
+  { delay: 500, type: 'prompt', text: 'ANALYST.OS >> COMMAND_INPUT' },
+  { delay: 1200, type: 'cmd', text: 'Compile valuation report on RELIANCE for Q3 FY26 assumptions.' },
+  { delay: 2400, type: 'out', text: '>> PIPELINE_REPLY' },
+  { delay: 2800, type: 'out', text: 'COMPILING VALUATION METRICS...' },
+  { delay: 3600, type: 'out', text: 'RELIANCE EBITDA: ₹120L · WACC: 9.0% · Exit Multiple: 14.0x' },
+  { delay: 4400, type: 'num', text: 'Implied intrinsic share price: ₹1,854 | EV: ₹18.54 Cr' },
+  { delay: 5500, type: 'prompt', text: 'ANALYST.OS >> COMMAND_INPUT' },
+  { delay: 6200, type: 'cmd', text: 'Bear case sensitivity: WACC 10%, Multiple 12x?' },
+  { delay: 7200, type: 'out', text: '>> BEAR CASE ANALYSIS' },
+  { delay: 7800, type: 'err', text: 'Implied price: ₹1,492 — DOWNSIDE: -19.4% from base case' },
+  { delay: 8800, type: 'warn', text: 'Risk flags: input cost pressure · telecom headwinds · O2C margin compression' },
+];
+let termTimers = [];
+function runTerminal() {
+  const body = document.getElementById('term-body');
+  body.innerHTML = '<div class="t-line"><span class="t-prompt">ANALYST.OS &gt;&gt; </span><span class="t-out">RESEARCH PIPELINE INITIALIZED [NSE NODE CONNECTED]</span></div>';
+  termTimers.forEach(clearTimeout);
+  termLines.forEach(l => {
+    const t = setTimeout(() => {
+      const div = document.createElement('div'); div.className = 't-line';
+      const cls = l.type === 'prompt' ? 't-prompt' : l.type === 'cmd' ? 't-cmd' : l.type === 'num' ? 't-num' : l.type === 'err' ? 't-err' : l.type === 'warn' ? 't-warn' : 't-out';
+      div.innerHTML = `<span class="${cls}">${l.text}</span>`;
+      body.appendChild(div);
+      body.scrollTop = body.scrollHeight;
+    }, l.delay);
+    termTimers.push(t);
+  });
+}
+
+// ── DCF CALC ──
+function updateDCF() {
+  const ebitda = parseFloat(document.getElementById('sl-ebitda').value);
+  const growth = parseFloat(document.getElementById('sl-growth').value) / 100;
+  const wacc = parseFloat(document.getElementById('sl-wacc').value) / 100;
+  const mult = parseFloat(document.getElementById('sl-mult').value);
+  document.getElementById('dv-ebitda').textContent = '₹' + ebitda + 'L';
+  document.getElementById('dv-growth').textContent = (growth*100).toFixed(0) + '%';
+  document.getElementById('dv-wacc').textContent = (wacc*100).toFixed(1) + '%';
+  document.getElementById('dv-mult').textContent = mult + 'x';
+  let e = ebitda, pv = 0;
+  const yrEls = ['yr1','yr2','yr3','yr4','yr5'], yrVals = ['yr1v','yr2v','yr3v','yr4v','yr5v'];
+  let maxE = ebitda * Math.pow(1 + growth, 5);
+  for (let y = 1; y <= 5; y++) {
+    e *= (1 + growth); pv += e / Math.pow(1 + wacc, y);
+    document.getElementById(yrEls[y-1]).style.width = Math.min(95, (e / maxE) * 90) + '%';
+    document.getElementById(yrVals[y-1]).textContent = '₹' + Math.round(e) + 'L';
+  }
+  const terminalEV = (e * mult) / Math.pow(1 + wacc, 5);
+  const totalEV = pv + terminalEV;
+  const price = totalEV / (ebitda * 1.5);
+  document.getElementById('dcf-price').textContent = '₹' + price.toFixed(2);
+  document.getElementById('dcf-ev').textContent = '₹' + Math.round(totalEV * 15.4) + 'Cr';
+  document.getElementById('dcf-scenario').textContent = (growth*100).toFixed(0) + '% growth · ' + (wacc*100).toFixed(1) + '% WACC';
+  document.getElementById('dcf-bull').textContent = '₹' + (price * 1.175).toFixed(1);
+  document.getElementById('dcf-bear').textContent = '₹' + (price * 0.827).toFixed(1);
+}
+
+// ── DCF AUTO-ANIMATE ──
+let dcfAnim = null;
+function animateDCF() {
+  const targets = [
+    { ebitda:120, growth:15, wacc:9.0, mult:14 },
+    { ebitda:180, growth:20, wacc:8.0, mult:16 },
+    { ebitda:80,  growth:8,  wacc:11,  mult:10 },
+    { ebitda:120, growth:15, wacc:9.0, mult:14 },
+  ];
+  let ti = 0;
+  function nextTarget() {
+    if (!playing || cur !== 3) return;
+    const target = targets[ti % targets.length]; ti++;
+    animateTo(target, 2000, () => { dcfAnim = setTimeout(nextTarget, 1200); });
+  }
+  nextTarget();
+}
+function animateTo(target, duration, cb) {
+  const steps = 40, interval = duration / steps;
+  const sl_e = document.getElementById('sl-ebitda');
+  const sl_g = document.getElementById('sl-growth');
+  const sl_w = document.getElementById('sl-wacc');
+  const sl_m = document.getElementById('sl-mult');
+  const start = { ebitda:+sl_e.value, growth:+sl_g.value, wacc:+sl_w.value, mult:+sl_m.value };
+  let step = 0;
+  const t = setInterval(() => {
+    step++;
+    const p = step / steps;
+    sl_e.value = lerp(start.ebitda, target.ebitda, p);
+    sl_g.value = lerp(start.growth, target.growth, p);
+    sl_w.value = lerp(start.wacc, target.wacc, p);
+    sl_m.value = lerp(start.mult, target.mult, p);
+    updateDCF();
+    if (step >= steps) { clearInterval(t); if (cb) cb(); }
+  }, interval);
+}
+function lerp(a,b,t) { return a + (b-a) * t; }
+
+// ── NARRATION SYSTEM ──
+let narIdx = 0, narTimer = null;
+function startNarration(screenIdx) {
+  const lines = narrations[screenIdx];
+  narIdx = 0;
+  showNar(lines[0]);
+  function cycle() {
+    narIdx = (narIdx + 1) % lines.length;
+    showNar(lines[narIdx]);
+    narTimer = setTimeout(cycle, 3200);
+  }
+  narTimer = setTimeout(cycle, 3200);
+}
+function showNar(text) {
+  const el = document.getElementById('narration-text');
+  el.style.opacity = 0;
+  setTimeout(() => { el.textContent = text; el.style.opacity = 1; }, 200);
+}
+
+// ── MINI BAR ANIMATE ──
+function animateMiniBar(id, pct) {
+  setTimeout(() => { document.getElementById(id).style.width = pct + '%'; }, 300);
+}
+
+// ── SCREEN SETUP CALLBACKS ──
+function onEnter(idx) {
+  document.getElementById('stage-title').textContent = screenTitles[idx];
+  startNarration(idx);
+  if (idx === 0) {
+    countUp(document.getElementById('h-models'), 1200, 1500);
+    countUp(document.getElementById('h-dash'), 340, 1500);
+  }
+  if (idx === 1) {
+    setTimeout(() => {
+      animateMiniBar('mb0', 72); animateMiniBar('mb1', 55);
+      animateMiniBar('mb2', 28); animateMiniBar('mb3', 65);
+      document.getElementById('idx0').style.width = '72%';
+      document.getElementById('idx1').style.width = '65%';
+      document.getElementById('idx2').style.width = '80%';
+    }, 400);
+  }
+  if (idx === 2) { runTerminal(); }
+  if (idx === 3) { updateDCF(); setTimeout(animateDCF, 600); }
+}
+
+// ── GO TO SCREEN ──
+function goTo(n) {
+  if (n < 0 || n >= TOTAL) return;
+  clearTimeout(narTimer);
+  clearTimeout(dcfAnim);
+  closeDrawers();
+
+  // hide old
+  const oldS = cur < 5 ? document.getElementById('s'+cur) : document.getElementById('s5');
+  if (oldS) { oldS.classList.remove('active'); }
+  document.getElementById('nav-'+cur).classList.remove('active');
+  document.getElementById('nav-'+cur).classList.add('done');
+
+  cur = n;
+
+  // show new
+  const newId = cur === 5 ? 's5' : 's'+cur;
+  const newS = document.getElementById(newId);
+  if (newS) newS.classList.add('active');
+  document.getElementById('nav-'+cur).classList.remove('done');
+  document.getElementById('nav-'+cur).classList.add('active');
+
+  // update progress
+  let prog = ((cur) / (TOTAL - 1)) * 100;
+  document.getElementById('progress-fill').style.width = prog + '%';
+  document.getElementById('step-label').textContent = 'STEP '+(cur+1)+' / '+TOTAL;
+
+  // time remaining
+  const remaining_ms = durations.slice(cur).reduce((a,b)=>a+b,0);
+  const secs = Math.ceil(remaining_ms / 1000);
+  const m = Math.floor(secs/60), s = secs % 60;
+  document.getElementById('time-remaining').textContent = '~'+m+':'+(s<10?'0':'')+s+' left';
+
+  onEnter(cur);
+
+  // auto advance
+  clearTimeout(stepTimer);
+  if (playing && cur < TOTAL - 1) {
+    stepTimer = setTimeout(() => goTo(cur + 1), durations[cur]);
+  }
+}
+
+// ── PLAY / PAUSE ──
+function togglePlay() {
+  playing = !playing;
+  const btn = document.getElementById('btn-play');
+  btn.textContent = playing ? '⏸ PAUSE' : '▶ PLAY';
+  if (playing) { stepTimer = setTimeout(() => goTo(cur + 1), durations[cur]); }
+  else { clearTimeout(stepTimer); }
+}
+
+function manualStep(d) {
+  clearTimeout(stepTimer);
+  const next = cur + d;
+  if (next >= 0 && next < TOTAL) goTo(next);
+}
+
+// ── TICK LOOP ──
+setInterval(() => {
+  flickerTicker();
+  if (Math.random() > 0.7) flickerLatency();
+  if (Math.random() > 0.6) addLog();
+}, 1500);
+
+// ── NARRATION FADE ──
+document.getElementById('narration-text').style.transition = 'opacity 0.2s';
+
+// ── INIT ──
+goTo(0);
+</script>
+</body>
+</html>

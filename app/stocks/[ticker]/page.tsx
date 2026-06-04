@@ -46,7 +46,7 @@ export default function StockDetailPage() {
   useEffect(() => {
     async function checkAuth() {
       const isFounder = typeof window !== "undefined" && 
-        (new URLSearchParams(window.location.search).get("founder") === "abhinav_gate_pro" || 
+        (new URLSearchParams(window.location.search).get("founder") === "revanth_gate_pro" || 
          localStorage.getItem("founder_bypass") === "true");
 
       if (isFounder) {
@@ -78,7 +78,7 @@ export default function StockDetailPage() {
 
       // Founder Whitelisting Hook
       if (
-        session.user.email?.toLowerCase().includes("abhin") || 
+        session.user.email?.toLowerCase().includes("revanth") || 
         session.user.email?.toLowerCase().includes("founder") || 
         session.user.email?.toLowerCase().includes("admin")
       ) {
