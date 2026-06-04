@@ -11,6 +11,7 @@ import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import Navbar from "@/components/navbar";
 import TickerBar from "@/components/ticker-bar";
+import LiveStockChart from "@/components/live-stock-chart";
 import { locales, LocaleCode } from "@/lib/locales";
 import { 
   Search, Terminal, BarChart3, ShieldAlert, 
@@ -1902,17 +1903,18 @@ IMPLIED FAIR VALUATION SPOT: ₹2,580.40
                         <span className="font-bold">TERMINAL_SEARCH_PORT</span>
                       </div>
 
-                      <form onSubmit={handleSearchSubmit} className="flex border border-white/10 rounded-lg overflow-hidden text-[11px] font-mono">
+                      <form onSubmit={handleSearchSubmit} className="text-[11px] font-mono space-y-2">
                         <input
                           type="text"
                           required
                           value={searchQuery}
                           onChange={e => setSearchQuery(e.target.value)}
-                          placeholder="ENTER TICKER OR CODE..."
-                          className="flex-1 bg-slate-950/80 px-4 py-3 text-white outline-none border-none animate-pulse font-mono placeholder-slate-700"
+                          placeholder="ENTER TICKER (TCS, AAPL, RELIANCE…)"
+                          className="w-full bg-slate-950/80 border border-white/10 rounded-lg px-4 py-3 text-white outline-none font-mono placeholder-slate-700 focus:border-[#a78bfa]/40"
                         />
-                        <button type="submit" className="bg-[#0b0f19] px-4 border-l border-white/5 text-[#a78bfa] hover:text-white hover:bg-slate-950/50 transition-colors cursor-none">
+                        <button type="submit" className="w-full flex items-center justify-center gap-2 bg-[#0b0f19] border border-white/10 py-2 rounded-lg text-[#a78bfa] hover:text-white hover:border-[#a78bfa]/40 transition-colors">
                           <Search className="w-4 h-4" />
+                          <span>OPEN STOCK + LIVE CHART</span>
                         </button>
                       </form>
 
@@ -2121,132 +2123,14 @@ IMPLIED FAIR VALUATION SPOT: ₹2,580.40
                       ))}
                     </div>
 
-                    {/* Live Interactive Price Chart */}
-                    <div className="mb-6 bg-[#080c16] border border-white/[0.06] rounded-2xl p-6">
-                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
-                        <div className="flex items-center space-x-2">
-                          <TrendingUp className="w-4 h-4 text-[#00f0ff]" />
-                          <span className="text-[10px] font-mono font-bold text-slate-400 tracking-widest">LIVE_PRICE_CHART</span>
-                          <span className="w-1.5 h-1.5 bg-[#34d399] rounded-full animate-ping" />
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <span className="text-[9px] font-mono text-slate-500">TICKER:</span>
-                          <select
-                            value={selectedChartTicker}
-                            onChange={e => {
-                              const newTicker = e.target.value;
-                              setSelectedChartTicker(newTicker);
-                              const existingStock = stocks.find(s => s.ticker === newTicker);
-                              if (existingStock && !priceHistory[newTicker]?.length) {
-                                setPriceHistory(prev => ({
-                                  ...prev,
-                                  [newTicker]: [{ time: new Date().toLocaleTimeString("en-US", { hour12: false, hour: "2-digit", minute: "2-digit", second: "2-digit" }), price: existingStock.price }]
-                                }));
-                              }
-                            }}
-                            className="bg-slate-950 border border-white/10 text-[#00f0ff] text-[10px] font-mono font-bold px-3 py-1.5 rounded-lg outline-none cursor-pointer hover:border-[#00f0ff]/30 transition-colors"
-                          >
-                            {stocks.map(s => (
-                              <option key={s.ticker} value={s.ticker}>
-                                {s.ticker} — {s.name}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                      </div>
-
-                      {/* Price header */}
-                      {(() => {
-                        const chartStock = stocks.find(s => s.ticker === selectedChartTicker);
-                        if (!chartStock) return null;
-                        const isUp = chartStock.changePercent >= 0;
-                        return (
-                          <div className="flex items-baseline space-x-3 mb-4">
-                            <span className="text-2xl font-bold text-white font-mono">
-                              {chartStock.price < 10 ? chartStock.price.toFixed(4) : chartStock.price.toFixed(2)}
-                            </span>
-                            <span className={`text-sm font-bold font-mono ${isUp ? "text-[#34d399]" : "text-[#ff3860]"}`}>
-                              {isUp ? "+" : ""}{chartStock.change.toFixed(2)} ({isUp ? "+" : ""}{chartStock.changePercent.toFixed(2)}%)
-                            </span>
-                            <span className="text-[9px] text-slate-500 font-mono">LIVE</span>
-                          </div>
-                        );
-                      })()}
-
-                      {/* Chart */}
-                      <div className="h-[280px] w-full">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <AreaChart
-                            data={priceHistory[selectedChartTicker] || []}
-                            margin={{ top: 5, right: 10, left: 10, bottom: 5 }}
-                          >
-                            <defs>
-                              <linearGradient id="chartGradientUp" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="5%" stopColor="#34d399" stopOpacity={0.35} />
-                                <stop offset="95%" stopColor="#34d399" stopOpacity={0} />
-                              </linearGradient>
-                              <linearGradient id="chartGradientDown" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="5%" stopColor="#ff3860" stopOpacity={0.35} />
-                                <stop offset="95%" stopColor="#ff3860" stopOpacity={0} />
-                              </linearGradient>
-                            </defs>
-                            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
-                            <XAxis
-                              dataKey="time"
-                              tick={{ fontSize: 9, fill: "#64748b", fontFamily: "monospace" }}
-                              axisLine={{ stroke: "rgba(255,255,255,0.06)" }}
-                              tickLine={false}
-                              interval="preserveStartEnd"
-                              minTickGap={40}
-                            />
-                            <YAxis
-                              domain={["auto", "auto"]}
-                              tick={{ fontSize: 9, fill: "#64748b", fontFamily: "monospace" }}
-                              axisLine={{ stroke: "rgba(255,255,255,0.06)" }}
-                              tickLine={false}
-                              width={65}
-                              tickFormatter={(val: number) => val < 10 ? val.toFixed(4) : val.toFixed(2)}
-                            />
-                            <Tooltip
-                              contentStyle={{
-                                backgroundColor: "#0b0f19",
-                                border: "1px solid rgba(0,240,255,0.15)",
-                                borderRadius: "8px",
-                                fontSize: "11px",
-                                fontFamily: "monospace",
-                                color: "#e2e8f0",
-                                padding: "8px 12px"
-                              }}
-                              labelStyle={{ color: "#94a3b8", fontSize: "9px" }}
-                              formatter={(value: any) => {
-                                const v = Number(value) || 0;
-                                return [v < 10 ? v.toFixed(4) : v.toFixed(2), "Price"];
-                              }}
-                            />
-                            <Area
-                              type="monotone"
-                              dataKey="price"
-                              stroke={(() => {
-                                const s = stocks.find(s => s.ticker === selectedChartTicker);
-                                return s && s.changePercent >= 0 ? "#34d399" : "#ff3860";
-                              })()}
-                              strokeWidth={2}
-                              fill={(() => {
-                                const s = stocks.find(s => s.ticker === selectedChartTicker);
-                                return s && s.changePercent >= 0 ? "url(#chartGradientUp)" : "url(#chartGradientDown)";
-                              })()}
-                              dot={false}
-                              activeDot={{ r: 4, fill: "#00f0ff", stroke: "#05070a", strokeWidth: 2 }}
-                              animationDuration={200}
-                            />
-                          </AreaChart>
-                        </ResponsiveContainer>
-                      </div>
-
-                      <div className="mt-3 pt-3 border-t border-white/5 flex justify-between items-center text-[9px] font-mono text-slate-500">
-                        <span>FEED: POLYGON + TWELVE_DATA NODES</span>
-                        <span className="text-[#00f0ff] font-bold">250ms TICK RATE</span>
-                      </div>
+                    <div className="mb-6">
+                      <LiveStockChart
+                        initialSymbol={selectedChartTicker}
+                        symbolOptions={stocks
+                          .filter((s) => s.type === "equity" && s.region === selectedRegion)
+                          .slice(0, 12)
+                          .map((s) => s.ticker)}
+                      />
                     </div>
 
                     <div className="overflow-x-auto">

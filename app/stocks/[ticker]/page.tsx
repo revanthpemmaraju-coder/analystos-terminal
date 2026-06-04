@@ -6,6 +6,7 @@ import { useParams, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import Navbar from "@/components/navbar";
 import TickerBar from "@/components/ticker-bar";
+import LiveStockChart from "@/components/live-stock-chart";
 import { 
   TrendingUp, ShieldAlert, FileText, ChevronRight, 
   HelpCircle, ArrowLeft, RefreshCw, AlertTriangle
@@ -166,6 +167,8 @@ export default function StockDetailPage() {
                 </div>
               </div>
             </div>
+
+            <LiveStockChart initialSymbol={ticker} compact />
 
             {/* Metrics spreadsheet grid */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

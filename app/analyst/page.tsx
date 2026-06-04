@@ -8,9 +8,10 @@ import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import Navbar from "@/components/navbar";
 import TickerBar from "@/components/ticker-bar";
+import StockSearchInput, { StockSearchSelection } from "@/components/stock-search-input";
 import { 
-  Send, Terminal, Cpu, ShieldAlert, Sparkles, 
-  Trash2, CornerDownLeft, RefreshCw, User, HelpCircle
+  Send, Cpu, ShieldAlert, 
+  Trash2, User
 } from "lucide-react";
 
 interface Message {
@@ -19,7 +20,7 @@ interface Message {
   timestamp: string;
 }
 
-function generateMockResponse(message: string): string {
+function generateFallbackResponse(message: string, pinnedSymbol?: string): string {
   const msg = message.toLowerCase();
   
   if (msg.includes("swot") || msg.includes("reliance")) {
@@ -130,8 +131,11 @@ Comparable Company Analysis (Comps) is a relative valuation method comparing the
     }
   }
   
+  if (!target && pinnedSymbol) {
+    target = pinnedSymbol.replace(/\.(NS|BO)$/i, "");
+  }
   if (!target) {
-    target = "TSLA";
+    target = "TCS";
   }
   
   const ticker = target.toUpperCase();
@@ -307,6 +311,7 @@ export default function AnalystChatPage() {
   const [sending, setSending] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [quotaExceeded, setQuotaExceeded] = useState(false);
+  const [pinnedStock, setPinnedStock] = useState<StockSearchSelection | null>(null);
   
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -335,7 +340,7 @@ export default function AnalystChatPage() {
             setMessages([
               {
                 role: "assistant",
-                content: "SYS_CORE_ONLINE: Welcome to AnalystOS AI Research Cockpit.\n\nI am your institutional equity research analyst. Ask me any question regarding corporate balance sheets, domestic NSE/BSE stock valuations, CAGR projections, exit EBITDA multiples, or financial modeling guides. I will cite my logic.\n\nTry asking: 'Perform a SWOT analysis for Reliance' or 'Explain DuPont ROE equations.'",
+                content: "SYS_CORE_ONLINE: Welcome to AnalystOS Stock AI.\n\nSearch any stock above (NSE/BSE or US), then ask anything — valuation, should I buy, peer comps, earnings, technicals. Live prices are pulled from Yahoo Finance.\n\nTry: select TCS from search, then ask \"Should I invest now?\"",
                 timestamp: new Date().toLocaleTimeString()
               }
             ]);
@@ -345,7 +350,7 @@ export default function AnalystChatPage() {
           setMessages([
             {
               role: "assistant",
-              content: "SYS_CORE_ONLINE: Welcome to AnalystOS AI Research Cockpit.\n\nI am your institutional equity research analyst. Ask me any question regarding corporate balance sheets, domestic NSE/BSE stock valuations, CAGR projections, exit EBITDA multiples, or financial modeling guides. I will cite my logic.\n\nTry asking: 'Perform a SWOT analysis for Reliance' or 'Explain DuPont ROE equations.'",
+              content: "SYS_CORE_ONLINE: Welcome to AnalystOS Stock AI.\n\nSearch any stock above (NSE/BSE or US), then ask anything — valuation, should I buy, peer comps, earnings, technicals. Live prices are pulled from Yahoo Finance.\n\nTry: select TCS from search, then ask \"Should I invest now?\"",
               timestamp: new Date().toLocaleTimeString()
             }
           ]);
@@ -401,7 +406,7 @@ export default function AnalystChatPage() {
         setMessages([
           {
             role: "assistant",
-            content: "SYS_CORE_ONLINE: Welcome to AnalystOS AI Research Cockpit.\n\nI am your institutional equity research analyst. Ask me any question regarding corporate balance sheets, domestic NSE/BSE stock valuations, CAGR projections, exit EBITDA multiples, or financial modeling guides. I will cite my logic.\n\nTry asking: 'Perform a SWOT analysis for Reliance' or 'Explain DuPont ROE equations.'",
+            content: "SYS_CORE_ONLINE: Welcome to AnalystOS Stock AI.\n\nSearch any stock above (NSE/BSE or US), then ask anything — valuation, should I buy, peer comps, earnings, technicals. Live prices are pulled from Yahoo Finance.\n\nTry: select TCS from search, then ask \"Should I invest now?\"",
             timestamp: new Date().toLocaleTimeString()
           }
         ]);
@@ -436,10 +441,14 @@ export default function AnalystChatPage() {
     setMessages(newMsgs);
 
     try {
-      const response = await fetch("/api/ai", {
+      const symbols = pinnedStock
+        ? [pinnedStock.symbol.split(".")[0]]
+        : [];
+
+      const response = await fetch("/api/stocks/ai", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: prompt, userId: user.id })
+        body: JSON.stringify({ message: prompt, userId: user.id, symbols })
       });
 
       if (response.status === 429) {
@@ -491,7 +500,9 @@ export default function AnalystChatPage() {
     } catch (err: any) {
       console.warn("Secure link offline. Running local client-side co-pilot simulation:", err);
       
-      const localResponse = `[SYS_BACKUP_NODE: LOCAL CO-PILOT SIMULATION ACTIVE]\n\n` + generateMockResponse(prompt);
+      const localResponse =
+        `[SYS_BACKUP_NODE: OFFLINE FALLBACK]\n\n` +
+        generateFallbackResponse(prompt, pinnedStock?.symbol);
       
       const assistantMsg: Message = {
         role: "assistant",
@@ -551,8 +562,8 @@ export default function AnalystChatPage() {
         <div className="flex items-center justify-between border-b border-slate-900 pb-3">
           <div className="flex items-center space-x-2 text-xs">
             <Cpu className="w-4 h-4 text-[#00f0ff]" />
-            <span className="text-white font-bold uppercase">AI_RESEARCH_ANALYST_PORT</span>
-            <span className="terminal-badge">CLAUDE_SONNET_ACTIVE</span>
+            <span className="text-white font-bold uppercase">STOCK_AI_ANALYST</span>
+            <span className="terminal-badge">LIVE_YAHOO_FEED</span>
           </div>
 
           <div className="flex items-center space-x-4 text-[10px]">
@@ -586,6 +597,30 @@ export default function AnalystChatPage() {
             </Link>
           </div>
         )}
+
+        <div className="space-y-2">
+          <p className="text-[10px] text-slate-500 font-mono uppercase tracking-wider">
+            Search & pin a stock (required for best answers)
+          </p>
+          <StockSearchInput
+            onSelect={(item) => setPinnedStock(item)}
+          />
+          {pinnedStock && (
+            <div className="flex items-center justify-between text-[10px] font-mono bg-[#00f0ff]/5 border border-[#00f0ff]/20 rounded px-3 py-2">
+              <span>
+                PINNED: <span className="text-[#00f0ff] font-bold">{pinnedStock.symbol}</span>
+                <span className="text-slate-400 ml-2">{pinnedStock.name}</span>
+              </span>
+              <button
+                type="button"
+                onClick={() => setPinnedStock(null)}
+                className="text-slate-500 hover:text-[#ff3860]"
+              >
+                [CLEAR]
+              </button>
+            </div>
+          )}
+        </div>
 
         {/* Monospace Chat Terminal logs display */}
         <div className="flex-1 bg-[#0b0f19] border border-[#00f0ff]/10 rounded-lg p-6 min-h-[400px] max-h-[60vh] overflow-y-auto scrollbar-thin flex flex-col space-y-4 shadow-xl">
@@ -638,7 +673,7 @@ export default function AnalystChatPage() {
             required
             value={inputVal}
             onChange={e => setInputVal(e.target.value)}
-            placeholder="Type any corporate or valuation query (e.g. Perform a comps review for Reliance)..."
+            placeholder="Ask about any stock (e.g. Should I buy TCS now? Compare Infosys vs Wipro P/E…)"
             className="flex-1 bg-transparent px-4 py-3 text-xs text-white outline-none border-none font-mono placeholder:text-slate-600"
           />
           <button
