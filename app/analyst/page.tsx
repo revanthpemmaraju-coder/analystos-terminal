@@ -105,33 +105,19 @@ Comparable Company Analysis (Comps) is a relative valuation method comparing the
 - Apply peer median multiples to target's financial metrics to estimate relative implied fair value spot.`;
   }
   
-  if (msg.includes("tcs") || msg.includes("infosys") || msg.includes("hdfc") || msg.includes("bank") || msg.includes("stock")) {
-    return `[SYS_ANALYST_SECURE_NODE: INDIAN BLUE-CHIP LEDGER]
-
-Institutional outlook on major Indian blue-chip equities [CIT_IND_01]:
-
-1. TATA CONSULTANCY SERVICES (TCS) [CIT_IND_02]:
-- Margin metrics: Solid EBITDA margin expansion holding firm at 26.2%.
-- Valuation: Trading at 28.2x P/E. Strong digital transformation and cloud pipelines.
-
-2. INFOSYS (INFY) [CIT_IND_03]:
-- Growth profile: Steady 7.8% 5-Yr pro-forma growth. High cash-flow conversion.
-- Valuation: Trading at 22.5x P/E.
-
-3. HDFC BANK (HDFCBANK) [CIT_IND_04]:
-- Valuation gap: Intrinsic upside of +18.4% based on normalized comps.
-- Metrics: Attractive 16.8x P/E following merger consolidation phases.
-
-RECOMMENDATION: Sector-leads hold positive long-term compounding structures.`;
-  }
-
-  // 2. Dynamic Asset Parser Fallback
+  // Dynamic Asset Parser — handles ANY stock, crypto, or commodity query
   const cleanMsg = message.replace(/[^\w\s-]/g, "");
   const stopWords = [
-    "analyze", "analysis", "opinion", "on", "what", "is", "the", "about", "for", 
-    "perform", "run", "do", "how", "compare", "vs", "versus", "and", "or", "dcf", 
-    "valuation", "of", "swot", "dupont", "roe", "comps", "earnings", "transcript", 
-    "summarize", "stock", "crypto", "commodity", "price", "target", "verdict", "please"
+    "analyze", "analysis", "opinion", "on", "what", "is", "the", "about", "for",
+    "perform", "run", "do", "how", "compare", "vs", "versus", "and", "or", "dcf",
+    "valuation", "of", "swot", "dupont", "roe", "comps", "earnings", "transcript",
+    "summarize", "stock", "stocks", "crypto", "commodity", "commodities", "price",
+    "target", "verdict", "please", "should", "invest", "buy", "sell", "hold",
+    "tell", "me", "can", "you", "give", "this", "that", "will", "would", "could",
+    "it", "now", "today", "think", "good", "bad", "best", "worst", "top",
+    "in", "a", "an", "my", "i", "want", "need", "like", "show", "explain",
+    "detailed", "full", "complete", "brief", "quick", "deep", "report",
+    "investment", "trading", "trade", "market", "markets", "portfolio"
   ];
   
   const words = cleanMsg.split(/\s+/);

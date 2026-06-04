@@ -221,35 +221,21 @@ Comparable Company Analysis (Comps) is a relative valuation methodology that ben
 ### Actionable Next Steps
 - Open Tab 02 \`STOCK_SCREENER\` to view the normalized semiconductor and IT comps.`;
   }
-  
-  else if (msg.includes("tcs") || msg.includes("infosys") || msg.includes("hdfc") || msg.includes("bank") || msg.includes("stock")) {
-    result = `### Quick Answer
-Indian blue-chip stocks show strong fundamentals: TCS (BUY, target P/E 28.2x), Infosys (HOLD, target P/E 22.5x), and HDFC Bank (BUY, target P/E 16.8x).
 
-### Analysis
-- TCS margin profile: EBITDA margin remains stable at 26.2%.
-- HDFC Bank comps: Intrinsic upside of +18.4% normalized post-merger adjustments.
-- Twelve Data & Polygon feeds show active NSE ticking prices. Real DCF metrics verify high cash conversion ratios.
-
-### Key Takeaways
-- IT services (TCS, INFY) show strong free cash flow conversions.
-- Financial sector (HDFCBANK) multiple is attractive at 16.8x P/E.
-
-### Risks & Considerations
-- Global macro client spending delays can slow IT export CAGR.
-
-### Actionable Next Steps
-- Track ticker volatility alerts on the main Cockpit board.`;
-  }
-
-  else {
-    // 2. Dynamic Asset Parser Fallback
+  if (!result) {
+    // Dynamic Asset Parser — handles ANY stock, crypto, or commodity query
     const cleanMsg = message.replace(/[^\w\s-]/g, "");
     const stopWords = [
-      "analyze", "analysis", "opinion", "on", "what", "is", "the", "about", "for", 
-      "perform", "run", "do", "how", "compare", "vs", "versus", "and", "or", "dcf", 
-      "valuation", "of", "swot", "dupont", "roe", "comps", "earnings", "transcript", 
-      "summarize", "stock", "crypto", "commodity", "price", "target", "verdict", "please"
+      "analyze", "analysis", "opinion", "on", "what", "is", "the", "about", "for",
+      "perform", "run", "do", "how", "compare", "vs", "versus", "and", "or", "dcf",
+      "valuation", "of", "swot", "dupont", "roe", "comps", "earnings", "transcript",
+      "summarize", "stock", "stocks", "crypto", "commodity", "commodities", "price",
+      "target", "verdict", "please", "should", "invest", "buy", "sell", "hold",
+      "tell", "me", "can", "you", "give", "this", "that", "will", "would", "could",
+      "it", "now", "today", "think", "good", "bad", "best", "worst", "top",
+      "in", "a", "an", "my", "i", "want", "need", "like", "show", "explain",
+      "detailed", "full", "complete", "brief", "quick", "deep", "report",
+      "investment", "trading", "trade", "market", "markets", "portfolio"
     ];
     
     const words = cleanMsg.split(/\s+/);
