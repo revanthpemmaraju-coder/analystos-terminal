@@ -25,11 +25,18 @@ CREATE TABLE IF NOT EXISTS public.portfolios (
   user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
   name TEXT NOT NULL,
   holdings JSONB DEFAULT '[]'::jsonb, -- Array of {ticker, shares, average_buy_price}
+  cash_balance NUMERIC DEFAULT 0,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 -- Enable RLS for portfolios
 ALTER TABLE public.portfolios ENABLE ROW LEVEL SECURITY;
+
+-- Ensure 1 portfolio per user (matches app logic using upsert on user_id)
+CREATE UNIQUE INDEX IF NOT EXISTS portfolios_user_id_unique ON public.portfolios(user_id);
+
+-- Backwards-compatible: add column if the table already exists
+ALTER TABLE public.portfolios ADD COLUMN IF NOT EXISTS cash_balance NUMERIC DEFAULT 0;
 
 -- -------------------------------------------------------------
 -- 3. DCF Models Table (Saved Discounted Cash Flow models)
@@ -93,6 +100,24 @@ CREATE POLICY "Allow users to manage their own DCF models" ON public.dcf_models
 
 -- Conversations Policies
 CREATE POLICY "Allow users to manage their own chat logs" ON public.conversations 
+  FOR ALL USING (auth.uid() = user_id);
+
+-- -------------------------------------------------------------
+-- 6. Analyst Feed Items (AI-generated brief + notes)
+-- -------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS public.analyst_feed_items (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  kind TEXT NOT NULL CHECK (kind IN ('brief', 'note')),
+  title TEXT NOT NULL,
+  symbols TEXT[] DEFAULT ARRAY[]::text[],
+  content TEXT NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+ALTER TABLE public.analyst_feed_items ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Allow users to manage their own feed items" ON public.analyst_feed_items
   FOR ALL USING (auth.uid() = user_id);
 
 -- Waitlist Policies

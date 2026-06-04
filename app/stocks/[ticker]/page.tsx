@@ -9,7 +9,7 @@ import TickerBar from "@/components/ticker-bar";
 import LiveStockChart from "@/components/live-stock-chart";
 import { 
   TrendingUp, ShieldAlert, FileText, ChevronRight, 
-  HelpCircle, ArrowLeft, RefreshCw, AlertTriangle
+  HelpCircle, ArrowLeft, RefreshCw, AlertTriangle, Database
 } from "lucide-react";
 
 interface StockDetail {
@@ -42,6 +42,8 @@ export default function StockDetailPage() {
   const [loading, setLoading] = useState(true);
   const [stock, setStock] = useState<StockDetail | null>(null);
   const [fetchingData, setFetchingData] = useState(true);
+  const [liveQuote, setLiveQuote] = useState<any>(null);
+  const [flow, setFlow] = useState<any>(null);
 
   // Protect route & Fetch session
   useEffect(() => {
@@ -116,6 +118,48 @@ export default function StockDetailPage() {
     fetchStockDetails();
   }, [ticker]);
 
+  // Real-time quote stream
+  useEffect(() => {
+    if (typeof window === "undefined" || !ticker) return;
+    const es = new EventSource(
+      `/api/stocks/stream?symbols=${encodeURIComponent(ticker)}&intervalMs=6000`
+    );
+
+    const onQuotes = (ev: MessageEvent) => {
+      try {
+        const payload = JSON.parse(ev.data);
+        if (!Array.isArray(payload)) return;
+        const row = payload.find(
+          (x) =>
+            x?.ok &&
+            String(x.quote?.displaySymbol || "")
+              .toUpperCase()
+              .replace(/\.(NS|BO|NSE|BSE)$/i, "") === ticker.toUpperCase()
+        );
+        if (row?.quote) setLiveQuote(row.quote);
+      } catch {
+        /* ignore */
+      }
+    };
+    es.addEventListener("quotes", onQuotes as any);
+    return () => es.close();
+  }, [ticker]);
+
+  // Institutional flow snapshot
+  useEffect(() => {
+    if (!ticker) return;
+    (async () => {
+      try {
+        const res = await fetch(`/api/stocks/flow?symbol=${encodeURIComponent(ticker)}`);
+        if (!res.ok) return;
+        const data = await res.json();
+        setFlow(data.flow);
+      } catch {
+        /* ignore */
+      }
+    })();
+  }, [ticker]);
+
   if (loading || fetchingData) {
     return (
       <div className="flex flex-col min-h-screen bg-[#05070a] text-slate-100 font-mono items-center justify-center space-y-3">
@@ -156,19 +200,81 @@ export default function StockDetailPage() {
               <div className="flex items-center space-x-6">
                 <div className="text-right">
                   <span className="text-[10px] text-slate-500 font-bold block uppercase">CURRENT QUOTE (₹)</span>
-                  <span className="text-2xl font-bold text-white font-mono">₹{stock.price.toFixed(2)}</span>
+                  <span className="text-2xl font-bold text-white font-mono">
+                    ₹{Number(liveQuote?.price ?? stock.price).toFixed(2)}
+                  </span>
                 </div>
                 
                 <div className="text-right">
                   <span className="text-[10px] text-slate-500 font-bold block uppercase">CHANGE</span>
-                  <span className={`text-xl font-bold flex items-center justify-end ${stock.change >= 0 ? "text-[#00e676]" : "text-[#ff3860]"}`}>
-                    {stock.change >= 0 ? "▲" : "▼"} {stock.change >= 0 ? "+" : ""}{stock.changePercent}%
+                  <span
+                    className={`text-xl font-bold flex items-center justify-end ${
+                      Number(liveQuote?.changePercent ?? stock.changePercent) >= 0
+                        ? "text-[#00e676]"
+                        : "text-[#ff3860]"
+                    }`}
+                  >
+                    {Number(liveQuote?.changePercent ?? stock.changePercent) >= 0 ? "▲" : "▼"}{" "}
+                    {Number(liveQuote?.changePercent ?? stock.changePercent) >= 0 ? "+" : ""}
+                    {Number(liveQuote?.changePercent ?? stock.changePercent).toFixed(2)}%
                   </span>
                 </div>
               </div>
             </div>
 
             <LiveStockChart initialSymbol={ticker} compact />
+
+            {flow && (
+              <div className="terminal-card rounded-lg p-6">
+                <div className="flex items-center justify-between gap-2 border-b border-slate-900 pb-3 text-xs mb-3">
+                  <div className="flex items-center space-x-2">
+                    <Database className="w-4 h-4 text-[#00f0ff]" />
+                    <span className="text-white font-bold uppercase">INSTITUTIONAL_FLOW_SNAPSHOT</span>
+                    <span className="terminal-badge">YAHOO_OWNERSHIP</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => router.push("/flow")}
+                    className="text-slate-500 hover:text-[#00f0ff] text-[10px] font-bold"
+                  >
+                    [OPEN_TRACKER →]
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 text-xs">
+                  <div>
+                    <div className="text-[10px] text-slate-500 font-bold">% INSTITUTIONS</div>
+                    <div className="text-slate-200">
+                      {flow?.majorHolders?.percentInstitutions != null
+                        ? `${(flow.majorHolders.percentInstitutions * 100).toFixed(2)}%`
+                        : "N/A"}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-[10px] text-slate-500 font-bold">% INSIDERS</div>
+                    <div className="text-slate-200">
+                      {flow?.majorHolders?.percentInsiders != null
+                        ? `${(flow.majorHolders.percentInsiders * 100).toFixed(2)}%`
+                        : "N/A"}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-[10px] text-slate-500 font-bold">INSIDER NET %</div>
+                    <div className="text-slate-200">
+                      {flow?.netSharePurchaseActivity?.netPercentInsiderSharesPurchased != null
+                        ? `${(flow.netSharePurchaseActivity.netPercentInsiderSharesPurchased * 100).toFixed(2)}%`
+                        : "N/A"}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-[10px] text-slate-500 font-bold">UPDATED</div>
+                    <div className="text-slate-200">
+                      {flow?.updatedAt ? new Date(flow.updatedAt).toLocaleString() : "—"}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Metrics spreadsheet grid */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

@@ -50,6 +50,10 @@ export default function LiveStockChart({
   } | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [streamStatus, setStreamStatus] = useState<
+    "connecting" | "live" | "offline"
+  >("connecting");
+  const [lastTick, setLastTick] = useState<string>("");
 
   const loadChart = useCallback(async () => {
     if (!symbol) return;
@@ -88,8 +92,56 @@ export default function LiveStockChart({
   }, [symbol, range]);
 
   useEffect(() => {
-    loadChart();
+    const t = setTimeout(() => {
+      void loadChart();
+    }, 0);
+    return () => clearTimeout(t);
   }, [loadChart]);
+
+  // Real-time quote stream (SSE). Chart history still refreshes on a slower cadence.
+  useEffect(() => {
+    if (typeof window === "undefined" || !symbol) return;
+    const t = setTimeout(() => setStreamStatus("connecting"), 0);
+
+    const url = `/api/stocks/stream?symbols=${encodeURIComponent(
+      symbol
+    )}&intervalMs=5000`;
+    const es = new EventSource(url);
+
+    const onReady = () => setStreamStatus("live");
+    const onQuotes = (ev: MessageEvent) => {
+      try {
+        const payload = JSON.parse(ev.data);
+        if (!Array.isArray(payload)) return;
+        const row = payload.find(
+          (x) => x?.ok && x?.quote?.displaySymbol?.toUpperCase() === symbol.toUpperCase()
+        );
+        if (row?.quote) {
+          setQuote({
+            name: row.quote.name,
+            price: row.quote.price,
+            change: row.quote.change,
+            changePercent: row.quote.changePercent,
+            currency: row.quote.currency,
+            displaySymbol: row.quote.displaySymbol,
+          });
+          setLastTick(row.ts || new Date().toISOString());
+          setStreamStatus("live");
+        }
+      } catch {
+        /* ignore */
+      }
+    };
+
+    es.addEventListener("ready", onReady as any);
+    es.addEventListener("quotes", onQuotes as any);
+    es.onerror = () => setStreamStatus("offline");
+
+    return () => {
+      clearTimeout(t);
+      es.close();
+    };
+  }, [symbol]);
 
   useEffect(() => {
     const id = setInterval(loadChart, range === "1d" ? 60_000 : 120_000);
@@ -118,7 +170,22 @@ export default function LiveStockChart({
             <span className="text-[10px] font-mono font-bold text-slate-400 tracking-widest">
               LIVE_PRICE_CHART
             </span>
-            <span className="w-1.5 h-1.5 bg-[#34d399] rounded-full animate-pulse" />
+            <span
+              className={`w-1.5 h-1.5 rounded-full ${
+                streamStatus === "live"
+                  ? "bg-[#34d399] animate-pulse"
+                  : streamStatus === "connecting"
+                    ? "bg-[#ffdd57] animate-pulse"
+                    : "bg-[#ff3860]"
+              }`}
+              title={
+                streamStatus === "live"
+                  ? `Streaming quotes (last: ${lastTick || "—"})`
+                  : streamStatus === "connecting"
+                    ? "Connecting to quote stream…"
+                    : "Quote stream offline — falling back to polling."
+              }
+            />
           </div>
           <button
             type="button"

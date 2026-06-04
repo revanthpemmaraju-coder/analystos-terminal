@@ -39,6 +39,56 @@ export default function PortfolioPage() {
     { ticker: "HDFCBANK", name: "HDFC Bank Ltd.", shares: 180, avgPrice: 1540.00, currentPrice: 1510.60 }
   ]);
 
+  // Real-time quotes for all holdings (SSE)
+  const tickerKey = React.useMemo(
+    () =>
+      holdings
+        .map((h) => h.ticker.trim().toUpperCase())
+        .filter(Boolean)
+        .sort()
+        .join(","),
+    [holdings]
+  );
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (!tickerKey) return;
+
+    const es = new EventSource(
+      `/api/stocks/stream?symbols=${encodeURIComponent(tickerKey)}&intervalMs=8000`
+    );
+
+    const onQuotes = (ev: MessageEvent) => {
+      try {
+        const payload = JSON.parse(ev.data);
+        if (!Array.isArray(payload)) return;
+        setHoldings((prev) =>
+          prev.map((h) => {
+            const row = payload.find(
+              (x) =>
+                x?.ok &&
+                String(x.quote?.displaySymbol || "")
+                  .toUpperCase()
+                  .replace(/\.(NS|BO|NSE|BSE)$/i, "") ===
+                  h.ticker.toUpperCase()
+            );
+            if (!row?.quote?.price) return h;
+            return {
+              ...h,
+              name: row.quote.name || h.name,
+              currentPrice: row.quote.price,
+            };
+          })
+        );
+      } catch {
+        /* ignore */
+      }
+    };
+
+    es.addEventListener("quotes", onQuotes as any);
+    return () => es.close();
+  }, [tickerKey]);
+
   // Transaction form states
   const [txTicker, setTxTicker] = useState("");
   const [txShares, setTxShares] = useState(10);
@@ -69,6 +119,9 @@ export default function PortfolioPage() {
 
         if (port) {
           setPortfolioName(port.name);
+          if (port.cash_balance != null) {
+            setCashBalance(Number(port.cash_balance));
+          }
           if (port.holdings && port.holdings.length > 0) {
             setHoldings(port.holdings);
           }
@@ -117,6 +170,9 @@ export default function PortfolioPage() {
 
       if (port) {
         setPortfolioName(port.name);
+        if (port.cash_balance != null) {
+          setCashBalance(Number(port.cash_balance));
+        }
         if (port.holdings && port.holdings.length > 0) {
           setHoldings(port.holdings);
         }
@@ -137,6 +193,7 @@ export default function PortfolioPage() {
           user_id: user.id,
           name: portfolioName,
           holdings: holdings,
+          cash_balance: cashBalance,
           created_at: new Date()
         }, { onConflict: "user_id" });
 

@@ -43,8 +43,11 @@ export default function StockSearchInput({
     if (debounceRef.current) clearTimeout(debounceRef.current);
     const q = query.trim();
     if (q.length < 1) {
-      setResults([]);
-      setOpen(false);
+      // Avoid setState synchronously inside effect (eslint rule)
+      setTimeout(() => {
+        setResults([]);
+        setOpen(false);
+      }, 0);
       return;
     }
 

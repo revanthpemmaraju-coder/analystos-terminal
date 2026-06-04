@@ -274,6 +274,18 @@ async function yahooFetch(url: string) {
   return res.json();
 }
 
+async function yahooFetchNoStore(url: string) {
+  const res = await fetch(url, {
+    headers: {
+      "User-Agent": "Mozilla/5.0 (compatible; AnalystOS/1.0)",
+      Accept: "application/json",
+    },
+    cache: "no-store",
+  });
+  if (!res.ok) throw new Error(`Yahoo API error: ${res.status}`);
+  return res.json();
+}
+
 export async function searchStocks(query: string): Promise<SearchResult[]> {
   const q = query.trim();
   if (!q) return [];
@@ -347,6 +359,193 @@ async function fetchQuoteRaw(yahooSymbol: string): Promise<StockQuote | null> {
     fiftyTwoWeekLow: meta.fiftyTwoWeekLow,
     exchange: meta.fullExchangeName || meta.exchangeName || "",
   };
+}
+
+async function fetchQuoteRawRealtime(yahooSymbol: string): Promise<StockQuote | null> {
+  if (!yahooSymbol) return null;
+  const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(yahooSymbol)}?interval=1d&range=5d`;
+  let data: Awaited<ReturnType<typeof yahooFetchNoStore>>;
+  try {
+    data = await yahooFetchNoStore(url);
+  } catch {
+    return null;
+  }
+  const result = data?.chart?.result?.[0];
+  if (!result) return null;
+
+  const meta = result.meta;
+  const price = meta.regularMarketPrice ?? meta.previousClose ?? 0;
+  const previousClose = meta.chartPreviousClose ?? meta.previousClose ?? price;
+  const change = price - previousClose;
+  const changePercent = previousClose ? (change / previousClose) * 100 : 0;
+
+  return {
+    symbol: yahooSymbol,
+    displaySymbol: fromYahooSymbol(yahooSymbol),
+    name: meta.longName || meta.shortName || fromYahooSymbol(yahooSymbol),
+    price: Number(price.toFixed(price < 10 ? 4 : 2)),
+    change: Number(change.toFixed(price < 10 ? 4 : 2)),
+    changePercent: Number(changePercent.toFixed(2)),
+    currency: meta.currency || "USD",
+    marketState: meta.marketState || "REGULAR",
+    previousClose: Number(previousClose.toFixed(2)),
+    dayHigh: meta.regularMarketDayHigh ?? price,
+    dayLow: meta.regularMarketDayLow ?? price,
+    volume: meta.regularMarketVolume ?? 0,
+    marketCap: meta.marketCap,
+    fiftyTwoWeekHigh: meta.fiftyTwoWeekHigh,
+    fiftyTwoWeekLow: meta.fiftyTwoWeekLow,
+    exchange: meta.fullExchangeName || meta.exchangeName || "",
+  };
+}
+
+/**
+ * Real-time-ish quote fetch.
+ * Uses `cache: "no-store"` to avoid Next.js fetch caching for streaming/polling UIs.
+ */
+export async function fetchQuoteRealtime(symbolInput: string): Promise<StockQuote | null> {
+  const candidates = [
+    toYahooSymbol(symbolInput),
+    symbolInput.trim().toUpperCase(),
+  ].filter(Boolean);
+
+  const unique = [...new Set(candidates)];
+
+  for (const yahooSymbol of unique) {
+    const quote = await fetchQuoteRawRealtime(yahooSymbol);
+    if (quote) return quote;
+  }
+
+  return null;
+}
+
+export interface InstitutionalFlowSnapshot {
+  symbol: string;
+  displaySymbol: string;
+  updatedAt: string;
+  majorHolders?: {
+    percentInsiders?: number | null;
+    percentInstitutions?: number | null;
+    institutionsFloatPercent?: number | null;
+    institutionsCount?: number | null;
+  };
+  netSharePurchaseActivity?: {
+    period?: string | null;
+    netPercentInsiderSharesPurchased?: number | null;
+    netSharesPurchased?: number | null;
+    totalInsiderSharesHeld?: number | null;
+  };
+  topInstitutions?: Array<{
+    name: string;
+    position?: number | null;
+    value?: number | null;
+    pctHeld?: number | null;
+    reportDate?: string | null;
+  }>;
+  topFunds?: Array<{
+    name: string;
+    position?: number | null;
+    value?: number | null;
+    pctHeld?: number | null;
+    reportDate?: string | null;
+  }>;
+  insiderTransactions?: Array<{
+    insider: string;
+    startDate?: string | null;
+    transactionText?: string | null;
+    shares?: number | null;
+    value?: number | null;
+    ownership?: string | null;
+  }>;
+}
+
+function yahooNumberMaybe(v: any): number | null {
+  const raw = v?.raw ?? v;
+  if (raw == null) return null;
+  const n = Number(raw);
+  return Number.isFinite(n) ? n : null;
+}
+
+function yahooDateMaybe(v: any): string | null {
+  const raw = v?.fmt ?? v?.raw ?? v;
+  if (raw == null) return null;
+  if (typeof raw === "string") return raw;
+  // epoch seconds
+  if (typeof raw === "number") return new Date(raw * 1000).toISOString().slice(0, 10);
+  return null;
+}
+
+/**
+ * Institutional flow tracking via Yahoo quoteSummary modules.
+ * Note: Yahoo does not provide true "tape-level" institutional order flow. This surface provides
+ * institutional ownership breakdown + recent insider net purchase activity when available.
+ */
+export async function fetchInstitutionalFlow(symbolInput: string): Promise<InstitutionalFlowSnapshot | null> {
+  const yahooSymbol = toYahooSymbol(symbolInput);
+  if (!yahooSymbol) return null;
+
+  const url =
+    `https://query1.finance.yahoo.com/v10/finance/quoteSummary/${encodeURIComponent(yahooSymbol)}` +
+    `?modules=majorHoldersBreakdown,netSharePurchaseActivity,institutionOwnership,fundOwnership,insiderTransactions`;
+
+  let data: any;
+  try {
+    data = await yahooFetchNoStore(url);
+  } catch {
+    return null;
+  }
+
+  const result = data?.quoteSummary?.result?.[0];
+  if (!result) return null;
+
+  const major = result.majorHoldersBreakdown || {};
+  const net = result.netSharePurchaseActivity || {};
+
+  const instList: any[] = result.institutionOwnership?.ownershipList || [];
+  const fundList: any[] = result.fundOwnership?.ownershipList || [];
+  const insiderTx: any[] = result.insiderTransactions?.transactions || [];
+
+  const snapshot: InstitutionalFlowSnapshot = {
+    symbol: yahooSymbol,
+    displaySymbol: fromYahooSymbol(yahooSymbol),
+    updatedAt: new Date().toISOString(),
+    majorHolders: {
+      percentInsiders: yahooNumberMaybe(major.percentInsiders),
+      percentInstitutions: yahooNumberMaybe(major.percentInstitutions),
+      institutionsFloatPercent: yahooNumberMaybe(major.institutionsFloatPercent),
+      institutionsCount: yahooNumberMaybe(major.institutionsCount),
+    },
+    netSharePurchaseActivity: {
+      period: net.period?.fmt ?? net.period ?? null,
+      netPercentInsiderSharesPurchased: yahooNumberMaybe(net.netPercentInsiderSharesPurchased),
+      netSharesPurchased: yahooNumberMaybe(net.netSharesPurchased),
+      totalInsiderSharesHeld: yahooNumberMaybe(net.totalInsiderSharesHeld),
+    },
+    topInstitutions: instList.slice(0, 10).map((x) => ({
+      name: x.organization?.fmt || x.organization || "Institution",
+      position: yahooNumberMaybe(x.position),
+      value: yahooNumberMaybe(x.value),
+      pctHeld: yahooNumberMaybe(x.pctHeld),
+      reportDate: yahooDateMaybe(x.reportDate),
+    })),
+    topFunds: fundList.slice(0, 10).map((x) => ({
+      name: x.organization?.fmt || x.organization || "Fund",
+      position: yahooNumberMaybe(x.position),
+      value: yahooNumberMaybe(x.value),
+      pctHeld: yahooNumberMaybe(x.pctHeld),
+      reportDate: yahooDateMaybe(x.reportDate),
+    })),
+    insiderTransactions: insiderTx.slice(0, 15).map((x) => ({
+      insider: x.filerName?.fmt || x.filerName || "Insider",
+      startDate: yahooDateMaybe(x.startDate),
+      transactionText: x.transactionText?.fmt || x.transactionText || null,
+      shares: yahooNumberMaybe(x.shares),
+      value: yahooNumberMaybe(x.value),
+      ownership: x.ownership?.fmt || x.ownership || null,
+    })),
+  };
+
+  return snapshot;
 }
 
 export type ChartRange = "1d" | "5d" | "1mo" | "3mo" | "6mo" | "1y" | "5y";

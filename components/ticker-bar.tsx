@@ -33,7 +33,7 @@ export default function TickerBar() {
       }
     }
     load();
-    const interval = setInterval(load, 90_000);
+    const interval = setInterval(load, 30_000);
     return () => clearInterval(interval);
   }, []);
 
