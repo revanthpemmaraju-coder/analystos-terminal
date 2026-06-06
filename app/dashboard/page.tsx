@@ -18,9 +18,14 @@ import {
   Sparkles, FileText, ChevronRight, Play, Compass, 
   TrendingUp, Download, Briefcase, Award, Send, RefreshCw, Check,
   Sliders, Grid, Calculator, BookOpen, Layers, Printer, Maximize2, Columns,
-  Command, Star, PieChart, Calendar
+  Command, Star, PieChart, Calendar, File, Share2
 } from "lucide-react";
 import { motion, AnimatePresence, useMotionValue, useSpring } from "framer-motion";
+import { 
+  getConfidenceScore, 
+  exportToDocx, 
+  generateShareLink 
+} from "@/lib/report-exporter";
 
 const CALENDAR_EVENTS: Record<string, Array<{
   time: string;
@@ -682,6 +687,7 @@ export default function DashboardPage() {
   // Macro Indicator States
   const [macroYield, setMacroYield] = useState(7.04);
   const [macroUsdInr, setMacroUsdInr] = useState(83.42);
+  const [macroEurUsd, setMacroEurUsd] = useState(1.0850);
   const [macroBrent, setMacroBrent] = useState(81.40);
   const [lastMacroDirection, setLastMacroDirection] = useState<Record<string, "up" | "down" | null>>({});
 
@@ -709,6 +715,7 @@ export default function DashboardPage() {
   const stocksRef = React.useRef(stocks);
   const macroYieldRef = React.useRef(7.04);
   const macroUsdInrRef = React.useRef(83.42);
+  const macroEurUsdRef = React.useRef(1.0850);
   const macroBrentRef = React.useRef(81.40);
 
   useEffect(() => {
@@ -953,6 +960,13 @@ export default function DashboardPage() {
         macroUsdInrRef.current = newVal;
         setMacroUsdInr(newVal);
         macroDirs["usdinr"] = delta >= 0 ? "up" : "down";
+      }
+      if (Math.random() > 0.6) {
+        const delta = (Math.random() - 0.5) * 0.0008;
+        const newVal = Number((macroEurUsdRef.current + delta).toFixed(4));
+        macroEurUsdRef.current = newVal;
+        setMacroEurUsd(newVal);
+        macroDirs["eurusd"] = delta >= 0 ? "up" : "down";
       }
       if (Math.random() > 0.6) {
         const delta = (Math.random() - 0.5) * 0.15;
@@ -1922,6 +1936,7 @@ IMPLIED FAIR VALUATION SPOT: ₹2,580.40
                       <div className="flex flex-col gap-2.5 text-xs font-mono">
                         {[
                           { label: "Equity Chat Analyst", desc: "Interactive LLM sandbox", link: "/analyst" },
+                          { label: "Forex AI Chat Desk", desc: "Global rates & macro chat", link: "/forex" },
                           { label: "DCF Sandbox Sheets", desc: "5-Yr pro-forma model", link: "/dcf" },
                           { label: "Paper Trading desk", desc: "Simulate cash positions", link: "/portfolio" }
                         ].map((launcher, lIdx) => (
@@ -1975,6 +1990,18 @@ IMPLIED FAIR VALUATION SPOT: ₹2,580.40
                           </div>
                           <span className={`font-bold ${lastMacroDirection["usdinr"] === "up" ? "text-[#34d399]" : lastMacroDirection["usdinr"] === "down" ? "text-[#ff3860]" : "text-white"}`}>
                             ₹{macroUsdInr.toFixed(2)}
+                          </span>
+                        </div>
+                        {/* EUR/USD */}
+                        <div className={`p-3 bg-slate-950/60 rounded border border-white/[0.03] flex justify-between items-center transition-colors ${
+                          lastMacroDirection["eurusd"] === "up" ? "flash-up" : lastMacroDirection["eurusd"] === "down" ? "flash-down" : ""
+                        }`}>
+                          <div>
+                            <span className="text-slate-400 block text-[9px] uppercase font-bold">EUR/USD SPOT RATE</span>
+                            <span className="text-slate-550 text-[8px]">GLOBAL_FX</span>
+                          </div>
+                          <span className={`font-bold ${lastMacroDirection["eurusd"] === "up" ? "text-[#34d399]" : lastMacroDirection["eurusd"] === "down" ? "text-[#ff3860]" : "text-white"}`}>
+                            ${macroEurUsd.toFixed(4)}
                           </span>
                         </div>
                         {/* Brent Crude */}
@@ -2851,13 +2878,52 @@ IMPLIED FAIR VALUATION SPOT: ₹2,580.40
                         <span>INSTITUTIONAL EQUITY MEMORANDUM</span>
                       </span>
                       {generatedMemo && (
-                        <button 
-                          onClick={() => window.print()}
-                          className="bg-transparent border border-white/10 hover:border-white text-slate-400 hover:text-white px-2 py-0.5 rounded text-[9px] flex items-center space-x-1 font-mono cursor-none"
-                        >
-                          <Printer className="w-3 h-3" />
-                          <span>PRINT</span>
-                        </button>
+                        <div className="flex items-center space-x-2">
+                          <button 
+                            type="button"
+                            onClick={() => window.print()}
+                            className="bg-transparent border border-white/10 hover:border-[#00f0ff] text-slate-400 hover:text-[#00f0ff] px-2 py-0.5 rounded text-[9px] flex items-center space-x-1 font-mono transition-colors cursor-pointer"
+                          >
+                            <Printer className="w-3 h-3" />
+                            <span>PDF</span>
+                          </button>
+                          <button 
+                            type="button"
+                            onClick={() => {
+                              const score = getConfidenceScore(generatedMemo);
+                              exportToDocx({
+                                content: generatedMemo,
+                                timestamp: new Date().toLocaleTimeString(),
+                                confidence: score,
+                                ticker: activeResearchTicker
+                              });
+                            }}
+                            className="bg-transparent border border-white/10 hover:border-[#00f0ff] text-slate-400 hover:text-[#00f0ff] px-2 py-0.5 rounded text-[9px] flex items-center space-x-1 font-mono transition-colors cursor-pointer"
+                          >
+                            <File className="w-3 h-3" />
+                            <span>DOCX</span>
+                          </button>
+                          <button 
+                            type="button"
+                            onClick={() => {
+                              const score = getConfidenceScore(generatedMemo);
+                              const link = generateShareLink({
+                                content: generatedMemo,
+                                timestamp: new Date().toLocaleTimeString(),
+                                confidence: score,
+                                ticker: activeResearchTicker
+                              });
+                              if (link) {
+                                navigator.clipboard.writeText(link);
+                                alert("Certified report share link copied to clipboard!");
+                              }
+                            }}
+                            className="bg-transparent border border-white/10 hover:border-[#00f0ff] text-slate-400 hover:text-[#00f0ff] px-2 py-0.5 rounded text-[9px] flex items-center space-x-1 font-mono transition-colors cursor-pointer"
+                          >
+                            <Share2 className="w-3 h-3" />
+                            <span>SHARE</span>
+                          </button>
+                        </div>
                       )}
                     </div>
 

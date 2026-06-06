@@ -33,6 +33,7 @@ export interface SearchResult {
   name: string;
   exchange: string;
   type: string;
+  assetClass?: string;
 }
 
 const INDIAN_NSE = new Set([
@@ -286,6 +287,56 @@ async function yahooFetchNoStore(url: string) {
   return res.json();
 }
 
+export function detectAssetClass(item: {
+  symbol: string;
+  name: string;
+  quoteType?: string;
+  sector?: string;
+  industry?: string;
+}): "Stock" | "ETF" | "REIT" | "Closed-End Fund" | "Mutual Fund" {
+  const quoteType = item.quoteType?.toUpperCase() || "";
+  const sector = item.sector?.toLowerCase() || "";
+  const industry = item.industry?.toLowerCase() || "";
+  const name = item.name?.toLowerCase() || "";
+
+  if (quoteType === "ETF") return "ETF";
+  if (
+    quoteType === "MUTUALFUND" ||
+    quoteType === "MUTUAL_FUND" ||
+    quoteType === "MUTUAL"
+  ) {
+    return "Mutual Fund";
+  }
+
+  if (quoteType === "EQUITY") {
+    if (industry.includes("reit") || sector === "real estate") {
+      return "REIT";
+    }
+    if (
+      (industry.includes("asset management") || sector.includes("financial")) &&
+      (name.includes("closed-end") ||
+        name.includes("term trust") ||
+        name.includes("income fund") ||
+        name.includes("high income") ||
+        name.includes("tax-free") ||
+        name.includes("municipal fund") ||
+        name.includes("equity fund") ||
+        (name.includes("trust") && name.includes("fund")))
+    ) {
+      return "Closed-End Fund";
+    }
+    return "Stock";
+  }
+
+  // Fallback heuristics based on name and symbol
+  if (name.includes("etf")) return "ETF";
+  if (name.includes("reit") || name.includes("real estate investment trust")) return "REIT";
+  if (name.includes("closed-end") || name.includes("closed end")) return "Closed-End Fund";
+  if (name.includes("mutual fund") || name.includes("index fund")) return "Mutual Fund";
+
+  return "Stock";
+}
+
 export async function searchStocks(query: string): Promise<SearchResult[]> {
   const q = query.trim();
   if (!q) return [];
@@ -295,15 +346,23 @@ export async function searchStocks(query: string): Promise<SearchResult[]> {
   const quotes = data?.quotes || [];
 
   return quotes
-    .filter((item: { quoteType?: string }) =>
-      ["EQUITY", "ETF", "INDEX"].includes(item.quoteType || "")
-    )
-    .map((item: { symbol: string; shortname?: string; longname?: string; exchange?: string; quoteType?: string }) => ({
-      symbol: item.symbol,
-      name: item.longname || item.shortname || item.symbol,
-      exchange: item.exchange || "",
-      type: item.quoteType || "EQUITY",
-    }));
+    .map((item: { symbol: string; shortname?: string; longname?: string; exchange?: string; quoteType?: string; sector?: string; industry?: string }) => {
+      const name = item.longname || item.shortname || item.symbol;
+      const assetClass = detectAssetClass({
+        symbol: item.symbol,
+        name,
+        quoteType: item.quoteType,
+        sector: item.sector,
+        industry: item.industry,
+      });
+      return {
+        symbol: item.symbol,
+        name,
+        exchange: item.exchange || "",
+        type: item.quoteType || "EQUITY",
+        assetClass,
+      };
+    });
 }
 
 export async function fetchQuote(symbolInput: string): Promise<StockQuote | null> {

@@ -361,7 +361,7 @@ export default function AnalystOSMobile() {
   const [hedgeFundMode, setHedgeFundMode] = useState(false);
   const [isSimulator, setIsSimulator] = useState(true);
   const [aiVoiceActive, setAiVoiceActive] = useState(false);
-  const [activeWorkspaceTab, setActiveWorkspaceTab] = useState<"ai" | "dcf" | "financials" | "news">("ai");
+  const [activeWorkspaceTab, setActiveWorkspaceTab] = useState<"ai" | "dcf" | "financials" | "news" | "forex">("ai");
 
   // User Auth & Profiles
   const [user, setUser] = useState<any>(null);
@@ -452,7 +452,17 @@ export default function AnalystOSMobile() {
     }
   ]);
   const [chatInput, setChatInput] = useState("");
+  const [forexMessages, setForexMessages] = useState([
+    {
+      sender: "ForexAI",
+      text: "Welcome to ForexAI Desk. Ask me about EUR/USD trends, currency correlations, or central bank macro policies.",
+      timestamp: "13:04"
+    }
+  ]);
+  const [forexInput, setForexInput] = useState("");
+  const [isTypingForex, setIsTypingForex] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
+  const forexEndRef = useRef<HTMLDivElement>(null);
 
   // 3D Canvas properties
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -1345,6 +1355,32 @@ export default function AnalystOSMobile() {
     setChatInput("");
   };
 
+  // Submit forex chat message
+  const handleForexSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!forexInput.trim()) return;
+    const userText = forexInput;
+    setForexInput("");
+    setForexMessages(prev => [...prev, { sender: "User", text: userText, timestamp: currentTime }]);
+    setIsTypingForex(true);
+    
+    setTimeout(() => {
+      let reply = "";
+      const text = userText.toLowerCase();
+      if (text.includes("eur") || text.includes("usd")) {
+        reply = "EUR/USD sits in a critical macro bracket near 1.0850. The European Central Bank's inflation commentary indicates near-term rate cuts while the Federal Reserve continues quantitative tightening. This divergence supports an initial test of 1.0920 before potential regression.";
+      } else if (text.includes("inr") || text.includes("rupee")) {
+        reply = "USD/INR is trading around 83.42. The Reserve Bank of India has maintained active market intervention to manage reserves and curb volatility. Expect a stable range of 83.20 - 83.80 over the current policy cycle.";
+      } else if (text.includes("interest") || text.includes("rate") || text.includes("fed")) {
+        reply = "Central banks remain hawkish. Real yields are compressing global bond desks. Expect yield curve steepening as short-term policy stays elevated, impacting global carry trades.";
+      } else {
+        reply = `ForexAI Research: Analyzing pair correlations for query: "${userText}". Macro reserves and spot liquidities show steady cross-currency flows with a bullish bias towards USD counterparts in volatile environments.`;
+      }
+      setForexMessages(prev => [...prev, { sender: "ForexAI", text: reply, timestamp: currentTime }]);
+      setIsTypingForex(false);
+    }, 800);
+  };
+
   return (
     <div className={`min-h-screen bg-[#050505] text-[#f8fafc] font-sans antialiased overflow-x-hidden flex items-center justify-center relative p-0 md:p-6 transition-all duration-500`}>
       
@@ -1697,6 +1733,7 @@ export default function AnalystOSMobile() {
                 <div className="flex bg-white/[0.02] border border-white/[0.08] p-1 rounded-xl w-full select-none justify-between shrink-0">
                   {[
                     { id: "ai", label: "AI Chat", icon: MessageSquare },
+                    { id: "forex", label: "Forex AI", icon: Globe },
                     { id: "dcf", label: "DCF Model", icon: SlidersHorizontal },
                     { id: "financials", label: "Statements", icon: Layers },
                     { id: "news", label: "News Feed", icon: Activity }
@@ -1775,6 +1812,111 @@ export default function AnalystOSMobile() {
                           value={chatInput}
                           onChange={(e) => setChatInput(e.target.value)}
                           placeholder={`Command portfolio indices... (e.g. AAPL)`}
+                          className="flex-1 px-3 py-2 text-[11px] rounded-xl bg-white/[0.03] border border-white/[0.08] focus:outline-none focus:border-indigo-500 text-white font-mono placeholder:text-neutral-600"
+                        />
+                        <button 
+                          type="submit" 
+                          className={`p-2 rounded-xl transition-all ${hedgeFundMode ? "bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-800 text-emerald-400" : "bg-indigo-600 hover:bg-indigo-500 text-white"}`}
+                        >
+                          <Send className="w-3.5 h-3.5" />
+                        </button>
+                      </form>
+                    </div>
+                  )}
+
+                  {/* TAB: FOREX AI DESK */}
+                  {activeWorkspaceTab === "forex" && (
+                    <div className="flex-1 flex flex-col bg-white/[0.02] border border-white/[0.06] rounded-2xl p-4 backdrop-blur-xl relative overflow-hidden">
+                      <div className="flex items-center justify-between border-b border-white/[0.04] pb-2 mb-3">
+                        <div className="flex items-center gap-2">
+                          <Globe className="w-3.5 h-3.5 text-indigo-400" />
+                          <span className="text-xs font-bold text-white font-display">ForexAI Macro Desk</span>
+                        </div>
+                        <span className="text-[9px] text-neutral-400 font-mono tracking-wider">LIVE DATA</span>
+                      </div>
+
+                      {/* Live Ticking Rates Row */}
+                      <div className="grid grid-cols-2 gap-2 mb-3 text-[10px] font-mono">
+                        <div className="bg-white/[0.03] border border-white/[0.05] p-2 rounded-lg flex justify-between items-center">
+                          <span className="text-neutral-400">EUR/USD</span>
+                          <span className="text-emerald-400 font-bold">1.0852</span>
+                        </div>
+                        <div className="bg-white/[0.03] border border-white/[0.05] p-2 rounded-lg flex justify-between items-center">
+                          <span className="text-neutral-400">USD/INR</span>
+                          <span className="text-emerald-400 font-bold">83.42</span>
+                        </div>
+                        <div className="bg-white/[0.03] border border-white/[0.05] p-2 rounded-lg flex justify-between items-center">
+                          <span className="text-neutral-400">GBP/USD</span>
+                          <span className="text-emerald-400 font-bold">1.2740</span>
+                        </div>
+                        <div className="bg-white/[0.03] border border-white/[0.05] p-2 rounded-lg flex justify-between items-center">
+                          <span className="text-neutral-400">USD/JPY</span>
+                          <span className="text-red-400 font-bold">156.12</span>
+                        </div>
+                      </div>
+
+                      {/* Economic Calendar Small Feed */}
+                      <div className="bg-indigo-950/20 border border-indigo-500/20 p-2 rounded-lg mb-3 text-[9px] font-mono text-indigo-300">
+                        <div className="flex justify-between font-bold border-b border-indigo-500/15 pb-1 mb-1">
+                          <span>UPCOMING CALENDAR</span>
+                          <span className="text-indigo-400">TODAY</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>US Fed Policy Statement</span>
+                          <span className="text-white">20:30 BST</span>
+                        </div>
+                      </div>
+
+                      {/* Chat Messages Log */}
+                      <div className="flex-1 overflow-y-auto max-h-[170px] space-y-3 pr-1 text-[12px] scrollbar-none mb-3">
+                        {forexMessages.map((msg, idx) => (
+                          <div 
+                            key={idx} 
+                            className={`flex flex-col max-w-[85%] ${msg.sender === "User" ? "ml-auto items-end" : "mr-auto items-start"}`}
+                          >
+                            <span className="text-[9px] text-neutral-500 font-mono mb-1">{msg.sender} · {msg.timestamp}</span>
+                            <div className={`p-3 rounded-2xl leading-relaxed ${msg.sender === "User" ? (hedgeFundMode ? "bg-emerald-950/40 text-emerald-400 border border-emerald-800/40" : "bg-indigo-600 text-white rounded-tr-none") : "bg-white/[0.04] border border-white/[0.06] text-neutral-200 rounded-tl-none"}`}>
+                              {msg.text}
+                            </div>
+                          </div>
+                        ))}
+                        {isTypingForex && (
+                          <div className="mr-auto items-start flex flex-col">
+                            <span className="text-[9px] text-neutral-500 font-mono mb-1">ForexAI ...</span>
+                            <div className="p-3 rounded-2xl bg-white/[0.04] border border-white/[0.06] text-neutral-400 rounded-tl-none animate-pulse">
+                              Typing macro research response...
+                            </div>
+                          </div>
+                        )}
+                        <div ref={forexEndRef} />
+                      </div>
+
+                      {/* Forex suggestion chips */}
+                      <div className="flex gap-1.5 mb-3 overflow-x-auto pb-1.5 shrink-0 scrollbar-none">
+                        {[
+                          { text: "EUR/USD Thesis", q: "Analyze EUR/USD macro trend" },
+                          { text: "INR Reserves", q: "Explain impact of RBI policy on USD/INR" },
+                          { text: "Fed Impact", q: "How will Fed rate cuts affect global yields" }
+                        ].map((sug, idx) => (
+                          <button
+                            key={idx}
+                            onClick={() => {
+                              setForexInput(sug.q);
+                            }}
+                            className="px-2.5 py-1 border border-white/[0.06] bg-white/[0.02] rounded-lg text-[9px] font-bold text-neutral-400 hover:text-white shrink-0 font-mono"
+                          >
+                            {sug.text}
+                          </button>
+                        ))}
+                      </div>
+
+                      {/* Input controls */}
+                      <form onSubmit={handleForexSubmit} className="flex gap-2 shrink-0 border-t border-white/[0.05] pt-3">
+                        <input
+                          type="text"
+                          value={forexInput}
+                          onChange={(e) => setForexInput(e.target.value)}
+                          placeholder="Ask ForexAI (e.g. Fed policy, EUR/USD)"
                           className="flex-1 px-3 py-2 text-[11px] rounded-xl bg-white/[0.03] border border-white/[0.08] focus:outline-none focus:border-indigo-500 text-white font-mono placeholder:text-neutral-600"
                         />
                         <button 

@@ -326,4 +326,89 @@ option {
   animation: figmaPulse 2s infinite ease-in-out;
 }
 
+/* AnalystOS Research Report Styles */
+.watermark-overlay {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200' viewBox='0 0 200 200'%3E%3Ctext x='10' y='100' font-family='Courier, monospace' font-size='12' fill='rgba(0, 240, 255, 0.035)' transform='rotate(-30 100 100)' font-weight='bold' letter-spacing='1'%3EANALYSTOS CERTIFIED%3C/text%3E%3C/svg%3E");
+  background-repeat: repeat;
+  pointer-events: none;
+}
+
+.watermark-overlay-light {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200' viewBox='0 0 200 200'%3E%3Ctext x='10' y='100' font-family='Courier, monospace' font-size='12' fill='rgba(2, 132, 199, 0.04)' transform='rotate(-30 100 100)' font-weight='bold' letter-spacing='1'%3EANALYSTOS CERTIFIED%3C/text%3E%3C/svg%3E");
+  background-repeat: repeat;
+  pointer-events: none;
+}
+
+/* Print Overrides for Certified Reports */
+@media print {
+  body, html, main, nav, header, footer, select, button, form, .custom-cursor-dot, .custom-cursor-ring, .custom-cursor-ring-active {
+    display: none !important;
+    height: 0 !important;
+    overflow: hidden !important;
+  }
+  
+  .printable-report-wrapper {
+    display: block !important;
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    height: auto !important;
+    background: #ffffff !important;
+    color: #0f172a !important;
+    font-family: 'Times New Roman', Times, serif !important;
+    font-size: 11pt !important;
+    line-height: 1.6 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .print-cover-page {
+    page-break-after: always !important;
+    height: 100vh !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    padding: 4rem 3rem !important;
+    box-sizing: border-box !important;
+    border: 6px double #0284c7 !important;
+    text-align: center !important;
+    background: #fafafa !important;
+    page-break-inside: avoid !important;
+  }
+
+  .print-content-page {
+    page-break-before: always !important;
+    padding: 3rem 2.5rem !important;
+    position: relative !important;
+    box-sizing: border-box !important;
+    min-height: 100vh !important;
+  }
+
+  .print-watermark-overlay {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300' viewBox='0 0 300 300'%3E%3Ctext x='15' y='150' font-family='Courier, monospace' font-size='16' fill='rgba(2, 132, 199, 0.05)' transform='rotate(-35 150 150)' font-weight='bold'%3EANALYSTOS CERTIFIED%3C/text%3E%3C/svg%3E") !important;
+    background-repeat: repeat !important;
+    z-index: -10 !important;
+    pointer-events: none !important;
+  }
+
+  .print-section-header {
+    border-bottom: 2px solid #0284c7 !important;
+    color: #0284c7 !important;
+    padding-bottom: 4px !important;
+    margin-top: 1.5rem !important;
+    margin-bottom: 0.75rem !important;
+    page-break-after: avoid !important;
+  }
+}
+
+
 

@@ -7,6 +7,7 @@ export interface StockSearchSelection {
   symbol: string;
   name: string;
   exchange: string;
+  assetClass?: string;
 }
 
 interface StockSearchInputProps {
@@ -57,10 +58,11 @@ export default function StockSearchInput({
         const res = await fetch(`/api/stocks/search?q=${encodeURIComponent(q)}`);
         const data = await res.json();
         const list = (data.results || []).map(
-          (r: { symbol: string; name: string; exchange: string }) => ({
+          (r: { symbol: string; name: string; exchange: string; assetClass?: string }) => ({
             symbol: r.symbol,
             name: r.name,
             exchange: r.exchange,
+            assetClass: r.assetClass,
           })
         );
         setResults(list);
@@ -82,6 +84,22 @@ export default function StockSearchInput({
     setQuery(`${item.symbol} — ${item.name}`);
     setOpen(false);
     onSelect(item);
+  };
+
+  const getAssetClassBadgeStyles = (assetClass?: string) => {
+    switch (assetClass) {
+      case "ETF":
+        return "bg-cyan-500/10 text-cyan-400 border border-cyan-500/25";
+      case "REIT":
+        return "bg-purple-500/10 text-purple-400 border border-purple-500/25";
+      case "Closed-End Fund":
+        return "bg-amber-500/10 text-amber-400 border border-amber-500/25";
+      case "Mutual Fund":
+        return "bg-rose-500/10 text-rose-400 border border-rose-500/25";
+      case "Stock":
+      default:
+        return "bg-emerald-500/10 text-emerald-400 border border-emerald-500/25";
+    }
   };
 
   return (
@@ -109,12 +127,19 @@ export default function StockSearchInput({
               <button
                 type="button"
                 onClick={() => pick(r)}
-                className="w-full text-left px-3 py-2.5 hover:bg-[#00f0ff]/10 border-b border-white/5 last:border-0"
+                className="w-full text-left px-3 py-2.5 hover:bg-[#00f0ff]/10 border-b border-white/5 last:border-0 flex items-center justify-between gap-2"
               >
-                <span className="text-[#00f0ff] font-bold">{r.symbol}</span>
-                <span className="text-slate-400 ml-2 truncate">{r.name}</span>
-                {r.exchange && (
-                  <span className="text-slate-600 ml-1 text-[9px]">[{r.exchange}]</span>
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="text-[#00f0ff] font-bold shrink-0">{r.symbol}</span>
+                  <span className="text-slate-400 truncate">{r.name}</span>
+                  {r.exchange && (
+                    <span className="text-slate-600 text-[9px] shrink-0">[{r.exchange}]</span>
+                  )}
+                </div>
+                {r.assetClass && (
+                  <span className={`text-[8px] uppercase tracking-wider font-bold px-1.5 py-0.5 rounded shrink-0 font-sans ${getAssetClassBadgeStyles(r.assetClass)}`}>
+                    {r.assetClass}
+                  </span>
                 )}
               </button>
             </li>

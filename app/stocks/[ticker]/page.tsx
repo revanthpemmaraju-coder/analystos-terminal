@@ -19,17 +19,26 @@ interface StockDetail {
   change: number;
   changePercent: number;
   vol: string;
-  pe: number;
-  pb: number;
-  evEbitda: number;
-  roe: number;
-  debtEquity: number;
   high52: number;
   low52: number;
-  businessModel: string;
-  risks: string;
-  earningsVerdict: string;
+  businessModel?: string;
+  risks?: string;
+  earningsVerdict?: string;
   redFlags: string[];
+  pe?: number;
+  pb?: number;
+  evEbitda?: number;
+  roe?: number;
+  debtEquity?: number;
+  assetClass?: "Stock" | "ETF" | "REIT" | "Closed-End Fund" | "Mutual Fund";
+  overviewTitle?: string;
+  overviewText?: string;
+  verdictTitle?: string;
+  verdictText?: string;
+  risksTitle?: string;
+  risksText?: string;
+  redFlagsTitle?: string;
+  metrics?: Array<{ label: string; val: string; desc: string }>;
 }
 
 export default function StockDetailPage() {
@@ -191,7 +200,26 @@ export default function StockDetailPage() {
             {/* Stock Core Title Card */}
             <div className="terminal-card rounded-lg p-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6">
               <div className="space-y-1">
-                <span className="terminal-badge font-bold uppercase text-[10px]">EQUITY_SHARE_TICKER</span>
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="terminal-badge font-bold uppercase text-[10px]">
+                    {stock.assetClass ? `${stock.assetClass.toUpperCase().replace(/ /g, "_")}_TICKER` : "EQUITY_SHARE_TICKER"}
+                  </span>
+                  {stock.assetClass && (
+                    <span className={`text-[8px] uppercase tracking-wider font-extrabold px-2 py-0.5 rounded border ${
+                      stock.assetClass === "ETF"
+                        ? "bg-cyan-500/10 text-cyan-400 border border-cyan-500/25"
+                        : stock.assetClass === "REIT"
+                        ? "bg-purple-500/10 text-purple-400 border border-purple-500/25"
+                        : stock.assetClass === "Closed-End Fund"
+                        ? "bg-amber-500/10 text-amber-400 border border-amber-500/25"
+                        : stock.assetClass === "Mutual Fund"
+                        ? "bg-rose-500/10 text-rose-400 border border-rose-500/25"
+                        : "bg-emerald-500/10 text-emerald-400 border border-emerald-500/25"
+                    }`}>
+                      {stock.assetClass}
+                    </span>
+                  )}
+                </div>
                 <h1 className="text-2xl font-extrabold text-white tracking-tight font-mono">{stock.ticker}</h1>
                 <p className="text-slate-400 text-xs font-sans">{stock.name}</p>
               </div>
@@ -277,17 +305,18 @@ export default function StockDetailPage() {
             )}
 
             {/* Metrics spreadsheet grid */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {[
-                { label: "PRICE_TO_EARNINGS (P/E)", val: `${stock.pe}x`, desc: "Earnings multiplier" },
-                { label: "PRICE_TO_BOOK (P/B)", val: `${stock.pb}x`, desc: "Net asset premium" },
-                { label: "EV_TO_EBITDA", val: `${stock.evEbitda}x`, desc: "Operating value" },
-                { label: "RETURN_ON_EQUITY (ROE)", val: `${stock.roe}%`, desc: "Equity reinvestment" },
-                { label: "DEBT_TO_EQUITY", val: `${stock.debtEquity}x`, desc: "Consolidated leverage" },
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+              {(stock.metrics || [
+                { label: "PRICE_TO_EARNINGS (P/E)", val: `${stock.pe || 0}x`, desc: "Earnings multiplier" },
+                { label: "PRICE_TO_BOOK (P/B)", val: `${stock.pb || 0}x`, desc: "Net asset premium" },
+                { label: "EV_TO_EBITDA", val: `${stock.evEbitda || 0}x`, desc: "Operating value" },
+                { label: "RETURN_ON_EQUITY (ROE)", val: `${stock.roe || 0}%`, desc: "Equity reinvestment" },
+                { label: "DEBT_TO_EQUITY", val: `${stock.debtEquity || 0}x`, desc: "Consolidated leverage" },
+              ]).concat([
                 { label: "VOLUME", val: stock.vol, desc: "Liquid daily shares" },
-                { label: "52W_HIGH (₹)", val: stock.high52, desc: "Channel ceiling limit" },
-                { label: "52W_LOW (₹)", val: stock.low52, desc: "Channel floor limit" }
-              ].map((metric, idx) => (
+                { label: "52W_HIGH (₹)", val: `${stock.high52 != null ? stock.high52.toFixed(2) : "N/A"}`, desc: "Channel ceiling limit" },
+                { label: "52W_LOW (₹)", val: `${stock.low52 != null ? stock.low52.toFixed(2) : "N/A"}`, desc: "Channel floor limit" }
+              ]).map((metric, idx) => (
                 <div key={idx} className="terminal-card rounded p-4 font-mono space-y-1 bg-[#0b0f19]">
                   <span className="text-[9px] text-slate-500 font-bold block">{metric.label}</span>
                   <span className="text-lg font-bold text-white block">{metric.val}</span>
@@ -306,26 +335,30 @@ export default function StockDetailPage() {
                 <div className="terminal-card rounded-lg p-6">
                   <div className="flex items-center space-x-2 border-b border-slate-900 pb-3 text-xs mb-3">
                     <FileText className="w-4 h-4 text-[#00f0ff]" />
-                    <span className="text-white font-bold uppercase">BUSINESS_MODEL_OVERVIEW</span>
+                    <span className="text-white font-bold uppercase">
+                      {stock.overviewTitle || "BUSINESS_MODEL_OVERVIEW"}
+                    </span>
                   </div>
-                  <p className="text-slate-300 text-xs leading-relaxed font-sans">
-                    {stock.businessModel}
+                  <p className="text-slate-300 text-xs leading-relaxed font-sans whitespace-pre-line">
+                    {stock.overviewText || stock.businessModel}
                   </p>
                 </div>
-
+ 
                 {/* Earnings Verdict */}
                 <div className="terminal-card rounded-lg p-6">
                   <div className="flex items-center space-x-2 border-b border-slate-900 pb-3 text-xs mb-3">
                     <TrendingUp className="w-4 h-4 text-[#00e676]" />
-                    <span className="text-white font-bold uppercase">VALUATION_VERDICT_VERIFICATION</span>
+                    <span className="text-white font-bold uppercase">
+                      {stock.verdictTitle || "VALUATION_VERDICT_VERIFICATION"}
+                    </span>
                   </div>
-                  <p className="text-slate-300 text-xs leading-relaxed font-sans">
-                    {stock.earningsVerdict}
+                  <p className="text-slate-300 text-xs leading-relaxed font-sans whitespace-pre-line">
+                    {stock.verdictText || stock.earningsVerdict}
                   </p>
                 </div>
-
+ 
               </div>
-
+ 
               {/* Risks & Red Flags */}
               <div className="space-y-6">
                 
@@ -333,18 +366,22 @@ export default function StockDetailPage() {
                 <div className="terminal-card rounded-lg p-6">
                   <div className="flex items-center space-x-2 border-b border-slate-900 pb-3 text-xs mb-3">
                     <AlertTriangle className="w-4 h-4 text-[#ff3860]" />
-                    <span className="text-white font-bold uppercase">REGULATORY_OPERATIONAL_RISKS</span>
+                    <span className="text-white font-bold uppercase">
+                      {stock.risksTitle || "REGULATORY_OPERATIONAL_RISKS"}
+                    </span>
                   </div>
-                  <p className="text-slate-400 text-xs leading-relaxed font-sans">
-                    {stock.risks}
+                  <p className="text-slate-400 text-xs leading-relaxed font-sans whitespace-pre-line">
+                    {stock.risksText || stock.risks}
                   </p>
                 </div>
-
+ 
                 {/* Red Flags warnings */}
                 <div className="terminal-card rounded-lg p-6 border border-[#ff3860]/20 bg-[#ff3860]/5">
                   <div className="flex items-center space-x-2 border-b border-[#ff3860]/10 pb-3 text-xs mb-3">
                     <ShieldAlert className="w-4 h-4 text-[#ff3860] animate-pulse" />
-                    <span className="text-[#ff3860] font-bold uppercase">RED_FLAGS_MONITOR</span>
+                    <span className="text-[#ff3860] font-bold uppercase">
+                      {stock.redFlagsTitle || "RED_FLAGS_MONITOR"}
+                    </span>
                   </div>
                   
                   <div className="flex flex-col gap-2.5 text-xs text-slate-300">
@@ -356,9 +393,9 @@ export default function StockDetailPage() {
                     ))}
                   </div>
                 </div>
-
+ 
               </div>
-
+ 
             </div>
 
           </div>

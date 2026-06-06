@@ -110,6 +110,7 @@ export default function Navbar() {
   const navLinks = [
     { label: "Dashboard", href: "/dashboard" },
     { label: "AI Analyst", href: "/analyst" },
+    { label: "Forex AI", href: "/forex" },
     { label: "Analyst Feed", href: "/feed" },
     { label: "DCF Sandbox", href: "/dcf" },
     { label: "Paper Trading", href: "/portfolio" },
