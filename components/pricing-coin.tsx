@@ -170,18 +170,19 @@ export default function PricingCoin() {
       canvas.height = 512;
       const ctx = canvas.getContext("2d")!;
 
-      // Dark Metal Background Gradient
+      // Silver Metal Background Gradient
       const grad = ctx.createRadialGradient(256, 256, 10, 256, 256, 256);
-      grad.addColorStop(0, "#0e131d");
-      grad.addColorStop(1, "#03060a");
+      grad.addColorStop(0, "#f8fafc");
+      grad.addColorStop(0.6, "#e2e8f0");
+      grad.addColorStop(1, "#94a3b8");
       ctx.fillStyle = grad;
       ctx.fillRect(0, 0, 512, 512);
 
       // Engraved Rings
-      ctx.strokeStyle = "rgba(0, 212, 255, 0.35)";
+      ctx.strokeStyle = "rgba(14, 165, 233, 0.4)";
       ctx.lineWidth = 4;
-      ctx.shadowBlur = 10;
-      ctx.shadowColor = "#00d4ff";
+      ctx.shadowBlur = 6;
+      ctx.shadowColor = "#0ea5e9";
       
       // Outer Engravings
       ctx.beginPath(); ctx.arc(256, 256, 240, 0, Math.PI * 2); ctx.stroke();
@@ -194,7 +195,7 @@ export default function PricingCoin() {
       // Technical ticks around edge
       ctx.save();
       ctx.translate(256, 256);
-      ctx.strokeStyle = "rgba(167, 139, 250, 0.25)";
+      ctx.strokeStyle = "rgba(99, 102, 241, 0.35)";
       ctx.lineWidth = 2;
       for (let i = 0; i < 36; i++) {
         ctx.beginPath();
@@ -208,20 +209,20 @@ export default function PricingCoin() {
       // Monograms
       ctx.shadowBlur = 0;
       ctx.font = "bold 24px 'Space Mono', monospace";
-      ctx.fillStyle = "#ffffff";
+      ctx.fillStyle = "#0f172a";
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
       ctx.fillText("A  O  S", 256, 175);
 
       ctx.font = "bold 14px 'Space Mono', monospace";
-      ctx.fillStyle = "rgba(0, 212, 255, 0.6)";
+      ctx.fillStyle = "#0284c7";
       ctx.fillText("EQUITY DESK", 256, 335);
 
       // Center ₹ Symbol
       ctx.font = "700 90px 'Space Mono', 'Inter', monospace";
-      ctx.fillStyle = "#00d4ff";
-      ctx.shadowBlur = 25;
-      ctx.shadowColor = "#00d4ff";
+      ctx.fillStyle = "#0ea5e9";
+      ctx.shadowBlur = 15;
+      ctx.shadowColor = "#0ea5e9";
       ctx.fillText("₹", 256, 250);
 
       return new THREE.CanvasTexture(canvas);
@@ -233,18 +234,19 @@ export default function PricingCoin() {
       canvas.height = 512;
       const ctx = canvas.getContext("2d")!;
 
-      // Background
+      // Silver Metal Background Gradient
       const grad = ctx.createRadialGradient(256, 256, 10, 256, 256, 256);
-      grad.addColorStop(0, "#0e131d");
-      grad.addColorStop(1, "#03060a");
+      grad.addColorStop(0, "#f8fafc");
+      grad.addColorStop(0.6, "#e2e8f0");
+      grad.addColorStop(1, "#94a3b8");
       ctx.fillStyle = grad;
       ctx.fillRect(0, 0, 512, 512);
 
       // Engraved Rings
-      ctx.strokeStyle = "rgba(167, 139, 250, 0.35)";
+      ctx.strokeStyle = "rgba(99, 102, 241, 0.4)";
       ctx.lineWidth = 4;
-      ctx.shadowBlur = 10;
-      ctx.shadowColor = "#a78bfa";
+      ctx.shadowBlur = 6;
+      ctx.shadowColor = "#6366f1";
       ctx.beginPath(); ctx.arc(256, 256, 240, 0, Math.PI * 2); ctx.stroke();
       ctx.beginPath(); ctx.arc(256, 256, 102, 0, Math.PI * 2); ctx.stroke();
 
@@ -252,7 +254,7 @@ export default function PricingCoin() {
       ctx.save();
       ctx.translate(256, 256);
       ctx.font = "bold 26px 'Space Mono', monospace";
-      ctx.fillStyle = "#a78bfa";
+      ctx.fillStyle = "#4f46e5";
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
       const text = "A N A L Y S T O S";
@@ -267,12 +269,12 @@ export default function PricingCoin() {
       // "NSE CERTIFIED" at center
       ctx.shadowBlur = 0;
       ctx.font = "bold 20px 'Space Mono', monospace";
-      ctx.fillStyle = "#ffffff";
+      ctx.fillStyle = "#0f172a";
       ctx.textAlign = "center";
       ctx.fillText("NSE CERTIFIED", 256, 256);
 
       // Circuit board micro lines
-      ctx.strokeStyle = "rgba(0, 212, 255, 0.15)";
+      ctx.strokeStyle = "rgba(14, 165, 233, 0.4)";
       ctx.lineWidth = 2;
       ctx.beginPath();
       // Line 1
@@ -282,7 +284,7 @@ export default function PricingCoin() {
       ctx.stroke();
 
       // Connector dots
-      ctx.fillStyle = "#00d4ff";
+      ctx.fillStyle = "#0ea5e9";
       ctx.beginPath(); ctx.arc(180, 310, 4, 0, Math.PI * 2); ctx.fill();
       ctx.beginPath(); ctx.arc(332, 310, 4, 0, Math.PI * 2); ctx.fill();
 
@@ -295,25 +297,25 @@ export default function PricingCoin() {
     // 5. Coin Geometry & Materials
     const coinGeometry = new THREE.CylinderGeometry(1.2, 1.2, 0.12, 64);
     
-    // Side: Beveled gunmetal color
+    // Side: Beveled silver/chrome color
     const sideMaterial = new THREE.MeshStandardMaterial({
-      color: 0x1a2535,
-      metalness: 0.95,
-      roughness: 0.1,
+      color: 0xcbd5e1,
+      metalness: 0.98,
+      roughness: 0.08,
     });
 
     // Front material
     const frontMaterial = new THREE.MeshStandardMaterial({
       map: frontTexture,
-      metalness: 0.95,
-      roughness: 0.12,
+      metalness: 0.9,
+      roughness: 0.15,
     });
 
     // Back material
     const backMaterial = new THREE.MeshStandardMaterial({
       map: backTexture,
-      metalness: 0.95,
-      roughness: 0.12,
+      metalness: 0.9,
+      roughness: 0.15,
     });
 
     // Apply 3 materials to cylinder: [side, top (front), bottom (back)]
