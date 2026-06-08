@@ -170,11 +170,14 @@ export default function PricingCoin() {
       canvas.height = 512;
       const ctx = canvas.getContext("2d")!;
 
-      // Silver Metal Background Gradient
+      // Silver Chrome Background Gradient
       const grad = ctx.createRadialGradient(256, 256, 10, 256, 256, 256);
-      grad.addColorStop(0, "#f8fafc");
-      grad.addColorStop(0.6, "#e2e8f0");
-      grad.addColorStop(1, "#94a3b8");
+      grad.addColorStop(0, "#ffffff");
+      grad.addColorStop(0.25, "#e2e8f0");
+      grad.addColorStop(0.5, "#94a3b8");
+      grad.addColorStop(0.7, "#ffffff");
+      grad.addColorStop(0.85, "#cbd5e1");
+      grad.addColorStop(1, "#334155");
       ctx.fillStyle = grad;
       ctx.fillRect(0, 0, 512, 512);
 
@@ -234,11 +237,14 @@ export default function PricingCoin() {
       canvas.height = 512;
       const ctx = canvas.getContext("2d")!;
 
-      // Silver Metal Background Gradient
+      // Silver Chrome Background Gradient
       const grad = ctx.createRadialGradient(256, 256, 10, 256, 256, 256);
-      grad.addColorStop(0, "#f8fafc");
-      grad.addColorStop(0.6, "#e2e8f0");
-      grad.addColorStop(1, "#94a3b8");
+      grad.addColorStop(0, "#ffffff");
+      grad.addColorStop(0.25, "#e2e8f0");
+      grad.addColorStop(0.5, "#94a3b8");
+      grad.addColorStop(0.7, "#ffffff");
+      grad.addColorStop(0.85, "#cbd5e1");
+      grad.addColorStop(1, "#334155");
       ctx.fillStyle = grad;
       ctx.fillRect(0, 0, 512, 512);
 
@@ -299,23 +305,23 @@ export default function PricingCoin() {
     
     // Side: Beveled silver/chrome color
     const sideMaterial = new THREE.MeshStandardMaterial({
-      color: 0xcbd5e1,
-      metalness: 0.98,
-      roughness: 0.08,
+      color: 0xffffff,
+      metalness: 1.0,
+      roughness: 0.02,
     });
 
     // Front material
     const frontMaterial = new THREE.MeshStandardMaterial({
       map: frontTexture,
-      metalness: 0.9,
-      roughness: 0.15,
+      metalness: 1.0,
+      roughness: 0.04,
     });
 
     // Back material
     const backMaterial = new THREE.MeshStandardMaterial({
       map: backTexture,
-      metalness: 0.9,
-      roughness: 0.15,
+      metalness: 1.0,
+      roughness: 0.04,
     });
 
     // Apply 3 materials to cylinder: [side, top (front), bottom (back)]
@@ -340,6 +346,11 @@ export default function PricingCoin() {
     const pointLight = new THREE.PointLight(0x7b61ff, 1.0, 50);
     pointLight.position.set(4, -5, 3);
     scene.add(pointLight);
+
+    // White key light for chrome specular highlights
+    const whiteLight = new THREE.DirectionalLight(0xffffff, 1.6);
+    whiteLight.position.set(5, 5, 4);
+    scene.add(whiteLight);
 
     // 7. Interaction and Animation Parameters
     let clock = new THREE.Clock();
