@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import TickerBar from "@/components/ticker-bar";
+import CinematicIntro from "@/components/cinematic-intro";
 import { motion, AnimatePresence, useMotionValue, useSpring, useMotionTemplate } from "framer-motion";
 import PricingCoin from "@/components/pricing-coin";
 import confetti from "canvas-confetti";
@@ -241,6 +242,28 @@ const AnimatedTerminalPreview = () => {
 
 export default function LandingPage() {
   const router = useRouter();
+  const [showIntro, setShowIntro] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const introSeen = sessionStorage.getItem("introSeen") === "true";
+      const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      if (!introSeen && !prefersReducedMotion) {
+        setShowIntro(true);
+        sessionStorage.setItem("introSeen", "true");
+      } else {
+        document.documentElement.classList.remove("intro-playing");
+      }
+    }
+  }, []);
+
+  const handleFadeInLanding = () => {
+    document.documentElement.classList.remove("intro-playing");
+  };
+
+  const handleIntroComplete = () => {
+    setShowIntro(false);
+  };
 
   // Navigation countdown target date (June 14, 2026)
   const [countdown, setCountdown] = useState("");
@@ -1228,7 +1251,33 @@ export default function LandingPage() {
   return (
     <div className="flex flex-col h-screen w-screen overflow-hidden bg-[#020010] text-slate-100 font-sans selection:bg-[#a78bfa]/30 selection:text-white relative">
       <script
-        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: `
+            (function() {
+              var introSeen = sessionStorage.getItem('introSeen') === 'true';
+              var prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+              if (!introSeen && !prefersReducedMotion) {
+                document.documentElement.classList.add('intro-playing');
+              }
+            })();
+          `
+        }}
+      />
+      <style dangerouslySetInnerHTML={{
+        __html: `
+          #landing-page-wrapper {
+            transition: opacity 1000ms ease-out;
+          }
+          html.intro-playing #landing-page-wrapper {
+            opacity: 0 !important;
+            pointer-events: none !important;
+          }
+        `
+      }} />
+
+      <div id="landing-page-wrapper" className="flex flex-col h-full w-full relative">
+        <script
+          type="application/ld+json"
         dangerouslySetInnerHTML={{
           __html: JSON.stringify({
             "@context": "https://schema.org",
@@ -2839,6 +2888,14 @@ export default function LandingPage() {
         )}
       </AnimatePresence>
 
+      </div>
+
+      {showIntro && (
+        <CinematicIntro
+          onFadeInLanding={handleFadeInLanding}
+          onComplete={handleIntroComplete}
+        />
+      )}
     </div>
   );
 }
