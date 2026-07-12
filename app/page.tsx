@@ -2126,7 +2126,7 @@ export default function LandingPage() {
               
               <div className="border border-white/10 rounded-xl p-4 bg-[#0b0f19]/35 max-w-sm font-mono text-[10px] text-slate-400">
                 <span className="text-white font-bold block mb-1">FOUNDER_LOG: v1.0.4</span>
-                "We set out to replace cluttered terminal tools with a unified 3D workspace. AnalystOS bridges raw sockets and pro-forma DCF formulas in one seamless interface."
+                "We set out to replace cluttered terminal tools with a unified 3D workspace. AnalystOS bridges market data feeds and pro-forma DCF formulas in one seamless interface."
               </div>
             </motion.div>
 
