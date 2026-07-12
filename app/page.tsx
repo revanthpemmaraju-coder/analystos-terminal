@@ -190,14 +190,14 @@ const AnimatedTerminalPreview = () => {
   useEffect(() => {
     const scripts = [
       ">> ANALYST.OS SYSTEMS CONNECTING SECURE CLIENT NODE...",
-      ">> CONNECTED DIRECTLY TO NSE MULTICAST INDEX SOCKETS",
-      ">> NSE_NODE LIVE STREAM CHANNEL ONLINE [12ms LATENCY]",
+      ">> CONNECTED TO NSE DATA FEED INTEGRATION",
+      ">> DATA_PIPELINE_LATENCY: OPTIMIZED FOR RESEARCH WORKFLOWS",
       ">> CORE_VALUATION_ENGINE INITIALIZED IN WEBASSEMBLY",
       ">> SYS_COMPILE: Scanning active Reliance assumptions...",
-      "   - EBITDA: ₹1,20,000 Lakhs | exit Multiple: 14.0x",
+      "   - EBITDA: ₹120 Lakhs | exit Multiple: 14.0x",
       "   - Discount rate (WACC): 9.0% | Cash flow CAGR: 15.0%",
       ">> COMPILING SENSITIVITY GRADIENT MODELS AT 60 FPS",
-      ">> INTRINSIC PROJECTION: Fair market share price: ₹2,580.40",
+      ">> INTRINSIC PROJECTION: Fair market share price: ₹1,854",
       ">> TASK_STATUS: COMPLETED [SECURE VAULT ACCESS GRANTED]",
       "----------------------------------------------------------"
     ];
@@ -1088,9 +1088,9 @@ export default function LandingPage() {
 
   // AI chat cockpit sequences
   const [aiChatHistory, setAiChatHistory] = useState<Array<{ role: string; content: string }>>([
-    { role: "system", content: "ANALYST.OS RESEARCH PIPELINE INITIALIZED [CONNECTED NSE NODE]" },
+    { role: "system", content: "ANALYST.OS RESEARCH PIPELINE INITIALIZED [DATA FEED ACTIVE]" },
     { role: "user", content: "Compile valuation report on RELIANCE for Q3 FY26 assumptions." },
-    { role: "system", content: "COMPILING VALUATION METRICS...\nRELIANCE assumptions EBITDA ₹120L, WACC 9.0%, Exit Multiple 14.0x. Implied intrinsic share price calculated: ₹1,854. EV of ₹18.54 Cr is mathematically consistent under pro-forma forecasts." }
+    { role: "system", content: "COMPILING VALUATION METRICS...\nRELIANCE assumptions EBITDA ₹120L, WACC 9.0%, Exit Multiple 14.0x. Implied intrinsic share price calculated: ₹1,854. EV of ₹18.54 Cr based on pro-forma forecasts." }
   ]);
   const [aiInput, setAiInput] = useState("");
   const [isAiTyping, setIsAiTyping] = useState(false);
@@ -1614,7 +1614,7 @@ export default function LandingPage() {
                 style={{ transformStyle: "preserve-3d", perspective: "800px" }}
                 className="flex flex-wrap items-center justify-center gap-3 pt-4"
               >
-                {["12ms Latency", "1,200+ Models", "99.4% Accuracy", "340+ Dashboards"].map((stat, idx) => (
+                {["Real-time Data", "1,200+ Models", "Research-Grade", "340+ Dashboards"].map((stat, idx) => (
                   <motion.span
                     key={idx}
                     initial={{ scale: 0.8, opacity: 0, rotateX: 45 }}
@@ -1658,7 +1658,7 @@ export default function LandingPage() {
                 Unified Analytical Cockpit
               </h2>
               <p className="text-white/50 text-base md:text-[20px] max-w-xl font-sans leading-relaxed mt-6">
-                Interact with high-performance dashboards, stock margin predictions, and secure databases. Our co-pilot chats directly with local NSE servers.
+                Interact with high-performance dashboards, stock margin predictions, and secure databases. Our co-pilot integrates with market data feeds for institutional research workflows.
               </p>
               
               {/* Chat terminal widget cockpit */}
@@ -1671,7 +1671,7 @@ export default function LandingPage() {
                       <span className="w-2 h-2 rounded-full bg-[#34d399]" />
                       <span className="font-bold ml-2 text-slate-400">CO-PILOT.ANALYST.OS</span>
                     </div>
-                    <span className="text-[#34d399]">NSE NODE ONLINE</span>
+                    <span className="text-[#34d399]">DATA FEED ACTIVE</span>
                   </div>
 
                   {/* history list */}
@@ -1724,9 +1724,9 @@ export default function LandingPage() {
                   duration={14}
                 />
                 <FloatingStatCard 
-                  label="Latency" 
-                  val="12ms" 
-                  sub="↑ Real-time" 
+                  label="Data Speed" 
+                  val="<100ms" 
+                  sub="↑ Optimized" 
                   delay={0.2}
                   duration={18}
                 />
@@ -2021,10 +2021,10 @@ export default function LandingPage() {
             >
               <span className="terminal-badge">04. LICENSE DESK</span>
               <h2 className="text-3xl md:text-[48px] font-bold font-display text-white uppercase tracking-tight leading-none mt-4">
-                Institutional Access Licensing
+                Institutional Licensing
               </h2>
               <p className="text-white/50 text-base md:text-[20px] max-w-xl font-sans leading-relaxed mt-6">
-                Unlock low-latency financial intelligence pipelines. Choose a tier matching your analytical bandwidth. All pricing models compile live NSE data.
+                Purpose-built for PMS/AIF funds, equity research shops, and CA/CFA advisory firms. Enterprise-grade security with dedicated support.
               </p>
 
               <button
@@ -2071,7 +2071,7 @@ export default function LandingPage() {
                     <tbody>
                       {[
                         { name: "Live DCF recals", core: "Yes", pro: "Yes", ent: "Yes" },
-                        { name: "NSE Websocket data", core: "Static", pro: "12ms Live", ent: "Dedicated 8ms" },
+                        { name: "Market data feeds", core: "Static", pro: "Real-time API", ent: "Dedicated feeds" },
                         { name: "AI Co-pilot chats", core: "Limited", pro: "Unlimited", ent: "Unlimited + Fine-tuned" },
                         { name: "Spreadsheet exports", core: "No", pro: "Yes", ent: "Yes (Audited)" },
                         { name: "Dedicated host node", core: "No", pro: "No", ent: "Yes" }
@@ -2140,8 +2140,8 @@ export default function LandingPage() {
                 {[
                   {
                     stage: "STAGE_01",
-                    title: "Live NSE Socket Gateways",
-                    desc: "Establishing direct multicast TCP connections to the National Stock Exchange for sub-12ms raw market data delivery.",
+                    title: "Market Data Integration",
+                    desc: "Establishing secure API connections to market data providers for research-grade data delivery with institutional SLAs.",
                     accent: "text-[#a78bfa]",
                     border: "border-[#a78bfa]/20",
                     bullet: "bg-[#a78bfa]",
