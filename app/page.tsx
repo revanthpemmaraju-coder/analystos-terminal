@@ -197,7 +197,7 @@ const AnimatedTerminalPreview = () => {
       "   - EBITDA: ₹120 Lakhs | exit Multiple: 14.0x",
       "   - Discount rate (WACC): 9.0% | Cash flow CAGR: 15.0%",
       ">> COMPILING SENSITIVITY GRADIENT MODELS AT 60 FPS",
-      ">> INTRINSIC PROJECTION: Fair market share price: ₹1,854",
+      ">> INTRINSIC PROJECTION: Fair market share price: ₹30.02",
       ">> TASK_STATUS: COMPLETED [SECURE VAULT ACCESS GRANTED]",
       "----------------------------------------------------------"
     ];
@@ -1090,7 +1090,7 @@ export default function LandingPage() {
   const [aiChatHistory, setAiChatHistory] = useState<Array<{ role: string; content: string }>>([
     { role: "system", content: "ANALYST.OS RESEARCH PIPELINE INITIALIZED [DATA FEED ACTIVE]" },
     { role: "user", content: "Compile valuation report on RELIANCE for Q3 FY26 assumptions." },
-    { role: "system", content: "COMPILING VALUATION METRICS...\nRELIANCE assumptions EBITDA ₹120L, WACC 9.0%, Exit Multiple 14.0x. Implied intrinsic share price calculated: ₹1,854. EV of ₹18.54 Cr based on pro-forma forecasts." }
+    { role: "system", content: "COMPILING VALUATION METRICS...\nRELIANCE assumptions EBITDA ₹120L, WACC 9.0%, Exit Multiple 14.0x. Implied intrinsic share price calculated: ₹30.02. EV of ₹30.02 Cr based on pro-forma forecasts." }
   ]);
   const [aiInput, setAiInput] = useState("");
   const [isAiTyping, setIsAiTyping] = useState(false);
@@ -1113,7 +1113,7 @@ export default function LandingPage() {
       } else if (cmd.includes("LIST_STOCKS")) {
         reply = "TICKERS: RELIANCE, TCS, HDFCBANK, INFY, ICICIBANK, KOTAKBANK";
       } else if (cmd.includes("RUN_VALUATION") || cmd.includes("RELIANCE")) {
-        reply = "DCF_COMPILING: Intrinsic valuation model running. EV implies ₹18.54 Cr. Target fair value is positive over active margins.";
+        reply = "DCF_COMPILING: Intrinsic valuation model running. EV implies ₹30.02 Cr. Target fair value is positive over active margins.";
       } else {
         reply = `CONNECTING TO LOCAL FINANCIAL INDEX NODES...\nUNABLE TO RESOLVE CO-PILOT PIPELINES DIRECTLY FOR '${msg}'.\nENTER HELP FOR OPTIONS.`;
       }
@@ -1653,7 +1653,7 @@ export default function LandingPage() {
               animate={activeSection === 2 ? "active" : "inactive"}
               className="lg:col-span-7 text-left space-y-4"
             >
-              <span className="terminal-badge">02. FEATURES GRIDS</span>
+              <span className="terminal-badge">03. FEATURES GRIDS</span>
               <h2 className="text-3xl md:text-[48px] font-bold font-display text-white uppercase tracking-tight leading-none mt-4">
                 Unified Analytical Cockpit
               </h2>
@@ -1731,9 +1731,9 @@ export default function LandingPage() {
                   duration={18}
                 />
                 <FloatingStatCard 
-                  label="Accuracy" 
-                  val="99.4%" 
-                  sub="↑ ML inference" 
+                  label="Precision" 
+                  val="High" 
+                  sub="↑ ML models" 
                   delay={0.3}
                   duration={16}
                 />
