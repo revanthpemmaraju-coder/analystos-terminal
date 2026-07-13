@@ -1109,7 +1109,7 @@ export default function LandingPage() {
       if (cmd.includes("HELP")) {
         reply = "AVAILABLE COMMANDS: HELP | SYS_PING | LIST_STOCKS | RUN_VALUATION [TICKER]";
       } else if (cmd.includes("SYS_PING")) {
-        reply = "SYS_STATUS: PING 28ms - NSE_NODE ALIVE - CORE_SYSTEMS OPERATIONAL [v1.0.4]";
+        reply = "SYS_STATUS: PING 28ms - DATA FEED ACTIVE - CORE_SYSTEMS OPERATIONAL [v1.0.4]";
       } else if (cmd.includes("LIST_STOCKS")) {
         reply = "TICKERS: RELIANCE, TCS, HDFCBANK, INFY, ICICIBANK, KOTAKBANK";
       } else if (cmd.includes("RUN_VALUATION") || cmd.includes("RELIANCE")) {
@@ -2121,7 +2121,7 @@ export default function LandingPage() {
                 Hedge-Fund Engineering Roadmap
               </h2>
               <p className="text-white/50 text-base md:text-[20px] max-w-xl font-sans leading-relaxed mt-6">
-                AnalystOS is forged by institutional quantitative designers. Our stages ensure zero-latency execution pipelines and audited mathematical logic.
+                AnalystOS is forged by institutional quantitative designers. Our stages ensure optimized data pipelines and audited mathematical logic.
               </p>
               
               <div className="border border-white/10 rounded-xl p-4 bg-[#0b0f19]/35 max-w-sm font-mono text-[10px] text-slate-400">
