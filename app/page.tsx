@@ -3,7 +3,8 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import * as THREE from "three";
+import type { Material, Mesh, Texture } from "three";
+import dynamic from "next/dynamic";
 import { 
   Terminal, Shield, ArrowRight, Lock, Unlock, Copy, Check, 
   ExternalLink, Search, BarChart3, LineChart, Cpu, BookOpen, 
@@ -14,10 +15,12 @@ import { supabase } from "@/lib/supabase";
 import TickerBar from "@/components/ticker-bar";
 import CinematicIntro from "@/components/cinematic-intro";
 import { motion, AnimatePresence, useMotionValue, useSpring, useMotionTemplate } from "framer-motion";
-import PricingCoin from "@/components/pricing-coin";
 import confetti from "canvas-confetti";
 import { useRouter } from "next/navigation";
 
+const PricingCoin = dynamic(() => import("@/components/pricing-coin"), {
+  loading: () => <div className="h-[600px] w-full" aria-hidden="true" />,
+});
 
 const formatIndianCurrency = (num: number) => {
   if (num >= 10000000) {
@@ -348,6 +351,7 @@ export default function LandingPage() {
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [infoHubActive, setInfoHubActive] = useState(false);
   const [pricingTableOpen, setPricingTableOpen] = useState(false);
+  const touchGlobeDraggedRef = useRef(false);
 
   const sectionCoordinates = [
     { x: 0,   y: 0 },   // 01. HERO (x: 0, y: 0)
@@ -424,12 +428,21 @@ export default function LandingPage() {
 
     const handleTouchStart = (e: TouchEvent) => {
       if (pricingTableOpen || infoHubActive) return;
+      if (e.target instanceof Element && e.target.closest("[data-scene-touch]")) {
+        touchStartRef.current = null;
+        return;
+      }
       const t = e.touches[0];
       touchStartRef.current = { x: t.clientX, y: t.clientY };
     };
 
     const handleTouchEnd = (e: TouchEvent) => {
       if (pricingTableOpen || infoHubActive || !touchStartRef.current) return;
+      if (touchGlobeDraggedRef.current) {
+        touchGlobeDraggedRef.current = false;
+        touchStartRef.current = null;
+        return;
+      }
       const t = e.changedTouches[0];
       const dx = touchStartRef.current.x - t.clientX;
       const dy = touchStartRef.current.y - t.clientY;
@@ -471,6 +484,15 @@ export default function LandingPage() {
     const container = canvasContainerRef.current;
     if (!container) return;
 
+    let disposed = false;
+    let disposeScene: (() => void) | undefined;
+
+    const initializeScene = async () => {
+      const THREE = await import("three");
+      if (disposed) return;
+
+    const motionPreference = window.matchMedia("(prefers-reduced-motion: reduce)");
+    let prefersReducedMotion = motionPreference.matches;
     let width = container.clientWidth;
     let height = container.clientHeight;
 
@@ -516,7 +538,7 @@ export default function LandingPage() {
     const colors = [0xa78bfa, 0x60a5fa, 0x34d399];
     const sphereGeometry = new THREE.SphereGeometry(1.5, 12, 12);
     const particles: Array<{
-      mesh: THREE.Mesh;
+      mesh: Mesh;
       baseY: number;
       amplitude: number;
       duration: number;
@@ -678,7 +700,7 @@ export default function LandingPage() {
     const connections: Array<{
       p1: typeof particles[0];
       p2: typeof particles[0];
-      mesh: THREE.Mesh;
+      mesh: Mesh;
     }> = [];
     const cylinderGeometry = new THREE.CylinderGeometry(0.3, 0.3, 1, 4);
     const connectionMaterial = new THREE.MeshBasicMaterial({
@@ -717,7 +739,8 @@ export default function LandingPage() {
     const camRot = { x: 0, y: 0 };
     const camVel = { x: 0, y: 0 };
 
-    const handleMouseMove = (event: MouseEvent) => {
+    const handlePointerMove = (event: PointerEvent) => {
+      if (prefersReducedMotion) return;
       mouseX = (event.clientX - window.innerWidth / 2) / (window.innerWidth / 2);
       mouseY = (event.clientY - window.innerHeight / 2) / (window.innerHeight / 2);
       targetRotX = -mouseY * (10 * Math.PI / 180);
@@ -726,6 +749,9 @@ export default function LandingPage() {
       // Globe drag rotation
       const drag = globeDragRef.current;
       if (drag.isDragging) {
+        if (event.pointerType === "touch") {
+          touchGlobeDraggedRef.current = true;
+        }
         const dx = event.clientX - drag.prevX;
         const dy = event.clientY - drag.prevY;
         
@@ -742,7 +768,8 @@ export default function LandingPage() {
       }
     };
 
-    const handleMouseDown = (event: MouseEvent) => {
+    const handlePointerDown = (event: PointerEvent) => {
+      if (prefersReducedMotion) return;
       // Don't drag on Metrics Sandbox (3) or Pricing Plans (4) sections as it interferes with sliders and the coin
       if (activeSectionRef.current === 3 || activeSectionRef.current === 4) return;
       // Don't drag if clicking interactive elements
@@ -770,16 +797,21 @@ export default function LandingPage() {
       drag.targetRotY = globeGroup.rotation.y;
     };
 
-    const handleMouseUp = () => {
+    const handlePointerEnd = (event: PointerEvent) => {
       globeDragRef.current.isDragging = false;
+      if (event.type === "pointercancel") {
+        touchGlobeDraggedRef.current = false;
+      }
     };
 
-    window.addEventListener("mousemove", handleMouseMove);
-    window.addEventListener("mousedown", handleMouseDown);
-    window.addEventListener("mouseup", handleMouseUp);
+    window.addEventListener("pointermove", handlePointerMove);
+    window.addEventListener("pointerdown", handlePointerDown);
+    window.addEventListener("pointerup", handlePointerEnd);
+    window.addEventListener("pointercancel", handlePointerEnd);
 
-    const clock = new THREE.Clock();
-    let animationFrameId: number;
+    const clock = new THREE.Timer();
+    clock.connect(document);
+    let animationFrameId: number | null = null;
 
     // High-performance static reuse caches to eliminate GC spikes inside the render loop
     const _dir = new THREE.Vector3();
@@ -788,8 +820,13 @@ export default function LandingPage() {
     const _quat = new THREE.Quaternion();
 
     const animate = () => {
+      if (prefersReducedMotion) {
+        renderer.render(scene, camera);
+        return;
+      }
       animationFrameId = requestAnimationFrame(animate);
-      const time = clock.getElapsedTime();
+      clock.update();
+      const time = clock.getElapsed();
       const dt = Math.min(clock.getDelta(), 0.1);
 
       // Scroll progress mapping driven smoothly by activeSectionRef coordinate Z interpolation
@@ -886,7 +923,22 @@ export default function LandingPage() {
       renderer.render(scene, camera);
     };
 
-    animate();
+    const handleMotionPreferenceChange = (event: MediaQueryListEvent) => {
+      prefersReducedMotion = event.matches;
+      if (prefersReducedMotion) {
+        if (animationFrameId !== null) {
+          cancelAnimationFrame(animationFrameId);
+          animationFrameId = null;
+        }
+        renderer.render(scene, camera);
+      } else if (animationFrameId === null) {
+        animate();
+      }
+    };
+    motionPreference.addEventListener("change", handleMotionPreferenceChange);
+
+    if (prefersReducedMotion) renderer.render(scene, camera);
+    else animate();
 
     const handleResize = () => {
       if (!container) return;
@@ -895,35 +947,61 @@ export default function LandingPage() {
       camera.aspect = width / height;
       camera.updateProjectionMatrix();
       renderer.setSize(width, height);
+      if (prefersReducedMotion) renderer.render(scene, camera);
     };
 
     window.addEventListener("resize", handleResize);
 
-    return () => {
-      window.removeEventListener("mousemove", handleMouseMove);
-      window.removeEventListener("mousedown", handleMouseDown);
-      window.removeEventListener("mouseup", handleMouseUp);
+    disposeScene = () => {
+      window.removeEventListener("pointermove", handlePointerMove);
+      window.removeEventListener("pointerdown", handlePointerDown);
+      window.removeEventListener("pointerup", handlePointerEnd);
+      window.removeEventListener("pointercancel", handlePointerEnd);
       window.removeEventListener("resize", handleResize);
-      cancelAnimationFrame(animationFrameId);
+      motionPreference.removeEventListener("change", handleMotionPreferenceChange);
+      if (animationFrameId !== null) cancelAnimationFrame(animationFrameId);
       
       // Pro GPU Memory (VRAM) Disposal: Traverse and release WebGL objects
+      const disposedTextures = new Set<Texture>();
+      const disposedMaterials = new Set<Material>();
       scene.traverse((obj: any) => {
         if (obj.geometry) {
           obj.geometry.dispose();
         }
         if (obj.material) {
-          if (Array.isArray(obj.material)) {
-            obj.material.forEach((mat: any) => mat.dispose());
-          } else {
-            obj.material.dispose();
-          }
+          const materials = Array.isArray(obj.material) ? obj.material : [obj.material];
+          materials.forEach((material: Material & Record<string, unknown>) => {
+            if (disposedMaterials.has(material)) return;
+            disposedMaterials.add(material);
+            Object.values(material).forEach(value => {
+              if (value && typeof value === "object" && "isTexture" in value && value.isTexture) {
+                const texture = value as Texture;
+                if (!disposedTextures.has(texture)) {
+                  disposedTextures.add(texture);
+                  texture.dispose();
+                }
+              }
+            });
+            material.dispose();
+          });
         }
       });
 
-      if (container && renderer.domElement) {
+      if (renderer.domElement.parentElement === container) {
         container.removeChild(renderer.domElement);
       }
+      clock.dispose();
       renderer.dispose();
+    };
+    };
+
+    void initializeScene().catch((error: unknown) => {
+      console.error("Failed to initialize landing scene:", error);
+    });
+
+    return () => {
+      disposed = true;
+      disposeScene?.();
     };
   }, []);
 
@@ -2037,7 +2115,11 @@ export default function LandingPage() {
 
             {/* Right Panel: 3D Holographic Pricing Desk */}
             <div className="lg:col-span-8 w-full relative overflow-visible">
-              <PricingCoin />
+              {activeSection === 4 ? (
+                <PricingCoin />
+              ) : (
+                <div className="h-[600px] w-full" aria-hidden="true" />
+              )}
             </div>
 
             {/* Detailed comparison table reveal popup */}

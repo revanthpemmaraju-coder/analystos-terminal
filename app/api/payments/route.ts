@@ -1,41 +1,76 @@
+import { createClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
-import { razorpayClient } from "@/lib/razorpay";
+import { getRazorpayClient, isPaymentProcessingConfigured } from "@/lib/razorpay";
 
-export async function POST(req: NextRequest) {
+export async function POST(request: NextRequest) {
+  if (!isPaymentProcessingConfigured()) {
+    return NextResponse.json(
+      { error: "Paid subscriptions are temporarily unavailable." },
+      { status: 503 }
+    );
+  }
+
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  if (!supabaseUrl || !supabaseAnonKey) {
+    return NextResponse.json(
+      { error: "Payment service is temporarily unavailable." },
+      { status: 503 }
+    );
+  }
+
+  const accessToken = request.headers
+    .get("authorization")
+    ?.match(/^Bearer\s+(.+)$/i)?.[1];
+  if (!accessToken) {
+    return NextResponse.json({ error: "Authentication required." }, { status: 401 });
+  }
+
+  const authClient = createClient(supabaseUrl, supabaseAnonKey, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
+  const { data: { user }, error: authError } = await authClient.auth.getUser(accessToken);
+  if (authError || !user) {
+    return NextResponse.json({ error: "Authentication required." }, { status: 401 });
+  }
+
+  let body: unknown;
   try {
-    const { plan, userId } = await req.json();
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON request." }, { status: 400 });
+  }
 
-    if (!plan || !userId) {
-      return new NextResponse("Bad Request: 'plan' and 'userId' are required.", { status: 400 });
-    }
+  if (!body || typeof body !== "object" || !("plan" in body)) {
+    return NextResponse.json({ error: "A plan is required." }, { status: 400 });
+  }
 
-    // Determine billing amount based on plan
-    let amount = 0;
-    if (plan === "pro") {
-      amount = 49900; // ₹499 in paise
-    } else if (plan === "analyst") {
-      amount = 149900; // ₹1499 in paise
-    } else {
-      return new NextResponse("Invalid Plan Option", { status: 400 });
-    }
+  const plan = body.plan;
+  let amount: number;
+  if (plan === "pro") {
+    amount = 49_900;
+  } else if (plan === "analyst") {
+    amount = 149_900;
+  } else {
+    return NextResponse.json({ error: "Invalid plan option." }, { status: 400 });
+  }
 
-    const options = {
+  try {
+    const order = await getRazorpayClient().orders.create({
       amount,
       currency: "INR",
-      receipt: `receipt_${userId}_${Date.now()}`,
-      notes: {
-        userId,
-        plan
-      }
-    };
-
-    // Create secure transaction order token using Razorpay bindings
-    const order = await razorpayClient.orders.create(options);
-
-    return NextResponse.json(order);
-
-  } catch (err: any) {
-    console.error("Razorpay order compilation failed:", err);
-    return new NextResponse("Internal Razorpay Server Error", { status: 500 });
+      receipt: `receipt_${user.id}_${Date.now()}`,
+      notes: { userId: user.id, plan },
+    });
+    return NextResponse.json(order, { status: 201 });
+  } catch (error) {
+    console.error(
+      "Razorpay order creation failed:",
+      error instanceof Error ? error.message : "Unknown provider error."
+    );
+    return NextResponse.json(
+      { error: "Unable to create a payment order." },
+      { status: 502 }
+    );
   }
 }

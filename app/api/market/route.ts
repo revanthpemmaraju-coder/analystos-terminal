@@ -142,6 +142,10 @@ export async function GET(req: NextRequest) {
     const ticker = searchParams.get("ticker")?.toUpperCase() || "";
 
     if (ticker) {
+      const searchResultsPromise = searchStocks(ticker).catch((err) => {
+        console.warn("Search lookup failed during asset class resolution:", err);
+        return [];
+      });
       const quote = await fetchQuote(ticker);
       if (!quote) {
         return NextResponse.json({ error: "Symbol not found" }, { status: 404 });
@@ -151,20 +155,16 @@ export async function GET(req: NextRequest) {
       let assetClass: "Stock" | "ETF" | "REIT" | "Closed-End Fund" | "Mutual Fund" = "Stock";
       let longName = quote.name;
 
-      try {
-        const searchResults = await searchStocks(ticker);
-        const matched = searchResults.find(
-          (r) =>
-            r.symbol.toUpperCase().replace(/\.(NS|BO|NSE|BSE)$/i, "") ===
-            ticker.replace(/\.(NS|BO|NSE|BSE)$/i, "")
-        ) || searchResults[0];
+      const searchResults = await searchResultsPromise;
+      const matched = searchResults.find(
+        (r) =>
+          r.symbol.toUpperCase().replace(/\.(NS|BO|NSE|BSE)$/i, "") ===
+          ticker.replace(/\.(NS|BO|NSE|BSE)$/i, "")
+      ) || searchResults[0];
 
-        if (matched) {
-          assetClass = (matched.assetClass as any) || "Stock";
-          longName = matched.name || quote.name;
-        }
-      } catch (err) {
-        console.warn("Search lookup failed during asset class resolution:", err);
+      if (matched) {
+        assetClass = (matched.assetClass as any) || "Stock";
+        longName = matched.name || quote.name;
       }
 
       // 2. Generate framework metadata (Claude system or fallback)
@@ -278,4 +278,3 @@ Rules:
     return new NextResponse("Internal Server Error", { status: 500 });
   }
 }
-

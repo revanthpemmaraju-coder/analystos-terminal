@@ -143,6 +143,8 @@ export default function PricingCoin() {
   useEffect(() => {
     if (!isMounted || !canvasRef.current) return;
 
+    const motionPreference = window.matchMedia("(prefers-reduced-motion: reduce)");
+    let prefersReducedMotion = motionPreference.matches;
     const width = 600;
     const height = 600;
 
@@ -372,7 +374,8 @@ export default function PricingCoin() {
     scene.add(lightBottom);
 
     // 7. Interaction and Animation Parameters
-    let clock = new THREE.Clock();
+    const clock = new THREE.Timer();
+    clock.connect(document);
     let isHovered = false;
     let isDragging = false;
     let prevMousePos = { x: 0, y: 0 };
@@ -386,6 +389,7 @@ export default function PricingCoin() {
 
     // Hover triggers
     const onMouseEnter = () => {
+      if (prefersReducedMotion) return;
       isHovered = true;
     };
     const onMouseLeave = () => {
@@ -395,12 +399,13 @@ export default function PricingCoin() {
 
     // Drag systems
     const onMouseDown = (e: MouseEvent) => {
+      if (prefersReducedMotion) return;
       isDragging = true;
       prevMousePos = { x: e.clientX, y: e.clientY };
     };
 
     const onMouseMove = (e: MouseEvent) => {
-      if (!isDragging) return;
+      if (prefersReducedMotion || !isDragging) return;
       const deltaX = e.clientX - prevMousePos.x;
       const deltaY = e.clientY - prevMousePos.y;
 
@@ -421,12 +426,13 @@ export default function PricingCoin() {
 
     // Touch support (mobiles)
     const onTouchStart = (e: TouchEvent) => {
+      if (prefersReducedMotion) return;
       isDragging = true;
       prevMousePos = { x: e.touches[0].clientX, y: e.touches[0].clientY };
     };
 
     const onTouchMove = (e: TouchEvent) => {
-      if (!isDragging) return;
+      if (prefersReducedMotion || !isDragging) return;
       const deltaX = e.touches[0].clientX - prevMousePos.x;
       const deltaY = e.touches[0].clientY - prevMousePos.y;
 
@@ -444,18 +450,22 @@ export default function PricingCoin() {
     mouseContainer.addEventListener("mousedown", onMouseDown);
     window.addEventListener("mousemove", onMouseMove);
     window.addEventListener("mouseup", onMouseUp);
-
-    // Touch additions
     mouseContainer.addEventListener("touchstart", onTouchStart, { passive: true });
     window.addEventListener("touchmove", onTouchMove, { passive: true });
     window.addEventListener("touchend", onMouseUp);
+    window.addEventListener("touchcancel", onMouseUp);
 
     // 8. Dynamic Animation Loop
-    let animationFrameId: number;
+    let animationFrameId: number | null = null;
     const animate = () => {
+      if (prefersReducedMotion) {
+        renderer.render(scene, camera);
+        return;
+      }
       animationFrameId = requestAnimationFrame(animate);
 
-      const time = clock.getElapsedTime();
+      clock.update();
+      const time = clock.getElapsed();
 
       // Lerp float scales on hover
       const targetScale = isHovered ? 1.05 : 1.0;
@@ -487,11 +497,29 @@ export default function PricingCoin() {
       renderer.render(scene, camera);
     };
 
-    animate();
+    const handleMotionPreferenceChange = (event: MediaQueryListEvent) => {
+      prefersReducedMotion = event.matches;
+      if (prefersReducedMotion) {
+        isDragging = false;
+        if (animationFrameId !== null) {
+          cancelAnimationFrame(animationFrameId);
+          animationFrameId = null;
+        }
+        renderer.render(scene, camera);
+      } else if (animationFrameId === null) {
+        animate();
+      }
+    };
+    motionPreference.addEventListener("change", handleMotionPreferenceChange);
+
+    if (prefersReducedMotion) renderer.render(scene, camera);
+    else animate();
 
     // 9. Cleanup Resources
     return () => {
-      cancelAnimationFrame(animationFrameId);
+      if (animationFrameId !== null) cancelAnimationFrame(animationFrameId);
+      motionPreference.removeEventListener("change", handleMotionPreferenceChange);
+      clock.dispose();
 
       mouseContainer.removeEventListener("mouseenter", onMouseEnter);
       mouseContainer.removeEventListener("mouseleave", onMouseLeave);
@@ -502,6 +530,7 @@ export default function PricingCoin() {
       mouseContainer.removeEventListener("touchstart", onTouchStart);
       window.removeEventListener("touchmove", onTouchMove);
       window.removeEventListener("touchend", onMouseUp);
+      window.removeEventListener("touchcancel", onMouseUp);
 
       // Free GPU geometries and materials
       coinGeometry.dispose();
@@ -522,6 +551,7 @@ export default function PricingCoin() {
 
       <div 
         ref={containerRef}
+        data-scene-touch="pricing-coin"
         className="w-full min-h-[650px] relative flex flex-col md:block items-center justify-center overflow-visible"
         style={{ background: "transparent" }}
       >

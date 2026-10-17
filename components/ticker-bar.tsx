@@ -9,27 +9,25 @@ interface IndexTick {
   changePercent: number;
 }
 
-const FALLBACK: IndexTick[] = [
-  { name: "NIFTY 50", value: 22853.2, change: 102.5, changePercent: 0.45 },
-  { name: "SENSEX", value: 75116.8, change: 390.2, changePercent: 0.52 },
-  { name: "S&P 500", value: 5277.5, change: 41.8, changePercent: 0.8 },
-  { name: "NASDAQ", value: 16735.0, change: 182.1, changePercent: 1.1 },
-  { name: "DOW JONES", value: 39069.5, change: -47.3, changePercent: -0.12 },
-  { name: "FTSE 100", value: 8275.3, change: 20.6, changePercent: 0.25 },
-];
-
 export default function TickerBar() {
-  const [ticks, setTicks] = useState<IndexTick[]>(FALLBACK);
+  const [ticks, setTicks] = useState<IndexTick[]>([]);
+  const [isAvailable, setIsAvailable] = useState<boolean | null>(null);
 
   useEffect(() => {
     async function load() {
       try {
         const res = await fetch("/api/stocks/indices");
-        if (!res.ok) return;
+        if (!res.ok) throw new Error(`Market indices request failed (${res.status}).`);
         const data = await res.json();
-        if (data.indices?.length) setTicks(data.indices);
-      } catch {
-        /* keep fallback */
+        if (!Array.isArray(data.indices) || data.indices.length === 0) {
+          throw new Error("Market indices response was empty.");
+        }
+        setTicks(data.indices);
+        setIsAvailable(true);
+      } catch (error) {
+        console.error("Unable to load live market indices:", error);
+        setTicks([]);
+        setIsAvailable(false);
       }
     }
     load();
@@ -40,7 +38,12 @@ export default function TickerBar() {
   return (
     <div className="w-full bg-[#05070a] border-b border-slate-900 overflow-hidden select-none py-1.5 px-4 text-xs font-mono">
       <div className="flex items-center space-x-8 animate-marquee whitespace-nowrap">
-        <span className="text-slate-500 font-semibold uppercase mr-2">[MARKETS_LIVE]</span>
+        <span className="text-slate-500 font-semibold uppercase mr-2">
+          {isAvailable === null ? "[MARKETS_CONNECTING]" : isAvailable ? "[MARKETS_LIVE]" : "[MARKETS_UNAVAILABLE]"}
+        </span>
+        {isAvailable === false && (
+          <span className="text-slate-400">Live market data unavailable</span>
+        )}
         {ticks.map((tick, idx) => {
           const isUp = tick.changePercent >= 0;
           return (
