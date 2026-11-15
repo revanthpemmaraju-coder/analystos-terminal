@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { getAuthenticatedUser } from "@/lib/auth";
+import { createRateLimiter } from "@/lib/rate-limit";
+import { errorResponse } from "@/lib/api-utils";
 import {
   formatMarketContext,
   fromYahooSymbol,
@@ -10,12 +12,13 @@ import {
   type StockQuote,
 } from "@/lib/market-data";
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
 const anthropicKey = process.env.ANTHROPIC_API_KEY || "";
+
+const rateLimiter = createRateLimiter({ windowMs: 60 * 1000, maxRequests: 20 });
 
 const isValidUuid = (id: string) =>
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+
 
 function buildStockAnalysis(
   message: string,
@@ -109,14 +112,22 @@ ${moversContext || "- RELIANCE: ₹2,450.40 (+1.8%)\n- TCS: ₹3,890.25 (+1.2%)\
 }
 
 export async function POST(req: NextRequest) {
+  // Check rate limit
+  const ip = req.headers.get("x-forwarded-for") || "127.0.0.1";
+  const { allowed } = rateLimiter.check(ip);
+  if (!allowed) return errorResponse("Too Many Requests", 429);
+
+  const authUser = await getAuthenticatedUser(req);
+  if (!authUser) {
+    return errorResponse("Unauthorized", 401);
+  }
+
   let message = "";
-  let userId = "";
   let explicitSymbols: string[] = [];
 
   try {
     const body = await req.json();
     message = (body.message || "").trim();
-    userId = body.userId || "";
     explicitSymbols = Array.isArray(body.symbols)
       ? body.symbols.map((s: string) => fromYahooSymbol(s.toUpperCase()))
       : [];
@@ -125,37 +136,19 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "message required" }, { status: 400 });
     }
 
-    const hasSupabase = !!(supabaseUrl && supabaseAnonKey);
-    const supabase = hasSupabase ? createClient(supabaseUrl, supabaseAnonKey) : null;
-
-    let plan = "free";
-    let questionsUsed = 0;
-
-    if (userId && isValidUuid(userId) && supabase) {
-      try {
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("*")
-          .eq("id", userId)
-          .single();
-        if (profile) {
-          plan = profile.plan || "free";
-          questionsUsed = profile.questions_used_today || 0;
-          if (plan === "free" && questionsUsed >= 5) {
-            return NextResponse.json(
-              {
-                error: "QUOTA_EXCEEDED",
-                message: "Daily limit of 5 AI questions reached. Upgrade to PRO for unlimited queries.",
-              },
-              { status: 429 }
-            );
-          }
-        }
-      } catch (err) {
-        console.warn("Profile check skipped:", err);
-      }
-    } else if (userId === "founder-guest-id") {
-      plan = "pro";
+    const { data: canConsumeQuestion, error: quotaError } = await authUser.db.rpc("consume_ai_question");
+    if (quotaError) {
+      console.error("Stock AI quota check failed:", quotaError.message);
+      return errorResponse("Unable to verify account quota.", 503);
+    }
+    if (!canConsumeQuestion) {
+      return NextResponse.json(
+        {
+          error: "QUOTA_EXCEEDED",
+          message: "Daily limit reached. Your plan's AI question limit resets tomorrow.",
+        },
+        { status: 429 }
+      );
     }
 
     const { quotes, symbols } = await resolveQuotesFromMessage(message, explicitSymbols);
@@ -307,17 +300,6 @@ Keep answers strictly professional, precise, fact-based, and optimized for termi
     const responseText = data.content?.[0]?.text || (isGeneralMarket
       ? buildGeneralMarketAnalysis(message, indicesContext, moversContext)
       : buildStockAnalysis(message, quotes, symbols));
-
-    if (userId && isValidUuid(userId) && plan === "free" && supabase) {
-      try {
-        await supabase
-          .from("profiles")
-          .update({ questions_used_today: questionsUsed + 1 })
-          .eq("id", userId);
-      } catch {
-        /* non-fatal */
-      }
-    }
 
     return NextResponse.json({
       content: responseText,

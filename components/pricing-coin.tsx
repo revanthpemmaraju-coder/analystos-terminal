@@ -4,6 +4,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import { motion, AnimatePresence } from "framer-motion";
+import SubscriptionManagement from "@/components/subscription-management";
 
 export default function PricingCoin() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -21,6 +22,8 @@ export default function PricingCoin() {
       title: "FREE VAULT",
       price: "5 Resources",
       desc: "Static NSE indexes, DuPont models, local workspace",
+      cta: "START FREE",
+      href: "/signup?plan=free",
       posClass: "md:top-[45%] md:left-[5%] md:-translate-y-1/2",
       align: "left",
       initialX: -60,
@@ -28,10 +31,12 @@ export default function PricingCoin() {
       delay: 0.1,
     },
     {
-      id: "starter",
+      id: "pro",
       title: "STARTER NODE",
       price: "₹2,500/mo",
-      desc: "Live Recalculations, client database, fundamental screenings",
+      desc: "Live DCF models, screening tools, basic API access",
+      cta: "SUBSCRIBE",
+      href: "/signup?upgrade=true&plan=pro",
       posClass: "md:top-[8%] md:left-1/2 md:-translate-x-1/2",
       align: "top",
       initialX: 0,
@@ -39,10 +44,12 @@ export default function PricingCoin() {
       delay: 0.25,
     },
     {
-      id: "pro",
+      id: "analyst",
       title: "AI CO-PILOT",
       price: "₹7,500/mo",
-      desc: "Flagship terminal, 12ms WebSocket tickers, AI Chat connections",
+      desc: "AI co-pilot, real-time data feeds, multi-seat licenses",
+      cta: "SUBSCRIBE",
+      href: "/signup?upgrade=true&plan=analyst",
       posClass: "md:top-[45%] md:right-[5%] md:-translate-y-1/2",
       align: "right",
       initialX: 60,
@@ -53,7 +60,9 @@ export default function PricingCoin() {
       id: "enterprise",
       title: "INSTITUTIONAL",
       price: "Custom",
-      desc: "Investment funds, multi-tenant API pipelines, dedicated servers",
+      desc: "Dedicated infrastructure, custom integrations, priority support",
+      cta: "CONTACT SALES",
+      href: null,
       posClass: "md:bottom-[8%] md:left-1/2 md:-translate-x-1/2",
       align: "bottom",
       initialX: 0,
@@ -372,7 +381,8 @@ export default function PricingCoin() {
     scene.add(lightBottom);
 
     // 7. Interaction and Animation Parameters
-    let clock = new THREE.Clock();
+    const clock = new THREE.Timer();
+    clock.connect(document);
     let isHovered = false;
     let isDragging = false;
     let prevMousePos = { x: 0, y: 0 };
@@ -455,7 +465,8 @@ export default function PricingCoin() {
     const animate = () => {
       animationFrameId = requestAnimationFrame(animate);
 
-      const time = clock.getElapsedTime();
+      clock.update();
+      const time = clock.getElapsed();
 
       // Lerp float scales on hover
       const targetScale = isHovered ? 1.05 : 1.0;
@@ -492,6 +503,7 @@ export default function PricingCoin() {
     // 9. Cleanup Resources
     return () => {
       cancelAnimationFrame(animationFrameId);
+      clock.dispose();
 
       mouseContainer.removeEventListener("mouseenter", onMouseEnter);
       mouseContainer.removeEventListener("mouseleave", onMouseLeave);
@@ -590,7 +602,8 @@ export default function PricingCoin() {
             <motion.a
               key={card.id}
               id={`hud-card-${card.id}`}
-              href="https://analystos-terminal.vercel.app/signup"
+              href={card.href ?? undefined}
+              aria-disabled={!card.href}
               onMouseEnter={() => setActivePlan(card.id)}
               onMouseLeave={() => setActivePlan(null)}
               initial={{ 
@@ -635,10 +648,14 @@ export default function PricingCoin() {
               >
                 {card.desc}
               </p>
+              <span className="mt-3 block text-[9px] font-bold tracking-widest text-[#a78bfa]">
+                {card.cta} →
+              </span>
             </motion.a>
           ))}
         </div>
       </div>
+      <SubscriptionManagement />
     </div>
   );
 }

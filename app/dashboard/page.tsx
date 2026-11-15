@@ -354,23 +354,6 @@ export default function DashboardPage() {
   // Protection & Session
   useEffect(() => {
     async function checkAuth() {
-      // Founder Backdoor Hook (Bypasses Supabase auth entirely if ?founder=revanth_gate_pro query is supplied or bypassed in localStorage)
-      const searchParams = new URLSearchParams(window.location.search);
-      const isFounder = searchParams.get("founder") === "revanth_gate_pro" || 
-        (typeof window !== "undefined" && localStorage.getItem("founder_bypass") === "true");
-
-      if (isFounder) {
-        setUser({ id: "founder-guest-id", email: "founder@analystos.com" });
-        setProfile({ plan: "pro", name: "Founder / Administrator" });
-        if (typeof window !== "undefined") {
-          localStorage.setItem("founder_bypass", "true");
-        }
-        setLoading(false);
-        fetchSavedMemos("founder-guest-id");
-        fetchPortfolio("founder-guest-id");
-        return;
-      }
-
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
         router.push("/login");
@@ -378,27 +361,11 @@ export default function DashboardPage() {
       }
       setUser(session.user);
 
-      const { data: prof } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", session.user.id)
-        .single();
-      
-      let finalProfile = prof || { plan: "free", name: "User" };
-      
-      // Founder Whitelisting Hook (Grants lifetime PRO credentials to the founder)
-      if (
-        session.user.email?.toLowerCase().includes("revanth") || 
-        session.user.email?.toLowerCase().includes("founder") || 
-        session.user.email?.toLowerCase().includes("admin")
-      ) {
-        finalProfile = { 
-          ...finalProfile, 
-          plan: "pro", 
-          name: "Founder / Administrator" 
-        };
-      }
-      
+      const { data: effectivePlan, error: planError } = await supabase.rpc(
+        "get_effective_user_plan",
+      );
+      if (planError) console.error("Unable to load subscription plan:", planError.message);
+      const finalProfile = { plan: typeof effectivePlan === "string" ? effectivePlan : "free", name: session.user.user_metadata?.full_name || "User" };
       setProfile(finalProfile);
       setLoading(false);
 
@@ -413,23 +380,12 @@ export default function DashboardPage() {
   // Fetch saved memos / models
   const [savedMemos, setSavedMemos] = useState<any[]>([]);
   async function fetchSavedMemos(userId: string) {
-    if (userId === "founder-guest-id") {
-      const stored = localStorage.getItem("aos_saved_dcf_models");
-      if (stored) {
-        try {
-          setSavedMemos(JSON.parse(stored));
-        } catch (e) {
-          console.error(e);
-        }
-      }
-    } else {
-      const { data } = await supabase
-        .from("dcf_models")
-        .select("*")
-        .eq("user_id", userId)
-        .order("created_at", { ascending: false });
-      if (data) setSavedMemos(data);
-    }
+    const { data } = await supabase
+      .from("dcf_models")
+      .select("*")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false });
+    if (data) setSavedMemos(data);
   }
 
   // Portfolio & Risk Analytics Desk States & Fetch
@@ -443,45 +399,26 @@ export default function DashboardPage() {
 
   const fetchPortfolio = async (userId: string) => {
     setLoadingPortfolio(true);
-    if (userId === "founder-guest-id") {
-      const stored = localStorage.getItem("aos_portfolio_holdings");
-      if (stored) {
-        try {
-          setPortfolioHoldings(JSON.parse(stored));
-        } catch (e) {
-          console.error(e);
-        }
-      } else {
-        const defaults = [
-          { ticker: "AAPL", shares: 150, average_buy_price: 175.50 },
-          { ticker: "NVDA", shares: 40, average_buy_price: 850.00 },
-          { ticker: "MSFT", shares: 80, average_buy_price: 405.00 }
-        ];
-        localStorage.setItem("aos_portfolio_holdings", JSON.stringify(defaults));
-        setPortfolioHoldings(defaults);
-      }
+    const { data } = await supabase
+      .from("portfolios")
+      .select("*")
+      .eq("user_id", userId);
+    if (data && data.length > 0 && data[0].holdings) {
+      setPortfolioHoldings(data[0].holdings);
     } else {
-      const { data } = await supabase
+      const initialHoldings = [
+        { ticker: "AAPL", shares: 150, average_buy_price: 175.50 },
+        { ticker: "NVDA", shares: 40, average_buy_price: 850.00 },
+        { ticker: "MSFT", shares: 80, average_buy_price: 405.00 }
+      ];
+      await supabase
         .from("portfolios")
-        .select("*")
-        .eq("user_id", userId);
-      if (data && data.length > 0 && data[0].holdings) {
-        setPortfolioHoldings(data[0].holdings);
-      } else {
-        const initialHoldings = [
-          { ticker: "AAPL", shares: 150, average_buy_price: 175.50 },
-          { ticker: "NVDA", shares: 40, average_buy_price: 850.00 },
-          { ticker: "MSFT", shares: 80, average_buy_price: 405.00 }
-        ];
-        await supabase
-          .from("portfolios")
-          .insert({
-            user_id: userId,
-            name: "Hedge Fund Model",
-            holdings: initialHoldings
-          });
-        setPortfolioHoldings(initialHoldings);
-      }
+        .insert({
+          user_id: userId,
+          name: "Hedge Fund Model",
+          holdings: initialHoldings
+        });
+      setPortfolioHoldings(initialHoldings);
     }
     setLoadingPortfolio(false);
   };
@@ -518,17 +455,12 @@ export default function DashboardPage() {
       }
     }
 
-    if (user.id === "founder-guest-id") {
-      localStorage.setItem("aos_portfolio_holdings", JSON.stringify(updated));
+    const { error } = await supabase
+      .from("portfolios")
+      .update({ holdings: updated })
+      .eq("user_id", user.id);
+    if (!error) {
       setPortfolioHoldings(updated);
-    } else {
-      const { error } = await supabase
-        .from("portfolios")
-        .update({ holdings: updated })
-        .eq("user_id", user.id);
-      if (!error) {
-        setPortfolioHoldings(updated);
-      }
     }
     setLoadingPortfolio(false);
   };

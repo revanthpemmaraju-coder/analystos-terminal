@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { getAuthenticatedUser } from "@/lib/auth";
+import { createRateLimiter } from "@/lib/rate-limit";
+import { errorResponse } from "@/lib/api-utils";
 import {
   fetchIndexQuotes,
   fetchQuote,
@@ -7,11 +9,12 @@ import {
   resolveQuotesFromMessage,
 } from "@/lib/market-data";
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
 const anthropicKey = process.env.ANTHROPIC_API_KEY || "";
 
+const rateLimiter = createRateLimiter({ windowMs: 60 * 1000, maxRequests: 20 });
+
 const isValidUuid = (id: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+
 
 const MOCK_HEADERS: Record<string, Record<string, string>> = {
   en: {
@@ -527,10 +530,20 @@ Insider tracking indicates net institutional accumulation over the past 90 days.
 }
 
 export async function POST(req: NextRequest) {
+  // Check rate limit
+  const ip = req.headers.get("x-forwarded-for") || "127.0.0.1";
+  const { allowed } = rateLimiter.check(ip);
+  if (!allowed) return errorResponse("Too Many Requests", 429);
+
+  const authUser = await getAuthenticatedUser(req);
+  if (!authUser) {
+    return errorResponse("Unauthorized", 401);
+  }
+
   let requestMessage = "";
   let activeLang = "en";
   try {
-    const { message, userId, lang } = await req.json();
+    const { message, lang } = await req.json();
     requestMessage = message || "";
     activeLang = typeof lang === "string" ? lang.toLowerCase() : "en";
 
@@ -538,39 +551,16 @@ export async function POST(req: NextRequest) {
       return new NextResponse("Bad Request: 'message' is required in payload", { status: 400 });
     }
 
-    const hasSupabase = !!(supabaseUrl && supabaseAnonKey);
-    const supabase = hasSupabase ? createClient(supabaseUrl, supabaseAnonKey) : null;
-
-    // 1. Quota & Plan Verification
-    let plan = "free";
-    let questionsUsed = 0;
-    
-    if (userId && isValidUuid(userId) && supabase) {
-      try {
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("*")
-          .eq("id", userId)
-          .single();
-
-        if (profile) {
-          plan = profile.plan || "free";
-          questionsUsed = profile.questions_used_today || 0;
-
-          // Enforce quota gate if user is on Free Tier
-          if (plan === "free" && questionsUsed >= 5) {
-            return NextResponse.json({
-              error: "QUOTA_EXCEEDED",
-              message: "Daily limit of 5 AI questions reached on the FREE tier. Upgrade to PRO for unlimited queries."
-            }, { status: 429 });
-          }
-        }
-      } catch (err) {
-        console.warn("DB profile query failed, skipping:", err);
-      }
-    } else if (userId === "founder-guest-id") {
-      plan = "pro";
-      questionsUsed = 0;
+    const { data: canConsumeQuestion, error: quotaError } = await authUser.db.rpc("consume_ai_question");
+    if (quotaError) {
+      console.error("AI quota check failed:", quotaError.message);
+      return errorResponse("Unable to verify account quota.", 503);
+    }
+    if (!canConsumeQuestion) {
+      return NextResponse.json({
+        error: "QUOTA_EXCEEDED",
+        message: "Daily limit reached. Your plan's AI question limit resets tomorrow."
+      }, { status: 429 });
     }
 
     // Resolve quotes if we can find any ticker symbols in the message
@@ -578,6 +568,7 @@ export async function POST(req: NextRequest) {
     const hasResolvedQuotes = quotes.length > 0;
 
     const lowerMsg = requestMessage.toLowerCase();
+
     const isGeneralMarket = 
       lowerMsg.includes("news") || 
       lowerMsg.includes("mover") || 
@@ -615,7 +606,7 @@ export async function POST(req: NextRequest) {
 
     // 2. Transmit request to Anthropic Claude
     if (!anthropicKey || anthropicKey === "your-api-key-here") {
-      return NextResponse.json({ content: generateMockResponse(requestMessage, activeLang) });
+      return NextResponse.json({ error: "AI service is not configured." }, { status: 503 });
     }
 
     const headersDict = MOCK_HEADERS[activeLang] || MOCK_HEADERS.en;
@@ -750,34 +741,17 @@ You MUST respond entirely in the language corresponding to language code: "${act
     });
 
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error("Anthropic Claude API returned an error:", errorText);
-      return NextResponse.json({ content: generateMockResponse(requestMessage, activeLang) });
+      console.error("Anthropic Claude API returned status:", response.status);
+      return NextResponse.json({ error: "AI provider request failed." }, { status: 502 });
     }
 
     const data = await response.json();
     const responseText = data.content[0].text;
 
-    // 3. Update Profiles Table to increment daily check count for Free users
-    if (userId && isValidUuid(userId) && plan === "free" && supabase) {
-      try {
-        const { error: updateError } = await supabase
-          .from("profiles")
-          .update({ questions_used_today: questionsUsed + 1 })
-          .eq("id", userId);
-        
-         if (updateError) {
-          console.warn("DB profile check increment failed:", updateError.message);
-        }
-      } catch (err) {
-        console.warn("DB profile update failed, skipping:", err);
-      }
-    }
-
     return NextResponse.json({ content: responseText });
 
-  } catch (err: any) {
-    console.error("Server Route post failed:", err);
-    return NextResponse.json({ content: generateMockResponse(requestMessage, activeLang) });
+  } catch (err: unknown) {
+    console.error("Server Route post failed:", err instanceof Error ? err.message : "Unknown error.");
+    return NextResponse.json({ error: "Unable to process AI request." }, { status: 503 });
   }
 }

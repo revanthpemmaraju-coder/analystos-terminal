@@ -13,6 +13,7 @@ export default function Navbar() {
   const [user, setUser] = useState<any>(null);
   const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [logoutError, setLogoutError] = useState("");
   const [lang, setLang] = useState<string>("en");
 
   useEffect(() => {
@@ -31,37 +32,18 @@ export default function Navbar() {
 
   useEffect(() => {
     async function fetchSession() {
-      const isFounder = typeof window !== "undefined" && 
-        (new URLSearchParams(window.location.search).get("founder") === "revanth_gate_pro" || 
-         localStorage.getItem("founder_bypass") === "true");
-
-      if (isFounder) {
-        setUser({ id: "founder-guest-id", email: "founder@analystos.com" });
-        setProfile({ plan: "pro", name: "Founder / Administrator" });
-        setLoading(false);
-        return;
-      }
-
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
         setUser(session.user);
         
-        // Fetch custom user profile (plan info)
-        const { data: prof, error } = await supabase
-          .from("profiles")
-          .select("*")
-          .eq("id", session.user.id)
-          .single();
-
-        if (prof) {
-          setProfile(prof);
-        } else {
-          // Fallback metadata if db profile isn't generated yet
-          setProfile({
-            plan: session.user.user_metadata?.plan || "free",
-            name: session.user.user_metadata?.full_name || ""
-          });
-        }
+        const { data: effectivePlan, error } = await supabase.rpc(
+          "get_effective_user_plan",
+        );
+        if (error) console.error("Unable to load subscription plan:", error.message);
+        setProfile({
+          plan: typeof effectivePlan === "string" ? effectivePlan : "free",
+          name: session.user.user_metadata?.full_name || ""
+        });
       }
       setLoading(false);
     }
@@ -71,22 +53,16 @@ export default function Navbar() {
     // Listen for auth state revisions
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        const isFounder = typeof window !== "undefined" && 
-          localStorage.getItem("founder_bypass") === "true";
-        if (isFounder) {
-          setUser({ id: "founder-guest-id", email: "founder@analystos.com" });
-          setProfile({ plan: "pro", name: "Founder / Administrator" });
-          return;
-        }
-
         if (session?.user) {
           setUser(session.user);
-          const { data: prof } = await supabase
-            .from("profiles")
-            .select("*")
-            .eq("id", session.user.id)
-            .single();
-          if (prof) setProfile(prof);
+          const { data: effectivePlan, error } = await supabase.rpc(
+            "get_effective_user_plan",
+          );
+          if (error) console.error("Unable to load subscription plan:", error.message);
+          setProfile({
+            plan: typeof effectivePlan === "string" ? effectivePlan : "free",
+            name: session.user.user_metadata?.full_name || ""
+          });
         } else {
           setUser(null);
           setProfile(null);
@@ -100,11 +76,31 @@ export default function Navbar() {
   }, []);
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
-    if (typeof window !== "undefined") {
-      localStorage.removeItem("founder_bypass");
+    setLogoutError("");
+    let remoteSignOutFailed = false;
+    try {
+      const { error } = await supabase.auth.signOut();
+      remoteSignOutFailed = !!error;
+    } catch {
+      remoteSignOutFailed = true;
     }
-    router.push("/login");
+
+    if (remoteSignOutFailed) {
+      try {
+        const { error: localSignOutError } = await supabase.auth.signOut({ scope: "local" });
+        if (localSignOutError) {
+          setLogoutError("Unable to clear this session. Please retry.");
+          return;
+        }
+      } catch {
+        setLogoutError("Unable to clear this session. Please retry.");
+        return;
+      }
+      setLogoutError("Signed out on this device; other sessions could not be revoked.");
+    }
+    setUser(null);
+    setProfile(null);
+    router.replace("/login");
   };
 
   const navLinks = [
@@ -144,6 +140,11 @@ export default function Navbar() {
       </div>
 
       <div className="flex items-center space-x-4">
+        {logoutError && (
+          <span role="alert" className="text-[10px] text-[#ff3860]">
+            {logoutError}
+          </span>
+        )}
         {/* Language Selector Dropdown */}
         <div className="relative flex items-center">
           <span className="text-slate-500 text-[8px] mr-1.5 font-bold font-mono">LANG:</span>

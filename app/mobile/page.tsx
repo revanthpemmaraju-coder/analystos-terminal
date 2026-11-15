@@ -692,25 +692,9 @@ export default function AnalystOSMobile() {
     isDragging.current = false;
   };
 
-  // User Authentication & Backdoor Gate check
+  // User Authentication & Session check
   useEffect(() => {
     async function checkAuth() {
-      const searchParams = new URLSearchParams(window.location.search);
-      const isFounder = searchParams.get("founder") === "revanth_gate_pro" || 
-        (typeof window !== "undefined" && localStorage.getItem("founder_bypass") === "true");
-
-      if (isFounder) {
-        setUser({ id: "founder-guest-id", email: "founder@analystos.com" });
-        setProfile({ plan: "pro", name: "Founder / Administrator" });
-        if (typeof window !== "undefined") {
-          localStorage.setItem("founder_bypass", "true");
-        }
-        setLoading(false);
-        fetchSavedMemos("founder-guest-id");
-        fetchPortfolio("founder-guest-id");
-        return;
-      }
-
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
         router.push("/login");
@@ -718,25 +702,11 @@ export default function AnalystOSMobile() {
       }
       setUser(session.user);
 
-      const { data: prof } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", session.user.id)
-        .single();
-      
-      let finalProfile = prof || { plan: "free", name: "User" };
-      
-      if (
-        session.user.email?.toLowerCase().includes("revanth") || 
-        session.user.email?.toLowerCase().includes("founder") || 
-        session.user.email?.toLowerCase().includes("admin")
-      ) {
-        finalProfile = { 
-          ...finalProfile, 
-          plan: "pro", 
-          name: "Founder / Administrator" 
-        };
-      }
+      const { data: effectivePlan, error: planError } = await supabase.rpc(
+        "get_effective_user_plan",
+      );
+      if (planError) console.error("Unable to load subscription plan:", planError.message);
+      const finalProfile = { plan: typeof effectivePlan === "string" ? effectivePlan : "free", name: session.user.user_metadata?.full_name || "User" };
       
       setProfile(finalProfile);
       setLoading(false);
@@ -751,23 +721,12 @@ export default function AnalystOSMobile() {
 
   // Fetch saved memos / models
   async function fetchSavedMemos(userId: string) {
-    if (userId === "founder-guest-id") {
-      const stored = localStorage.getItem("aos_saved_dcf_models");
-      if (stored) {
-        try {
-          setSavedMemos(JSON.parse(stored));
-        } catch (e) {
-          console.error(e);
-        }
-      }
-    } else {
-      const { data } = await supabase
-        .from("dcf_models")
-        .select("*")
-        .eq("user_id", userId)
-        .order("created_at", { ascending: false });
-      if (data) setSavedMemos(data);
-    }
+    const { data } = await supabase
+      .from("dcf_models")
+      .select("*")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false });
+    if (data) setSavedMemos(data);
   }
 
   const saveDcfModel = async (customName?: string) => {
@@ -793,43 +752,19 @@ export default function AnalystOSMobile() {
       sensitivity_grid: []
     };
 
-    if (user.id === "founder-guest-id") {
-      const stored = localStorage.getItem("aos_saved_dcf_models");
-      let currentModels = [];
-      if (stored) {
-        try {
-          currentModels = JSON.parse(stored);
-        } catch (e) {
-          console.error(e);
-        }
-      }
-      const newModel = {
-        id: Math.random().toString(36).substring(7),
+    const { data, error } = await supabase
+      .from("dcf_models")
+      .insert({
         user_id: user.id,
         name,
         inputs,
-        result,
-        created_at: new Date().toISOString()
-      };
-      const updatedModels = [newModel, ...currentModels];
-      localStorage.setItem("aos_saved_dcf_models", JSON.stringify(updatedModels));
-      setSavedMemos(updatedModels);
-      setSavingModel(false);
-    } else {
-      const { data, error } = await supabase
-        .from("dcf_models")
-        .insert({
-          user_id: user.id,
-          name,
-          inputs,
-          result
-        })
-        .select();
-      if (!error && data) {
-        setSavedMemos(prev => [data[0], ...prev]);
-      }
-      setSavingModel(false);
+        result
+      })
+      .select();
+    if (!error && data) {
+      setSavedMemos(prev => [data[0], ...prev]);
     }
+    setSavingModel(false);
   };
 
   const loadDcfModel = (model: any) => {
@@ -906,43 +841,25 @@ export default function AnalystOSMobile() {
   // Fetch and manage portfolio
   const fetchPortfolio = async (userId: string) => {
     setLoadingPortfolio(true);
-    if (userId === "founder-guest-id") {
-      const stored = localStorage.getItem("aos_portfolio_holdings");
-      if (stored) {
-        try {
-          setPortfolioHoldings(JSON.parse(stored));
-        } catch (e) {
-          console.error(e);
-        }
-      } else {
-        const defaults = [
-          { ticker: "AAPL", shares: 150, average_buy_price: 175.50 },
-          { ticker: "NVDA", shares: 40, average_buy_price: 850.00 }
-        ];
-        localStorage.setItem("aos_portfolio_holdings", JSON.stringify(defaults));
-        setPortfolioHoldings(defaults);
-      }
+    const { data } = await supabase
+      .from("portfolios")
+      .select("*")
+      .eq("user_id", userId);
+    if (data && data.length > 0 && data[0].holdings) {
+      setPortfolioHoldings(data[0].holdings);
     } else {
-      const { data } = await supabase
+      const initialHoldings = [
+        { ticker: "AAPL", shares: 150, average_buy_price: 175.50 },
+        { ticker: "NVDA", shares: 40, average_buy_price: 850.00 }
+      ];
+      await supabase
         .from("portfolios")
-        .select("*")
-        .eq("user_id", userId);
-      if (data && data.length > 0 && data[0].holdings) {
-        setPortfolioHoldings(data[0].holdings);
-      } else {
-        const initialHoldings = [
-          { ticker: "AAPL", shares: 150, average_buy_price: 175.50 },
-          { ticker: "NVDA", shares: 40, average_buy_price: 850.00 }
-        ];
-        await supabase
-          .from("portfolios")
-          .insert({
-            user_id: userId,
-            name: "Hedge Fund Model",
-            holdings: initialHoldings
-          });
-        setPortfolioHoldings(initialHoldings);
-      }
+        .insert({
+          user_id: userId,
+          name: "Hedge Fund Model",
+          holdings: initialHoldings
+        });
+      setPortfolioHoldings(initialHoldings);
     }
     setLoadingPortfolio(false);
   };
@@ -979,17 +896,12 @@ export default function AnalystOSMobile() {
       }
     }
 
-    if (user.id === "founder-guest-id") {
-      localStorage.setItem("aos_portfolio_holdings", JSON.stringify(updated));
+    const { error } = await supabase
+      .from("portfolios")
+      .update({ holdings: updated })
+      .eq("user_id", user.id);
+    if (!error) {
       setPortfolioHoldings(updated);
-    } else {
-      const { error } = await supabase
-        .from("portfolios")
-        .update({ holdings: updated })
-        .eq("user_id", user.id);
-      if (!error) {
-        setPortfolioHoldings(updated);
-      }
     }
     setLoadingPortfolio(false);
   };

@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Resend } from "resend";
 import { createClient } from "@supabase/supabase-js";
+import { errorResponse } from "@/lib/api-utils";
 
 const resendApiKey = process.env.RESEND_API_KEY || "";
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
 const anthropicKey = process.env.ANTHROPIC_API_KEY || "";
 
 export async function GET(req: NextRequest) {
@@ -37,20 +38,40 @@ export async function GET(req: NextRequest) {
     const briefText = data.content[0].text;
 
     // 2. Email Subscribers using Resend (Pro/Analyst plan users)
-    if (resendApiKey && resendApiKey !== "re_your_resend_api_key") {
+    if (resendApiKey && resendApiKey !== "re_your_resend_api_key" && supabaseUrl && supabaseServiceKey) {
       const resend = new Resend(resendApiKey);
       const supabase = createClient(supabaseUrl, supabaseServiceKey);
       
       // Query paid subscriber emails
-      const { data: subscribers } = await supabase
-        .from("profiles")
-        .select("email")
-        .in("plan", ["pro", "analyst"]);
+      const { data: subscribers, error: subscribersError } = await supabase
+        .from("user_plans")
+        .select("user_id")
+        .in("plan", ["pro", "analyst"])
+        .not("user_id", "is", null);
+      if (subscribersError) throw subscribersError;
 
-      if (subscribers && subscribers.length > 0) {
-        const emailList = subscribers.map(s => s.email);
-        
-        await resend.emails.send({
+      const { data: activeSubscriptions, error: subscriptionsError } = await supabase
+        .from("razorpay_subscriptions")
+        .select("user_id")
+        .gt("paid_through", new Date().toISOString());
+      if (subscriptionsError) throw subscriptionsError;
+
+      const subscriberIds = new Set([
+        ...(subscribers || []).map(({ user_id }) => user_id).filter(Boolean),
+        ...(activeSubscriptions || []).map(({ user_id }) => user_id).filter(Boolean),
+      ]);
+
+      if (subscriberIds.size) {
+        const recipients = await Promise.all(
+          [...subscriberIds].map(async (user_id) => {
+            const { data, error } = await supabase.auth.admin.getUserById(user_id);
+            if (error) throw error;
+            return data.user?.email || null;
+          }),
+        );
+        const emailList = [...new Set(recipients.filter((email): email is string => !!email))];
+
+        if (emailList.length) await resend.emails.send({
           from: "briefing@analystos.app",
           to: emailList,
           subject: `AnalystOS Morning Briefing: India Trade Desk`,
@@ -65,14 +86,6 @@ export async function GET(req: NextRequest) {
 
   } catch (err: any) {
     console.error("Morning Brief compilation failed:", err);
-    // Return high-fidelity fallback if there's an API block
-    const fallbackText = 
-      "[MORNING_BRIEF: COMPILATION 8:00 AM IST]\n\n" +
-      "1. domestic indexes: NIFTY 50 ticks high (+0.52%) at 22,850. IT indices lead, followed by strong financial inflows.\n" +
-      "2. sector movers: Reliance launches Blackwell transition studies (+1.8%); TCS logs EBITDA margin expansion to 26.2%.\n" +
-      "3. macro bulletin: Brent crude ticks lower to $81.40, improving domestic trade balances and currency outlooks.\n" +
-      "4. stocks to watch: HDFCBANK comparable comps showing intrinsic upside of +18.4% ahead of Q1 valuations verdict.";
-
-    return NextResponse.json({ content: fallbackText });
+    return errorResponse("Morning Brief is currently unavailable.", 503);
   }
 }

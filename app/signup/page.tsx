@@ -6,7 +6,8 @@ export const dynamic = "force-dynamic";
 import React, { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { supabase } from "@/lib/supabase";
+import { fetchWithAuth, supabase } from "@/lib/supabase";
+import { getAuthErrorMessage, validateSignupInput } from "@/lib/auth-errors";
 import { Shield, Mail, Lock, User, RefreshCw, Sparkles, CheckCircle } from "lucide-react";
 import TickerBar from "@/components/ticker-bar";
 
@@ -17,6 +18,7 @@ function SignupForm() {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [upgradeUser, setUpgradeUser] = useState<{ email?: string } | null>(null);
   const [selectedPlan, setSelectedPlan] = useState<"free" | "pro" | "analyst">("free");
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
@@ -30,39 +32,82 @@ function SignupForm() {
 
   // Sync plan upgrade request if routed with ?upgrade=true
   useEffect(() => {
+    const requestedPlan = searchParams.get("plan");
+    const plan = requestedPlan === "free" || requestedPlan === "pro" || requestedPlan === "analyst"
+      ? requestedPlan
+      : null;
     if (searchParams.get("upgrade") === "true") {
-      setSelectedPlan("pro");
+      setSelectedPlan(plan === "pro" || plan === "analyst" ? plan : "pro");
+    } else if (plan) {
+      setSelectedPlan(plan);
     }
   }, [searchParams]);
 
   // If session is already active, redirect
   useEffect(() => {
+    let active = true;
     async function checkSession() {
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: { session }, error } = await supabase.auth.getSession();
+      if (error) {
+        if (active) setErrorMsg(getAuthErrorMessage(error, "signup"));
+        return;
+      }
       if (session?.user) {
-        router.push("/dashboard");
+        if (searchParams.get("upgrade") === "true") {
+          setUpgradeUser({ email: session.user.email });
+          setEmail(session.user.email || "");
+          setFullName(session.user.user_metadata?.full_name || "");
+          const requestedPlan = searchParams.get("plan");
+          setSelectedPlan(requestedPlan === "analyst" ? "analyst" : "pro");
+        } else {
+          router.replace("/dashboard");
+        }
       }
     }
-    checkSession();
-  }, [router]);
+    void checkSession().catch((error: unknown) => {
+      if (active) setErrorMsg(getAuthErrorMessage(error, "signup"));
+    });
+    return () => {
+      active = false;
+    };
+  }, [router, searchParams]);
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !password || !fullName) return setErrorMsg("All fields are required.");
-    if (password.length < 8) return setErrorMsg("Password must be at least 8 characters.");
+    if (upgradeUser) {
+      if (selectedPlan === "free") {
+        setErrorMsg("Select a paid plan to continue with your upgrade.");
+        return;
+      }
+      setErrorMsg("");
+      setSuccessMsg("✓ Connecting to secure payment node...");
+      setLoading(true);
+      try {
+        await triggerRazorpayPayment(upgradeUser, selectedPlan);
+      } catch (error: unknown) {
+        setErrorMsg(getAuthErrorMessage(error, "signup"));
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
+
+    const validationMessage = validateSignupInput(fullName, email, password);
+    if (validationMessage) return setErrorMsg(validationMessage);
     setErrorMsg("");
     setSuccessMsg("");
     setLoading(true);
 
     try {
-      // 1. Sign up user via Supabase Auth client
       const { data, error } = await supabase.auth.signUp({
-        email,
+        email: email.trim().toLowerCase(),
         password,
         options: {
+          emailRedirectTo: selectedPlan === "free"
+            ? `${window.location.origin}/login`
+            : `${window.location.origin}/login?upgrade=true&plan=${selectedPlan}`,
           data: {
-            full_name: fullName,
-            plan: selectedPlan
+            full_name: fullName.trim(),
           }
         }
       });
@@ -71,100 +116,153 @@ function SignupForm() {
         throw error;
       }
 
-      if (data.user) {
-        // 2. Add profile metadata row inside public.profiles
-        const { error: profileError } = await supabase
-          .from("profiles")
-          .insert([
-            {
-              id: data.user.id,
-              email: email,
-              name: fullName,
-              plan: selectedPlan,
-              questions_used_today: 0,
-              created_at: new Date()
-            }
-          ]);
-
-        if (profileError) {
-          console.warn("DB profile insert warning:", profileError.message);
-        }
-
-        // 3. Paid plan transition handler
-        if (selectedPlan !== "free") {
-          setSuccessMsg("✓ Credentials configured! Connecting payment node...");
-          setTimeout(() => {
-            triggerRazorpayPayment(data.user, selectedPlan);
-          }, 1000);
-        } else {
-          setSuccessMsg("✓ Registration successful! Redirecting to terminal cockpit...");
-          setTimeout(() => {
-            router.push("/dashboard");
-          }, 1500);
-        }
+      if (!data.user) {
+        throw new Error("The authentication provider did not return an account.");
       }
-    } catch (err: any) {
-      setErrorMsg(err.message || "Failed creating credentials node.");
+      if (data.user.identities?.length === 0) {
+        setErrorMsg("An account with this email may already exist. Try signing in instead.");
+        return;
+      }
+      if (!data.session) {
+        setSuccessMsg(
+          selectedPlan === "free"
+            ? "✓ Registration complete. Check your email to confirm your account, then sign in."
+            : `✓ Registration complete. Confirm your email, then sign in to resume your ${selectedPlan.toUpperCase()} checkout.`,
+        );
+        return;
+      }
+
+      if (selectedPlan !== "free") {
+        setSuccessMsg("✓ Credentials configured! Connecting payment node...");
+        await triggerRazorpayPayment(data.user, selectedPlan);
+      } else {
+        setSuccessMsg("✓ Registration successful! Redirecting to terminal cockpit...");
+        window.setTimeout(() => router.replace("/dashboard"), 1500);
+      }
+    } catch (error: unknown) {
+      setErrorMsg(getAuthErrorMessage(error, "signup"));
+    } finally {
       setLoading(false);
     }
   };
 
-  const triggerRazorpayPayment = (user: any, plan: "pro" | "analyst") => {
-    const script = document.createElement("script");
-    script.src = "https://checkout.razorpay.com/v1/checkout.js";
-    script.onload = () => {
-      const options = {
-        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "rzp_test_XXXXXXXXXXXXXXXX",
-        amount: plan === "pro" ? 49900 : 149900,
-        currency: "INR",
-        name: "AnalystOS Terminal",
-        description: `${plan.toUpperCase()} Tier Professional Subscription`,
-        prefill: {
-          email: user.email,
-          name: fullName
-        },
-        theme: {
-          color: "#00f0ff"
-        },
-        handler: async function (response: any) {
-          // Record successful plan state inside Supabase
-          const { error: saveError } = await supabase
-            .from("profiles")
-            .upsert({
-              id: user.id,
-              email: user.email,
-              name: fullName,
-              plan: plan,
-              created_at: new Date()
-            });
+  const triggerRazorpayPayment = async (user: { email?: string }, plan: "pro" | "analyst") => {
+    const key = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
+    if (!key) throw new Error("Payment checkout is not configured.");
 
-          if (saveError) {
-            console.error("Failed to update profile to paid tier:", saveError.message);
-          }
+    const product = plan === "pro" ? "starter_node" : "ai_copilot";
+    const expectedAmount = plan === "pro" ? 250000 : 750000;
+    const orderResponse = await fetchWithAuth("/api/payments", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ product }),
+    });
+    const subscription = await orderResponse.json().catch(() => null);
+    if (!orderResponse.ok) {
+      if (orderResponse.status === 503) {
+        throw new Error("Payment processing is temporarily unavailable.");
+      }
+      throw new Error(subscription?.error || "Unable to create a secure subscription.");
+    }
+    if (
+      typeof subscription?.subscription_id !== "string" ||
+      subscription.product !== product ||
+      subscription.amount !== expectedAmount ||
+      subscription.currency !== "INR"
+    ) {
+      throw new Error("The payment service returned an invalid subscription.");
+    }
 
-          setSuccessMsg(`✓ ${plan.toUpperCase()} plan active. Launching dashboard...`);
-          setTimeout(() => {
-            router.push("/dashboard");
-          }, 1200);
-        },
-        modal: {
-          ondismiss: function () {
-            setSuccessMsg("✓ Profile generated on FREE tier. Upgrade anytime via dashboard.");
-            setTimeout(() => {
-              router.push("/dashboard");
-            }, 2000);
-          }
+    await new Promise<void>((resolve, reject) => {
+      const script = document.createElement("script");
+      script.src = "https://checkout.razorpay.com/v1/checkout.js";
+      script.onload = () => {
+        try {
+          const checkout = new (window as any).Razorpay({
+            key,
+            subscription_id: subscription.subscription_id,
+            name: "AnalystOS Terminal",
+            description: plan === "pro" ? "Starter Node monthly subscription" : "AI Co-Pilot monthly subscription",
+            prefill: { email: user.email, name: fullName.trim() },
+            theme: { color: "#00f0ff" },
+            handler: async (response: {
+              razorpay_subscription_id?: string;
+              razorpay_payment_id?: string;
+              razorpay_signature?: string;
+            }) => {
+              try {
+                if (
+                  response.razorpay_subscription_id !== subscription.subscription_id ||
+                  !response.razorpay_payment_id ||
+                  !response.razorpay_signature
+                ) {
+                  throw new Error("The payment provider returned incomplete verification details.");
+                }
+
+                setSuccessMsg("Authorization received. Waiting for server-confirmed subscription activation...");
+                for (let attempt = 0; attempt < 15; attempt += 1) {
+                  const verificationResponse = await fetchWithAuth("/api/payments/subscriptions/verify", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(response),
+                  });
+                  const verification = await verificationResponse.json().catch(() => null);
+                  if (
+                    verificationResponse.ok &&
+                    verification?.status === "active"
+                  ) {
+                    setSuccessMsg("✓ Subscription payment verified and access is active. Redirecting...");
+                    router.replace("/dashboard");
+                    resolve();
+                    return;
+                  }
+                  if (!verificationResponse.ok) {
+                    throw new Error(
+                      verification?.error || "Unable to verify the subscription. Your plan was not changed.",
+                    );
+                  }
+                  if (verification?.status === "inactive") {
+                    throw new Error(
+                      "The subscription did not activate. Your account remains on its current plan.",
+                    );
+                  }
+
+                  setSuccessMsg(
+                    "Subscription authorization is confirmed. Waiting for the verified billing event...",
+                  );
+                  await new Promise((wait) => window.setTimeout(wait, 2000));
+                }
+
+                setSuccessMsg("");
+                throw new Error(
+                  "Subscription activation is still pending. Your plan has not been changed yet; please check back shortly.",
+                );
+              } catch (error) {
+                reject(error);
+              }
+            },
+            modal: {
+              ondismiss: () => {
+                setSuccessMsg("");
+                reject(
+                  new Error("Checkout was closed before subscription confirmation. Your account remains on its current plan."),
+                );
+              },
+            },
+          });
+          checkout.on("payment.failed", () => {
+            setSuccessMsg("");
+            reject(new Error("Subscription authorization could not be completed. Your account has not been upgraded."));
+            checkout.close();
+          });
+          checkout.open();
+        } catch (error) {
+          reject(error);
         }
       };
-
-      const rzp = new (window as any).Razorpay(options);
-      rzp.open();
-    };
-    script.onerror = () => {
-      setErrorMsg("Failed loading secure Razorpay checkout script.");
-      setLoading(false);
-    };
-    document.body.appendChild(script);
+      script.onerror = () => reject(new Error("Failed to load the secure payment checkout."));
+      document.body.appendChild(script);
+    });
   };
 
   return (
@@ -179,8 +277,12 @@ function SignupForm() {
           </div>
 
           <div className="text-center space-y-1">
-            <h2 className="text-xl font-bold tracking-tight text-white uppercase">Configure Credentials</h2>
-            <p className="text-slate-400 text-xs font-sans">Initialize access nodes and subscription plans.</p>
+            <h2 className="text-xl font-bold tracking-tight text-white uppercase">
+              {upgradeUser ? "Upgrade Subscription" : "Configure Credentials"}
+            </h2>
+            <p className="text-slate-400 text-xs font-sans">
+              {upgradeUser ? "Choose a plan and complete secure payment." : "Initialize access nodes and subscription plans."}
+            </p>
           </div>
 
           {errorMsg && (
@@ -197,23 +299,24 @@ function SignupForm() {
 
           <form onSubmit={handleSignup} className="space-y-4 text-xs">
             
-            {/* Full Name */}
-            <div className="flex flex-col space-y-1.5">
-              <label className="text-slate-400 font-bold uppercase text-[10px]">FULL NAME</label>
-              <div className="flex items-center bg-[#05070a] border border-[#00f0ff]/15 rounded overflow-hidden">
-                <span className="bg-[#0b0f19] px-3 py-2.5 text-slate-500 border-r border-[#00f0ff]/10">
-                  <User className="w-3.5 h-3.5" />
-                </span>
-                <input
-                  type="text"
-                  required
-                  value={fullName}
-                  onChange={e => setFullName(e.target.value)}
-                  placeholder="John Doe"
-                  className="flex-1 bg-transparent px-3 py-2.5 text-white outline-none border-none"
-                />
+            {!upgradeUser && (
+              <div className="flex flex-col space-y-1.5">
+                <label className="text-slate-400 font-bold uppercase text-[10px]">FULL NAME</label>
+                <div className="flex items-center bg-[#05070a] border border-[#00f0ff]/15 rounded overflow-hidden">
+                  <span className="bg-[#0b0f19] px-3 py-2.5 text-slate-500 border-r border-[#00f0ff]/10">
+                    <User className="w-3.5 h-3.5" />
+                  </span>
+                  <input
+                    type="text"
+                    required
+                    value={fullName}
+                    onChange={e => setFullName(e.target.value)}
+                    placeholder="John Doe"
+                    className="flex-1 bg-transparent px-3 py-2.5 text-white outline-none border-none"
+                  />
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Email Address */}
             <div className="flex flex-col space-y-1.5">
@@ -227,29 +330,31 @@ function SignupForm() {
                   required
                   value={email}
                   onChange={e => setEmail(e.target.value)}
+                  readOnly={Boolean(upgradeUser)}
                   placeholder="you@firm.com"
                   className="flex-1 bg-transparent px-3 py-2.5 text-white outline-none border-none"
                 />
               </div>
             </div>
 
-            {/* Password */}
-            <div className="flex flex-col space-y-1.5">
-              <label className="text-slate-400 font-bold uppercase text-[10px]">PASSWORD</label>
-              <div className="flex items-center bg-[#05070a] border border-[#00f0ff]/15 rounded overflow-hidden">
-                <span className="bg-[#0b0f19] px-3 py-2.5 text-slate-500 border-r border-[#00f0ff]/10">
-                  <Lock className="w-3.5 h-3.5" />
-                </span>
-                <input
-                  type="password"
-                  required
-                  value={password}
-                  onChange={e => setPassword(e.target.value)}
-                  placeholder="Min. 8 characters"
-                  className="flex-1 bg-transparent px-3 py-2.5 text-white outline-none border-none"
-                />
+            {!upgradeUser && (
+              <div className="flex flex-col space-y-1.5">
+                <label className="text-slate-400 font-bold uppercase text-[10px]">PASSWORD</label>
+                <div className="flex items-center bg-[#05070a] border border-[#00f0ff]/15 rounded overflow-hidden">
+                  <span className="bg-[#0b0f19] px-3 py-2.5 text-slate-500 border-r border-[#00f0ff]/10">
+                    <Lock className="w-3.5 h-3.5" />
+                  </span>
+                  <input
+                    type="password"
+                    required
+                    value={password}
+                    onChange={e => setPassword(e.target.value)}
+                    placeholder="Min. 8 characters"
+                    className="flex-1 bg-transparent px-3 py-2.5 text-white outline-none border-none"
+                  />
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Subscription Tiers Grid */}
             <div className="flex flex-col space-y-1.5 pt-2">
@@ -257,8 +362,8 @@ function SignupForm() {
               <div className="grid grid-cols-3 gap-2">
                 {[
                   { id: "free", name: "FREE", desc: "₹0/mo", detail: "5 AI/day" },
-                  { id: "pro", name: "PRO", desc: "₹499/mo", detail: "Unlimited AI" },
-                  { id: "analyst", name: "ANALYST", desc: "₹1,499/mo", detail: "Elite Career OS" }
+                  { id: "pro", name: "STARTER NODE", desc: "₹2,500/mo", detail: "Live Recalculations, client database, fundamental screenings" },
+                  { id: "analyst", name: "AI CO-PILOT", desc: "₹7,500/mo", detail: "Flagship terminal, 12ms WebSocket tickers, AI Chat connections" }
                 ].map(opt => (
                   <button
                     key={opt.id}
@@ -282,7 +387,7 @@ function SignupForm() {
             {selectedPlan !== "free" && (
               <div className="bg-[#00f0ff]/10 border border-[#00f0ff]/20 p-3 rounded text-center text-[10px] text-[#00f0ff] flex items-center justify-center space-x-2">
                 <Sparkles className="w-3.5 h-3.5 text-[#00f0ff]" />
-                <span>PAYMENT VIA SECURE RAZORPAY PORTAL AFTER REGISTRATION</span>
+                <span>PAID CHECKOUT AVAILABILITY DEPENDS ON PAYMENT CONFIGURATION</span>
               </div>
             )}
 
@@ -296,18 +401,18 @@ function SignupForm() {
               ) : (
                 <>
                   <Shield className="w-3.5 h-3.5" />
-                  <span>INITIALIZE SUBSCRIBER KEY →</span>
+                  <span>{upgradeUser ? "CONTINUE TO SECURE PAYMENT →" : "INITIALIZE SUBSCRIBER KEY →"}</span>
                 </>
               )}
             </button>
           </form>
 
-          <div className="text-center text-[10px] text-slate-400 font-sans pt-2">
+          {!upgradeUser && <div className="text-center text-[10px] text-slate-400 font-sans pt-2">
             Already configured credentials?{" "}
             <Link href="/login" className="text-[#00f0ff] hover:underline font-mono">
               [LOG_IN]
             </Link>
-          </div>
+          </div>}
         </div>
       </div>
     </div>

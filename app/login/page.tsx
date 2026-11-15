@@ -5,8 +5,21 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import { getAuthErrorMessage, validateLoginInput } from "@/lib/auth-errors";
 import { Shield, Mail, Lock, RefreshCw } from "lucide-react";
 import TickerBar from "@/components/ticker-bar";
+
+function getPostLoginPath(): string {
+  const searchParams = new URLSearchParams(window.location.search);
+  const plan = searchParams.get("plan");
+  if (
+    searchParams.get("upgrade") === "true" &&
+    (plan === "pro" || plan === "analyst")
+  ) {
+    return `/signup?upgrade=true&plan=${plan}`;
+  }
+  return "/dashboard";
+}
 
 export default function LoginPage() {
   const router = useRouter();
@@ -24,38 +37,57 @@ export default function LoginPage() {
 
   // Re-verify if session is already active and redirect
   useEffect(() => {
+    let active = true;
     async function checkSession() {
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: { session }, error } = await supabase.auth.getSession();
+      if (error) {
+        if (active) setErrorMsg(getAuthErrorMessage(error, "login"));
+        return;
+      }
       if (session?.user) {
-        router.push("/dashboard");
+        router.replace(getPostLoginPath());
       }
     }
-    checkSession();
+    void checkSession().catch((error: unknown) => {
+      if (active) setErrorMsg(getAuthErrorMessage(error, "login"));
+    });
+    return () => {
+      active = false;
+    };
   }, [router]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !password) return setErrorMsg("All fields are required.");
+    const validationMessage = validateLoginInput(email, password);
+    if (validationMessage) return setErrorMsg(validationMessage);
     setErrorMsg("");
     setSuccessMsg("");
     setLoading(true);
 
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
-        email,
+        email: email.trim().toLowerCase(),
         password
       });
 
       if (error) {
-        setErrorMsg(error.message);
-      } else {
-        setSuccessMsg("✓ Welcome back. Redirecting to terminal cockpit...");
-        setTimeout(() => {
-          router.push("/dashboard");
-        }, 1200);
+        setErrorMsg(getAuthErrorMessage(error, "login"));
+        return;
       }
-    } catch (err: any) {
-      setErrorMsg(err.message || "Session connection error.");
+      if (!data.session?.user) {
+        setErrorMsg("Sign-in did not create an active session. Please try again.");
+        return;
+      }
+
+      const destination = getPostLoginPath();
+      setSuccessMsg(
+        destination.startsWith("/signup?")
+          ? "✓ Welcome back. Resuming your secure checkout..."
+          : "✓ Welcome back. Redirecting to terminal cockpit...",
+      );
+      window.setTimeout(() => router.replace(destination), 1200);
+    } catch (error: unknown) {
+      setErrorMsg(getAuthErrorMessage(error, "login"));
     } finally {
       setLoading(false);
     }
@@ -63,16 +95,20 @@ export default function LoginPage() {
 
   const handleGoogleSignIn = async () => {
     setErrorMsg("");
+    setSuccessMsg("");
+    setLoading(true);
     try {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
-          redirectTo: `${window.location.origin}/dashboard`
+          redirectTo: `${window.location.origin}${getPostLoginPath()}`
         }
       });
-      if (error) setErrorMsg(error.message);
-    } catch (err: any) {
-      setErrorMsg(err.message || "OAuth connection failed.");
+      if (error) setErrorMsg(getAuthErrorMessage(error, "login"));
+    } catch (error: unknown) {
+      setErrorMsg(getAuthErrorMessage(error, "login"));
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -168,6 +204,7 @@ export default function LoginPage() {
 
           <button
             onClick={handleGoogleSignIn}
+            disabled={loading}
             className="w-full border border-slate-800 hover:border-[#00f0ff] bg-transparent text-slate-300 hover:text-white font-bold py-2.5 rounded text-xs transition-colors"
           >
             CONNECT_GOOGLE_KEY

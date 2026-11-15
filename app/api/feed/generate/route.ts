@@ -1,16 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { getAuthenticatedUser } from "@/lib/auth";
+import { createRateLimiter } from "@/lib/rate-limit";
+import { errorResponse } from "@/lib/api-utils";
 import { formatMarketContext, resolveQuotesFromMessage } from "@/lib/market-data";
 
 type FeedKind = "brief" | "note";
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
-const supabaseServiceKey =
-  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
 const anthropicKey = process.env.ANTHROPIC_API_KEY || "";
 
-const isValidUuid = (id: string) =>
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+const rateLimiter = createRateLimiter({ windowMs: 60 * 1000, maxRequests: 20 });
 
 function fallbackBrief(): string {
   return (
@@ -58,10 +56,20 @@ async function callClaude(system: string, user: string, maxTokens = 550): Promis
 }
 
 export async function POST(req: NextRequest) {
+  // Check rate limit
+  const ip = req.headers.get("x-forwarded-for") || "127.0.0.1";
+  const { allowed } = rateLimiter.check(ip);
+  if (!allowed) return errorResponse("Too Many Requests", 429);
+
+  const authUser = await getAuthenticatedUser(req);
+  if (!authUser) {
+    return errorResponse("Unauthorized", 401);
+  }
+
   try {
     const body = await req.json();
     const kind = (body.kind as FeedKind) || "note";
-    const userId = String(body.userId || "");
+    const userId = authUser.id;
     const symbols: string[] = Array.isArray(body.symbols)
       ? body.symbols.map((s: string) => String(s).trim().toUpperCase()).filter(Boolean).slice(0, 8)
       : [];
@@ -122,30 +130,26 @@ export async function POST(req: NextRequest) {
       created_at: nowIso,
     };
 
-    const canWriteDb = !!(supabaseUrl && supabaseServiceKey && userId && isValidUuid(userId));
-    if (canWriteDb) {
-      const supabase = createClient(supabaseUrl, supabaseServiceKey);
-      const { data, error } = await supabase
-        .from("analyst_feed_items")
-        .insert({
-          user_id: userId,
-          kind,
-          title,
-          symbols,
-          content,
-        })
-        .select("*")
-        .single();
+    const { data, error } = await authUser.db
+      .from("analyst_feed_items")
+      .insert({
+        user_id: userId,
+        kind,
+        title,
+        symbols,
+        content,
+      })
+      .select("*")
+      .single();
 
-      if (!error && data) {
-        return NextResponse.json({ item: data });
-      }
+    if (!error && data) {
+      return NextResponse.json({ item: data, persisted: true });
     }
 
-    return NextResponse.json({ item });
+    console.warn("Feed item could not be persisted:", error?.message);
+    return NextResponse.json({ item, persisted: false });
   } catch (err: any) {
     console.error("Feed generation failed:", err);
     return NextResponse.json({ error: "Failed to generate feed item" }, { status: 500 });
   }
 }
-

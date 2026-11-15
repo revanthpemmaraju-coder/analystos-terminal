@@ -98,38 +98,6 @@ export default function PortfolioPage() {
   // Protect route & Fetch session
   useEffect(() => {
     async function checkAuth() {
-      const isFounder = typeof window !== "undefined" && 
-        (new URLSearchParams(window.location.search).get("founder") === "revanth_gate_pro" || 
-         localStorage.getItem("founder_bypass") === "true");
-
-      if (isFounder) {
-        setUser({ id: "founder-guest-id", email: "founder@analystos.com" });
-        const finalProfile = { plan: "pro", name: "Founder / Administrator" };
-        setProfile(finalProfile);
-        if (typeof window !== "undefined") {
-          localStorage.setItem("founder_bypass", "true");
-        }
-
-        // Fetch existing portfolio holdings from Supabase for founder guest
-        const { data: port } = await supabase
-          .from("portfolios")
-          .select("*")
-          .eq("user_id", "founder-guest-id")
-          .single();
-
-        if (port) {
-          setPortfolioName(port.name);
-          if (port.cash_balance != null) {
-            setCashBalance(Number(port.cash_balance));
-          }
-          if (port.holdings && port.holdings.length > 0) {
-            setHoldings(port.holdings);
-          }
-        }
-        setLoading(false);
-        return;
-      }
-
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
         router.push("/login");
@@ -137,28 +105,11 @@ export default function PortfolioPage() {
       }
       setUser(session.user);
 
-      // Fetch user profile plan details
-      const { data: prof } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", session.user.id)
-        .single();
-      
-      let finalProfile = prof || { plan: "free", name: "User" };
-
-      // Founder Whitelisting Hook
-      if (
-        session.user.email?.toLowerCase().includes("revanth") || 
-        session.user.email?.toLowerCase().includes("founder") || 
-        session.user.email?.toLowerCase().includes("admin")
-      ) {
-        finalProfile = { 
-          ...finalProfile, 
-          plan: "pro", 
-          name: "Founder / Administrator" 
-        };
-      }
-
+      const { data: effectivePlan, error: planError } = await supabase.rpc(
+        "get_effective_user_plan",
+      );
+      if (planError) console.error("Unable to load subscription plan:", planError.message);
+      const finalProfile = { plan: typeof effectivePlan === "string" ? effectivePlan : "free", name: session.user.user_metadata?.full_name || "User" };
       setProfile(finalProfile);
 
       // Fetch existing portfolio holdings from Supabase
