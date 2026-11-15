@@ -1,18 +1,22 @@
 import type { Metadata } from "next";
-import { Inter, Inter_Tight } from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
 import CustomCursor from "@/components/custom-cursor";
 
-const inter = Inter({
+const inter = localFont({
+  src: "./fonts/inter-latin.woff2",
   variable: "--font-inter",
-  subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700"],
+  weight: "300 700",
+  display: "swap",
+  fallback: ["system-ui", "Arial"],
 });
 
-const interTight = Inter_Tight({
+const interTight = localFont({
+  src: "./fonts/inter-tight-latin.woff2",
   variable: "--font-inter-tight",
-  subsets: ["latin"],
-  weight: ["500", "600", "700", "800"],
+  weight: "500 800",
+  display: "swap",
+  fallback: ["system-ui", "Arial"],
 });
 
 export const metadata: Metadata = {
