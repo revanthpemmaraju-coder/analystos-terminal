@@ -1043,38 +1043,37 @@ export default function LandingPage() {
   const [vaultUnlocked, setVaultUnlocked] = useState(false);
   const [vaultLoading, setVaultLoading] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
-  const [waitlistPosition, setWaitlistPosition] = useState<number | null>(null);
-  const [referralCode, setReferralCode] = useState<string | null>(null);
+  const [waitlistError, setWaitlistError] = useState<string | null>(null);
 
   const handleUnlockVault = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!vaultEmail) return;
     setVaultLoading(true);
+    setWaitlistError(null);
     try {
       const res = await fetch("/api/waitlist", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: vaultEmail })
       });
-      const data = await res.json();
-      if (res.ok) {
-        setWaitlistPosition(data.position);
-        setReferralCode(data.referral_code);
-        setVaultUnlocked(true);
-        
-        // Confetti burst!
-        confetti({
-          particleCount: 150,
-          spread: 80,
-          origin: { y: 0.6 }
-        });
-      } else {
-        console.warn("Waitlist API error:", data.error);
-        setVaultUnlocked(true);
+      const data: unknown = await res.json();
+      const errorMessage =
+        typeof data === "object" && data !== null && "error" in data && typeof data.error === "string"
+          ? data.error
+          : "Unable to join the waitlist right now.";
+      if (!res.ok) {
+        setWaitlistError(errorMessage);
+        return;
       }
-    } catch (err) {
-      console.warn("Bypassed database waitlist insert: ", err);
+
       setVaultUnlocked(true);
+      confetti({
+        particleCount: 150,
+        spread: 80,
+        origin: { y: 0.6 }
+      });
+    } catch {
+      setWaitlistError("Unable to reach the waitlist service. Please try again.");
     } finally {
       setVaultLoading(false);
     }
@@ -2239,33 +2238,9 @@ export default function LandingPage() {
                   {vaultUnlocked ? (
                     <div className="text-center py-4 space-y-4 font-sans animate-fade-in">
                       <span className="inline-flex bg-[#34d399]/10 border border-[#34d399]/35 text-[#34d399] font-mono px-3 py-1.5 rounded text-xs font-bold select-all tracking-wide">
-                        ✓ YOU'RE #{waitlistPosition || 248} ON THE WAITLIST
+                        ✓ WAITLIST REGISTRATION CONFIRMED
                       </span>
-                      <p className="text-slate-400 text-xs font-sans">You have successfully activated your credentials and unlocked the Valuation Vault!</p>
-                      
-                      {referralCode && (
-                        <div className="bg-slate-950/80 border border-white/5 rounded-lg p-3 space-y-1.5 mt-2">
-                          <span className="text-[10px] text-slate-500 font-mono block uppercase">Share your referral link to move up:</span>
-                          <div className="flex items-center space-x-2">
-                            <input 
-                              type="text" 
-                              readOnly 
-                              value={`https://analystos-terminal.vercel.app/signup?ref=${referralCode}`}
-                              className="w-full bg-transparent border-none text-[10px] text-[#a78bfa] font-mono select-all outline-none"
-                            />
-                            <button
-                              type="button"
-                              onClick={() => {
-                                navigator.clipboard.writeText(`https://analystos-terminal.vercel.app/signup?ref=${referralCode}`);
-                                confetti({ particleCount: 30, spread: 40 });
-                              }}
-                              className="bg-white/5 hover:bg-white/10 text-white p-1.5 rounded transition-all cursor-none"
-                            >
-                              <Copy className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                        </div>
-                      )}
+                      <p className="text-slate-400 text-xs font-sans">Your email has been added to the AnalystOS waitlist.</p>
                     </div>
                   ) : (
                     <div className="space-y-4">
@@ -2294,6 +2269,11 @@ export default function LandingPage() {
                           required
                           className="w-full bg-slate-950 border border-white/10 rounded-lg px-4 py-3 text-xs text-white placeholder-slate-650 outline-none focus:border-[#a78bfa] transition-colors cursor-none font-mono"
                         />
+                        {waitlistError && (
+                          <p role="alert" className="text-red-400 text-xs">
+                            {waitlistError}
+                          </p>
+                        )}
                         <MagneticButton
                           type="submit"
                           disabled={vaultLoading}

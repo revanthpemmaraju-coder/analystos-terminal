@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { createHmac } from "node:crypto";
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
@@ -371,6 +371,31 @@ test("migration enforces canonical plans, payment idempotency, RLS and atomic ca
   assert.doesNotMatch(migration, /pg_get_constraintdef\(c\.oid,\s*TRUE\)/);
   assert.doesNotMatch(migration, /ADD CONSTRAINT user_plans_valid_plan_ck/);
   assert.doesNotMatch(migration, /UPDATE\s+public\.profiles/);
+});
+
+test("staging migrations bootstrap an empty canonical plan table in order", () => {
+  const migrationDirectory = resolve(root, "supabase/migrations");
+  const migrationFiles = readdirSync(migrationDirectory)
+    .filter((name) => name.endsWith(".sql"))
+    .sort();
+  assert.deepEqual(migrationFiles, [
+    "20261010_auth_profile_security.sql",
+    "20261103_staging_user_plans_baseline.sql",
+    "20261104_razorpay_payment_idempotency.sql",
+    "20261115_razorpay_recurring_subscriptions.sql",
+  ]);
+
+  const baseline = readFileSync(
+    resolve(migrationDirectory, "20261103_staging_user_plans_baseline.sql"),
+    "utf8",
+  );
+  assert.match(baseline, /CREATE TABLE public\.user_plans/);
+  assert.match(baseline, /user_plans_valid_plan_ck/);
+  assert.match(baseline, /user_plans_user_id_unique_idx/);
+  assert.match(baseline, /ALTER TABLE public\.user_plans ENABLE ROW LEVEL SECURITY/);
+  assert.match(baseline, /CREATE POLICY "own plan"[\s\S]+TO authenticated/);
+  assert.match(baseline, /REVOKE ALL PRIVILEGES[\s\S]+FROM PUBLIC, anon, authenticated, service_role/);
+  assert.doesNotMatch(baseline, /^\s*(?:INSERT|UPDATE|DELETE)\s+/im);
 });
 
 test("checkout requires a verified user and derives all price fields server-side", () => {

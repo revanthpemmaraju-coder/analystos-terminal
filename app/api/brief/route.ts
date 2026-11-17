@@ -3,12 +3,12 @@ import { Resend } from "resend";
 import { createClient } from "@supabase/supabase-js";
 import { errorResponse } from "@/lib/api-utils";
 
-const resendApiKey = process.env.RESEND_API_KEY || "";
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
-const anthropicKey = process.env.ANTHROPIC_API_KEY || "";
-
 export async function GET(req: NextRequest) {
+  const resendApiKey = process.env.RESEND_API_KEY || "";
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
+  const anthropicKey = process.env.ANTHROPIC_API_KEY || "";
+
   try {
     // 1. Generate Brief Content utilizing Claude Sonnet
     if (!anthropicKey || anthropicKey === "your-api-key-here") {
@@ -38,9 +38,18 @@ export async function GET(req: NextRequest) {
     const briefText = data.content[0].text;
 
     // 2. Email Subscribers using Resend (Pro/Analyst plan users)
-    if (resendApiKey && resendApiKey !== "re_your_resend_api_key" && supabaseUrl && supabaseServiceKey) {
+    const shouldSendEmail = resendApiKey && resendApiKey !== "re_your_resend_api_key";
+    if (shouldSendEmail && (!supabaseUrl || !supabaseServiceKey)) {
+      console.error(
+        "Brief email delivery requires NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY.",
+      );
+    }
+
+    if (shouldSendEmail && supabaseUrl && supabaseServiceKey) {
       const resend = new Resend(resendApiKey);
-      const supabase = createClient(supabaseUrl, supabaseServiceKey);
+      const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+        auth: { autoRefreshToken: false, persistSession: false },
+      });
       
       // Query paid subscriber emails
       const { data: subscribers, error: subscribersError } = await supabase

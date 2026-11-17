@@ -1,80 +1,112 @@
-import { NextResponse } from "next/server";
-import { supabase } from "@/lib/supabase";
+import { createClient } from "@supabase/supabase-js";
+import { NextRequest, NextResponse } from "next/server";
+import { errorResponse } from "@/lib/api-utils";
+import { createRateLimiter } from "@/lib/rate-limit";
 
-export async function POST(request: Request) {
+const rateLimiter = createRateLimiter({ windowMs: 60 * 1000, maxRequests: 5 });
+
+export async function POST(request: NextRequest) {
+  const ip = request.headers.get("x-forwarded-for") || "127.0.0.1";
+  const { allowed } = rateLimiter.check(ip);
+  if (!allowed) return errorResponse("Too Many Requests", 429);
+
+  let body: unknown;
   try {
-    const body = await request.json();
-    const { email } = body;
+    body = await request.json();
+  } catch {
+    return errorResponse("Invalid request body.", 400);
+  }
 
-    // Validate email presence and format
-    if (!email || typeof email !== "string") {
-      return NextResponse.json(
-        { error: "Email is required" },
-        { status: 400 }
-      );
-    }
+  if (typeof body !== "object" || body === null || !("email" in body)) {
+    return errorResponse("Email is required.", 400);
+  }
 
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email.trim())) {
-      return NextResponse.json(
-        { error: "Please enter a valid email address" },
-        { status: 400 }
-      );
-    }
+  const email = body.email;
+  if (typeof email !== "string" || !email.trim()) {
+    return errorResponse("Email is required.", 400);
+  }
 
-    const sanitizedEmail = email.trim().toLowerCase();
+  const sanitizedEmail = email.trim().toLowerCase();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(sanitizedEmail)) {
+    return errorResponse("Please enter a valid email address.", 400);
+  }
 
-    // Check if the user is already on the waitlist
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!supabaseUrl || !serviceRoleKey) {
+    console.error(
+      "Waitlist API requires NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY.",
+    );
+    return NextResponse.json(
+      { error: "The waitlist is temporarily unavailable." },
+      { status: 503 },
+    );
+  }
+
+  try {
+    const supabase = createClient(supabaseUrl, serviceRoleKey, {
+      auth: { autoRefreshToken: false, persistSession: false },
+    });
+
     const { data: existingUser, error: fetchError } = await supabase
       .from("waitlist")
-      .select("position, referral_code")
+      .select("email")
       .eq("email", sanitizedEmail)
       .maybeSingle();
 
+    if (fetchError) {
+      console.error("Waitlist lookup failed:", fetchError.code);
+      return NextResponse.json(
+        { error: "Unable to verify waitlist registration." },
+        { status: 503 },
+      );
+    }
+
     if (existingUser) {
       return NextResponse.json({
-        position: existingUser.position,
-        referral_code: existingUser.referral_code,
-        message: "You are already on the waitlist!",
-        isNew: false
+        message: "You are already on the waitlist.",
+        isNew: false,
       });
     }
 
-    // Insert new user to the waitlist
-    const { data: newUser, error: insertError } = await supabase
+    const { error: insertError } = await supabase
       .from("waitlist")
-      .insert([{ email: sanitizedEmail }])
-      .select("position, referral_code")
-      .single();
+      .insert({ email: sanitizedEmail });
+
+    if (insertError?.code === "23505") {
+      const { data: duplicate, error: duplicateError } = await supabase
+        .from("waitlist")
+        .select("email")
+        .eq("email", sanitizedEmail)
+        .maybeSingle();
+      if (!duplicateError && duplicate) {
+        return NextResponse.json({
+          message: "You are already on the waitlist.",
+          isNew: false,
+        });
+      }
+    }
 
     if (insertError) {
-      // If table doesn't exist yet, gracefully fall back to a simulator position so the UI doesn't crash
-      console.error("Supabase insert error, falling back to simulated position:", insertError.message);
-      
-      // Calculate a deterministic fallback position based on email length
-      const fallbackPosition = 120 + (sanitizedEmail.length % 50);
-      const simulatedReferralCode = Math.random().toString(36).substring(2, 15);
-      
-      return NextResponse.json({
-        position: fallbackPosition,
-        referral_code: simulatedReferralCode,
-        message: "Successfully joined waitlist (Simulated fallback)!",
-        isNew: true
-      });
+      console.error("Waitlist insert failed:", insertError.code);
+      return NextResponse.json(
+        { error: "Unable to save waitlist registration." },
+        { status: 503 },
+      );
     }
 
     return NextResponse.json({
-      position: newUser.position,
-      referral_code: newUser.referral_code,
-      message: "Successfully joined waitlist!",
-      isNew: true
+      message: "Successfully joined the waitlist.",
+      isNew: true,
     });
-
-  } catch (err: any) {
-    console.error("Waitlist API unexpected error:", err);
+  } catch (error) {
+    console.error(
+      "Waitlist request failed:",
+      error instanceof Error ? error.name : "Unknown server error.",
+    );
     return NextResponse.json(
-      { error: "An unexpected error occurred. Please try again." },
-      { status: 500 }
+      { error: "The waitlist is temporarily unavailable." },
+      { status: 503 },
     );
   }
 }

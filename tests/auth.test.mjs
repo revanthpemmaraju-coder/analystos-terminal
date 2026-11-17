@@ -13,6 +13,27 @@ import { getLimit } from "../lib/entitlements.ts";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
+test("Supabase public config is resolved lazily by the shared client", async () => {
+  const originalUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const originalAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  delete process.env.NEXT_PUBLIC_SUPABASE_URL;
+  delete process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+  try {
+    const { getSupabasePublicConfig } = await import("../lib/supabase-config.ts?no-runtime-config");
+    assert.throws(getSupabasePublicConfig, /Supabase public credentials are missing/);
+    const supabase = readFileSync(resolve(root, "lib/supabase.ts"), "utf8");
+    assert.match(supabase, /export function getSupabaseClient\(\)/);
+    assert.match(supabase, /client = createClient\(/);
+    assert.doesNotMatch(supabase, /(?:const|let)\s+supabase\s*=\s*createClient\(/);
+  } finally {
+    if (originalUrl === undefined) delete process.env.NEXT_PUBLIC_SUPABASE_URL;
+    else process.env.NEXT_PUBLIC_SUPABASE_URL = originalUrl;
+    if (originalAnonKey === undefined) delete process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    else process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = originalAnonKey;
+  }
+});
+
 test("bearer parsing rejects absent, malformed, and empty credentials", () => {
   assert.equal(getBearerToken(null), null);
   assert.equal(getBearerToken(""), null);
@@ -163,6 +184,17 @@ test("the retired profile migration cannot recreate duplicate entitlement state"
   const migration = readFileSync(resolve(root, "supabase/migrations/20261010_auth_profile_security.sql"), "utf8");
   assert.match(migration, /RETIRED/);
   assert.doesNotMatch(migration, /^\s*CREATE\s+(?:TABLE|OR REPLACE FUNCTION)/im);
+});
+
+test("waitlist failures are explicit and cannot produce simulated success", () => {
+  const route = readFileSync(resolve(root, "app/api/waitlist/route.ts"), "utf8");
+  const page = readFileSync(resolve(root, "app/page.tsx"), "utf8");
+  assert.match(route, /SUPABASE_SERVICE_ROLE_KEY/);
+  assert.doesNotMatch(route, /simulat|fallbackPosition|Math\.random/i);
+  assert.match(route, /status:\s*503/);
+  assert.match(page, /if \(!res\.ok\) \{\s*setWaitlistError\(errorMessage\);\s*return;/);
+  assert.match(page, /catch \{\s*setWaitlistError\(/);
+  assert.doesNotMatch(page, /waitlistPosition \|\| 248/);
 });
 
 test("subscription checks use the server-derived effective entitlement", () => {

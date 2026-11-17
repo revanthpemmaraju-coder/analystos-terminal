@@ -1,23 +1,33 @@
-import { createClient } from "@supabase/supabase-js";
-import { fetchWithAccessToken } from "@/lib/auth-utils";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { fetchWithAccessToken } from "./auth-utils";
+import { getSupabasePublicConfig } from "./supabase-config";
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
+let client: SupabaseClient | undefined;
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.warn("Supabase public credentials missing in environment variables.");
+export function getSupabaseClient(): SupabaseClient {
+  if (!client) {
+    const { supabaseUrl, supabaseAnonKey } = getSupabasePublicConfig();
+    client = createClient(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        autoRefreshToken: true,
+        persistSession: true,
+        detectSessionInUrl: true,
+      },
+    });
+  }
+  return client;
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    autoRefreshToken: true,
-    persistSession: true,
-    detectSessionInUrl: true,
+export const supabase = new Proxy({} as SupabaseClient, {
+  get(_target, property) {
+    const client = getSupabaseClient();
+    const value = Reflect.get(client, property, client);
+    return typeof value === "function" ? value.bind(client) : value;
   },
 });
 
 export async function fetchWithAuth(input: RequestInfo | URL, init: RequestInit = {}): Promise<Response> {
-  const { data, error } = await supabase.auth.getSession();
+  const { data, error } = await getSupabaseClient().auth.getSession();
   if (error) throw error;
 
   return fetchWithAccessToken(

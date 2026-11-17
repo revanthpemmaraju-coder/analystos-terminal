@@ -1,0 +1,8 @@
+-- RETIRED: do not apply this profile-based migration.
+-- AnalystOS uses public.user_plans as its sole subscription source.
+-- Its previous implementation created public.profiles and stored duplicate plan
+-- and AI quota state. The reviewed replacement is
+-- 20261104_razorpay_payment_idempotency.sql.
+--
+-- This file is intentionally a no-op so migration runners cannot recreate
+-- profile-backed entitlements. Review migration history before using db push.

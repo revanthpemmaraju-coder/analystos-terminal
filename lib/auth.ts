@@ -2,9 +2,7 @@ import type { NextRequest } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { getBearerToken } from '@/lib/auth-utils';
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+import { getSupabasePublicConfig } from './supabase-config';
 
 export type AuthenticatedUser = {
   id: string;
@@ -14,9 +12,10 @@ export type AuthenticatedUser = {
 };
 
 export const getSupabaseClient = (token: string) => {
-  if (!supabaseUrl || !supabaseAnonKey || !token) {
-    throw new Error('Supabase user client requires the public URL, anon key, and an access token.');
+  if (!token) {
+    throw new Error('Supabase user client requires an access token.');
   }
+  const { supabaseUrl, supabaseAnonKey } = getSupabasePublicConfig();
 
   return createClient(supabaseUrl, supabaseAnonKey, {
     auth: {
