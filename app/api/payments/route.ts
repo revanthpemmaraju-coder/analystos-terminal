@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { getRazorpayClient } from "@/lib/razorpay";
+import { getRazorpayClient, getRazorpayErrorDetails } from "@/lib/razorpay";
 import { getAuthenticatedUser } from "@/lib/auth";
 import { createRateLimiter } from "@/lib/rate-limit";
 import { errorResponse } from "@/lib/api-utils";
@@ -181,10 +181,10 @@ export async function POST(req: NextRequest) {
       currency: productConfig.currency,
       product,
     });
-  } catch (error) {
+  } catch (error: unknown) {
     console.error(
-      "Razorpay subscription creation failed:",
-      error instanceof Error ? error.message : "Unknown subscription provider error.",
+      "[RAZORPAY_SUBSCRIPTION_ERROR]",
+      getRazorpayErrorDetails(error),
     );
     return errorResponse("Unable to create a subscription.", 503);
   }

@@ -19,6 +19,7 @@ import {
   SubscriptionValidationError,
   verifySubscriptionSignature,
 } from "../lib/razorpay-subscriptions.ts";
+import { getRazorpayErrorDetails } from "../lib/razorpay.ts";
 
 const userId = "9a7b6c5d-4e3f-2a1b-8c7d-6e5f4a3b2c1d";
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -38,6 +39,37 @@ const payload = {
     },
   },
 };
+
+test("Razorpay subscription error logs expose normalized provider diagnostics only", () => {
+  const details = getRazorpayErrorDetails({
+    statusCode: 400,
+    error: {
+      code: "BAD_REQUEST_ERROR",
+      description: "The selected plan is invalid.",
+      source: "business",
+      step: "subscription_create",
+      reason: "invalid_plan",
+      metadata: { credential: "must-not-be-logged" },
+    },
+    config: { headers: { Authorization: "must-not-be-logged" } },
+  });
+
+  assert.deepEqual(details, {
+    statusCode: 400,
+    code: "BAD_REQUEST_ERROR",
+    description: "The selected plan is invalid.",
+    source: "business",
+    step: "subscription_create",
+    reason: "invalid_plan",
+  });
+
+  const fallback = getRazorpayErrorDetails(
+    new Error("Unable to reach Razorpay."),
+  );
+  assert.equal(fallback.name, "Error");
+  assert.equal(fallback.message, "Unable to reach Razorpay.");
+  assert.equal(getRazorpayErrorDetails({ toString: "not callable" }).message, undefined);
+});
 
 function storedOrder(overrides = {}) {
   return {
