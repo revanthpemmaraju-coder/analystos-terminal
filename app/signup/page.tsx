@@ -139,8 +139,12 @@ function SignupForm() {
         setSuccessMsg("✓ Registration successful! Redirecting to terminal cockpit...");
         window.setTimeout(() => router.replace("/dashboard"), 1500);
       }
-    } catch (error: unknown) {
-      setErrorMsg(getAuthErrorMessage(error, "signup"));
+    
+} catch (error: unknown) {
+  console.error("[SIGNUP_ERROR]", error);
+  setErrorMsg(
+    error instanceof Error ? error.message : String(error)
+  );
     } finally {
       setLoading(false);
     }
