@@ -109,6 +109,7 @@ export async function POST(req: NextRequest) {
     return errorResponse("The selected Razorpay subscription plan is not configured.", 503);
   }
 
+  let stage: "plan_fetch" | "subscription_create" = "plan_fetch";
   try {
     const razorpay = getRazorpayClient();
     const providerPlan = await razorpay.plans.fetch(planId);
@@ -119,10 +120,27 @@ export async function POST(req: NextRequest) {
       providerPlan.item.amount !== productConfig.amount ||
       providerPlan.item.currency !== productConfig.currency
     ) {
-      console.error("Razorpay plan configuration does not match the selected product.");
+      console.error("Razorpay plan configuration does not match the selected product.", {
+        product,
+        planId,
+        expected: {
+          period: "monthly",
+          interval: 1,
+          amount: productConfig.amount,
+          currency: productConfig.currency,
+        },
+        received: {
+          id: providerPlan.id,
+          period: providerPlan.period,
+          interval: providerPlan.interval,
+          amount: providerPlan.item.amount,
+          currency: providerPlan.item.currency,
+        },
+      });
       return errorResponse("The selected subscription plan is not configured correctly.", 503);
     }
 
+    stage = "subscription_create";
     const subscription = await razorpay.subscriptions.create({
       plan_id: planId,
       total_count: SUBSCRIPTION_CYCLE_COUNT,
@@ -184,7 +202,12 @@ export async function POST(req: NextRequest) {
   } catch (error: unknown) {
     console.error(
       "[RAZORPAY_SUBSCRIPTION_ERROR]",
-      getRazorpayErrorDetails(error),
+      JSON.stringify({
+        stage,
+        product,
+        planId,
+        ...getRazorpayErrorDetails(error),
+      }),
     );
     return errorResponse("Unable to create a subscription.", 503);
   }

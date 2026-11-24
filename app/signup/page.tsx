@@ -85,6 +85,7 @@ function SignupForm() {
       try {
         await triggerRazorpayPayment(upgradeUser, selectedPlan);
       } catch (error: unknown) {
+        setSuccessMsg("");
         setErrorMsg(getAuthErrorMessage(error, "signup"));
       } finally {
         setLoading(false);
@@ -139,12 +140,12 @@ function SignupForm() {
         setSuccessMsg("✓ Registration successful! Redirecting to terminal cockpit...");
         window.setTimeout(() => router.replace("/dashboard"), 1500);
       }
-    
-} catch (error: unknown) {
-  console.error("[SIGNUP_ERROR]", error);
-  setErrorMsg(
-    error instanceof Error ? error.message : String(error)
-  );
+    } catch (error: unknown) {
+      setSuccessMsg("");
+      console.error("[SIGNUP_ERROR]", error);
+      setErrorMsg(
+        error instanceof Error ? error.message : String(error)
+      );
     } finally {
       setLoading(false);
     }
