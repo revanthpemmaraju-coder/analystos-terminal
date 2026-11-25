@@ -2069,6 +2069,7 @@ export default function LandingPage() {
                     </thead>
                     <tbody>
                       {[
+                        { name: "Monthly price", core: "₹0", pro: "₹2,500", ent: "₹7,500" },
                         { name: "Live DCF recals", core: "Yes", pro: "Yes", ent: "Yes" },
                         { name: "NSE Websocket data", core: "Static", pro: "12ms Live", ent: "Dedicated 8ms" },
                         { name: "AI Co-pilot chats", core: "Limited", pro: "Unlimited", ent: "Unlimited + Fine-tuned" },
