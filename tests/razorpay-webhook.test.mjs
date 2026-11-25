@@ -569,17 +569,87 @@ test("subscription callback signature verifies payment_id|subscription_id", () =
   assert.equal(verifySubscriptionSignature("pay_bad", subscriptionId, signature, secret), false);
 });
 
-test("browser callback verification cannot write entitlements", () => {
+test("browser callback verification only activates through the hardened subscription RPC", () => {
   const route = readFileSync(
     resolve(root, "app/api/payments/subscriptions/verify/route.ts"),
     "utf8",
   );
+  // Authenticated, signature-verified, and ownership-bound to the caller.
   assert.match(route, /getAuthenticatedUser\(req\)/);
   assert.match(route, /verifySubscriptionSignature/);
   assert.match(route, /\.eq\("user_id", authUser\.id\)/);
+  // The provider subscription/plan/payment are re-fetched and validated.
+  assert.match(route, /validateProviderSubscription/);
+  // Activation is persisted only through the same idempotent SECURITY DEFINER RPC
+  // the webhook uses; the browser endpoint never writes tables directly.
+  assert.match(route, /record_razorpay_subscription_event/);
+  assert.match(route, /p_event_id:/);
+  assert.match(route, /p_payment_id:/);
+  // Supabase table writes are forbidden (the createHash().update() string arg is
+  // not an object write and is intentionally allowed).
+  assert.doesNotMatch(route, /\.update\(\s*\{/);
+  assert.doesNotMatch(route, /\.insert\(/);
+  assert.doesNotMatch(route, /\.upsert\(/);
+  // No browser-supplied plan, amount, or user id is trusted for the write.
+  assert.doesNotMatch(route, /body\.plan|body\.amount|body\.user_id/);
+  // The authoritative paid-through is read back after activation.
   assert.match(route, /stored\.paid_through/);
-  assert.doesNotMatch(route, /\.rpc\(/);
-  assert.doesNotMatch(route, /\.update\(/);
+});
+
+test("verify callback activates a paid subscription instead of leaving it on FREE", () => {
+  const route = readFileSync(
+    resolve(root, "app/api/payments/subscriptions/verify/route.ts"),
+    "utf8",
+  );
+  // Only a captured payment with a confirmed billing period advances access.
+  assert.match(route, /providerPayment\.status === "captured"/);
+  assert.match(route, /providerState\.currentEnd/);
+  // Deterministic, idempotent event id so a later real webhook is a no-op.
+  assert.match(route, /createHash\("sha256"\)/);
+  assert.match(route, /p_event_type:\s*"subscription\.charged"/);
+  // The freshly written paid-through is read back and drives the response.
+  assert.match(route, /paidThrough = refreshed\.paid_through/);
+  assert.match(route, /Date\.parse\(paidThrough\) > Date\.now\(\)/);
+});
+
+test("recurring activation is idempotent across webhook retries for one payment", async () => {
+  const seenEvents = new Set();
+  const seenPayments = new Set();
+  let grants = 0;
+  const recordEvent = async (event) => {
+    if (seenEvents.has(event.eventId)) return "duplicate";
+    if (event.paymentId) {
+      if (seenPayments.has(event.paymentId)) return "duplicate";
+      seenPayments.add(event.paymentId);
+      grants += 1;
+    }
+    seenEvents.add(event.eventId);
+    return "recorded";
+  };
+  const dependencies = {
+    getStoredSubscription: async () => subscriptionRow,
+    fetchProviderSubscription: async () => providerSubscription(),
+    fetchProviderPayment: async () => ({
+      id: "pay_subscription123",
+      subscription_id: "sub_test123",
+      amount: 250000,
+      currency: "INR",
+      status: "captured",
+      captured: true,
+    }),
+    recordEvent,
+  };
+
+  assert.equal(
+    await processSubscriptionWebhook(subscriptionWebhook("subscription.charged"), dependencies),
+    "recorded",
+  );
+  // A retried delivery of the same event is a no-op and grants access only once.
+  assert.equal(
+    await processSubscriptionWebhook(subscriptionWebhook("subscription.charged"), dependencies),
+    "duplicate",
+  );
+  assert.equal(grants, 1);
 });
 
 test("subscription webhook duplicate delivery records payment access only once", async () => {
