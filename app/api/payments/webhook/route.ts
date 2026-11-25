@@ -17,6 +17,22 @@ import {
   type StoredRazorpaySubscription,
 } from "@/lib/razorpay-subscriptions";
 
+// Log-only helper: safely digs the subscription entity id out of a webhook
+// payload for observability. The value is never trusted for writes; the
+// authoritative id comes from the provider re-fetch inside
+// processSubscriptionWebhook.
+function extractSubscriptionId(payload: unknown): string | null {
+  if (typeof payload !== "object" || payload === null) return null;
+  const data = (payload as { payload?: unknown }).payload;
+  if (typeof data !== "object" || data === null) return null;
+  const subscription = (data as { subscription?: unknown }).subscription;
+  if (typeof subscription !== "object" || subscription === null) return null;
+  const entity = (subscription as { entity?: unknown }).entity;
+  if (typeof entity !== "object" || entity === null) return null;
+  const id = (entity as { id?: unknown }).id;
+  return typeof id === "string" ? id : null;
+}
+
 export async function POST(req: NextRequest) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
@@ -158,6 +174,22 @@ export async function POST(req: NextRequest) {
             return data;
           },
         });
+    const logEvent =
+      typeof parsedPayload === "object" && parsedPayload !== null && "event" in parsedPayload
+        ? (parsedPayload as { event?: unknown }).event
+        : null;
+    const logSubscriptionId =
+      typeof logEvent === "string" && logEvent.startsWith("subscription.")
+        ? extractSubscriptionId(parsedPayload)
+        : null;
+    console.info(
+      "[RAZORPAY_WEBHOOK_OK]",
+      JSON.stringify({
+        event: typeof logEvent === "string" ? logEvent : "payment.captured",
+        subscriptionId: logSubscriptionId,
+        result,
+      }),
+    );
     return NextResponse.json({ status: result });
   } catch (error) {
     if (
