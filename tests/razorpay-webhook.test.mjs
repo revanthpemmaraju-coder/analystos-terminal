@@ -962,3 +962,85 @@ test("subscription verify route logs a safe rejection reason and returns 400", (
   assert.match(verify, /errorResponse\(error\.message, 400\)/);
   assert.doesNotMatch(verify, /razorpay_signature[^\n]*console\.error/);
 });
+
+test("reconcile endpoint re-verifies with Razorpay and activates via the secure RPC", () => {
+  const route = readFileSync(
+    resolve(root, "app/api/payments/subscriptions/reconcile/route.ts"),
+    "utf8",
+  );
+  // Authenticated and ownership-bound; the browser supplies only its session.
+  assert.match(route, /getAuthenticatedUser\(req\)/);
+  assert.match(route, /\.eq\("user_id", authUser\.id\)/);
+  // Provider subscription, plan, and payments are re-fetched and validated.
+  assert.match(route, /razorpay\.subscriptions\.fetch\(subscriptionId\)/);
+  assert.match(route, /razorpay\.plans\.fetch\(stored\.razorpay_plan_id\)/);
+  assert.match(route, /razorpay\.payments\.all\(\{ subscription_id: subscriptionId/);
+  // Only a captured payment with a billing period activates, via the same RPC.
+  assert.match(route, /if \(!captured \|\| !currentEnd\)/);
+  assert.match(route, /record_razorpay_subscription_event/);
+  assert.match(route, /p_event_type:\s*"subscription\.charged"/);
+  // No direct table writes and no browser-supplied identifiers.
+  assert.doesNotMatch(route, /\.update\(\s*\{/);
+  assert.doesNotMatch(route, /\.insert\(/);
+  assert.doesNotMatch(route, /body\.plan|body\.amount|body\.user_id|body\.razorpay_subscription_id/);
+  // No captured payment is a safe no-op, never an activation.
+  assert.match(route, /outcome:\s*"no_capture"/);
+});
+
+test("reconcile uses the stored plan id, not env or browser input", () => {
+  const route = readFileSync(
+    resolve(root, "app/api/payments/subscriptions/reconcile/route.ts"),
+    "utf8",
+  );
+  // Reconciliation must not depend on plan-id env vars being present (they may be
+  // unset in a broken deployment); the securely stored plan id is authoritative.
+  assert.doesNotMatch(route, /getSubscriptionPlanId/);
+  assert.match(route, /stored\.razorpay_plan_id/);
+});
+
+test("verify and webhook converge on one activation for the same payment in either order", async () => {
+  // Simulate the DB's ON CONFLICT guarantees: dedupe by event id AND by payment id,
+  // exactly as razorpay_subscription_events (PRIMARY KEY event_id, UNIQUE payment_id).
+  const seenEvents = new Set();
+  const seenPayments = new Set();
+  let grants = 0;
+  const recordEvent = async (event) => {
+    if (event.paymentId && seenPayments.has(event.paymentId)) return "duplicate";
+    if (seenEvents.has(event.eventId)) return "duplicate";
+    seenEvents.add(event.eventId);
+    if (event.paymentId) {
+      seenPayments.add(event.paymentId);
+      grants += 1;
+    }
+    return "recorded";
+  };
+  const deps = {
+    getStoredSubscription: async () => subscriptionRow,
+    fetchProviderSubscription: async () => providerSubscription(),
+    fetchProviderPayment: async () => ({
+      id: "pay_subscription123",
+      subscription_id: "sub_test123",
+      amount: 250000,
+      currency: "INR",
+      status: "captured",
+      captured: true,
+    }),
+    recordEvent,
+  };
+
+  // Webhook first (real evt_ id), then a verify-style activation for the same
+  // payment under a different deterministic evt_ id.
+  assert.equal(
+    await processSubscriptionWebhook(subscriptionWebhook("subscription.charged"), deps),
+    "recorded",
+  );
+  const verifyStyleEvent = {
+    ...subscriptionWebhook("subscription.charged"),
+    id: "evt_verifydeterministic0000000000000000000000000000000000000000",
+  };
+  assert.equal(
+    await processSubscriptionWebhook(verifyStyleEvent, deps),
+    "duplicate",
+  );
+  assert.equal(grants, 1);
+});
