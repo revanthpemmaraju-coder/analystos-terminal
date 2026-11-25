@@ -3,7 +3,7 @@
 
 export const dynamic = "force-dynamic";
 
-import React, { useState, useEffect, Suspense } from "react";
+import React, { useState, useEffect, useRef, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { fetchWithAuth, supabase } from "@/lib/supabase";
@@ -23,6 +23,7 @@ function SignupForm() {
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
+  const checkoutInFlight = useRef(false);
 
   // Restore native cursor (landing page hides it globally via cursor: none)
   useEffect(() => {
@@ -152,122 +153,141 @@ function SignupForm() {
   };
 
   const triggerRazorpayPayment = async (user: { email?: string }, plan: "pro" | "analyst") => {
+    if (checkoutInFlight.current) return;
     const key = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
     if (!key) throw new Error("Payment checkout is not configured.");
 
     const product = plan === "pro" ? "starter_node" : "ai_copilot";
     const expectedAmount = plan === "pro" ? 250000 : 750000;
-    const orderResponse = await fetchWithAuth("/api/payments", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ product }),
-    });
-    const subscription = await orderResponse.json().catch(() => null);
-    if (!orderResponse.ok) {
-      if (orderResponse.status === 503) {
-        throw new Error("Payment processing is temporarily unavailable.");
+    checkoutInFlight.current = true;
+    try {
+      const orderResponse = await fetchWithAuth("/api/payments", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ product }),
+      });
+      const subscription = await orderResponse.json().catch(() => null);
+      if (!orderResponse.ok) {
+        throw new Error(
+          subscription?.error ||
+            (orderResponse.status === 503
+              ? "Payment processing is temporarily unavailable."
+              : "Unable to create a secure subscription."),
+        );
       }
-      throw new Error(subscription?.error || "Unable to create a secure subscription.");
-    }
-    if (
-      typeof subscription?.subscription_id !== "string" ||
-      subscription.product !== product ||
-      subscription.amount !== expectedAmount ||
-      subscription.currency !== "INR"
-    ) {
-      throw new Error("The payment service returned an invalid subscription.");
-    }
+      if (
+        typeof subscription?.subscription_id !== "string" ||
+        subscription.product !== product ||
+        subscription.amount !== expectedAmount ||
+        subscription.currency !== "INR"
+      ) {
+        throw new Error("The payment service returned an invalid subscription.");
+      }
 
-    await new Promise<void>((resolve, reject) => {
-      const script = document.createElement("script");
-      script.src = "https://checkout.razorpay.com/v1/checkout.js";
-      script.onload = () => {
-        try {
-          const checkout = new (window as any).Razorpay({
-            key,
-            subscription_id: subscription.subscription_id,
-            name: "AnalystOS Terminal",
-            description: plan === "pro" ? "Starter Node monthly subscription" : "AI Co-Pilot monthly subscription",
-            prefill: { email: user.email, name: fullName.trim() },
-            theme: { color: "#00f0ff" },
-            handler: async (response: {
-              razorpay_subscription_id?: string;
-              razorpay_payment_id?: string;
-              razorpay_signature?: string;
-            }) => {
-              try {
-                if (
-                  response.razorpay_subscription_id !== subscription.subscription_id ||
-                  !response.razorpay_payment_id ||
-                  !response.razorpay_signature
-                ) {
-                  throw new Error("The payment provider returned incomplete verification details.");
-                }
-
-                setSuccessMsg("Authorization received. Waiting for server-confirmed subscription activation...");
-                for (let attempt = 0; attempt < 15; attempt += 1) {
-                  const verificationResponse = await fetchWithAuth("/api/payments/subscriptions/verify", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(response),
-                  });
-                  const verification = await verificationResponse.json().catch(() => null);
+      await new Promise<void>((resolve, reject) => {
+        const openCheckout = () => {
+          try {
+            const checkout = new (window as any).Razorpay({
+              key,
+              subscription_id: subscription.subscription_id,
+              name: "AnalystOS Terminal",
+              description: plan === "pro" ? "Starter Node monthly subscription" : "AI Co-Pilot monthly subscription",
+              prefill: { email: user.email, name: fullName.trim() },
+              theme: { color: "#00f0ff" },
+              handler: async (response: {
+                razorpay_subscription_id?: string;
+                razorpay_payment_id?: string;
+                razorpay_signature?: string;
+              }) => {
+                try {
                   if (
-                    verificationResponse.ok &&
-                    verification?.status === "active"
+                    response.razorpay_subscription_id !== subscription.subscription_id ||
+                    !response.razorpay_payment_id ||
+                    !response.razorpay_signature
                   ) {
-                    setSuccessMsg("✓ Subscription payment verified and access is active. Redirecting...");
-                    router.replace("/dashboard");
-                    resolve();
-                    return;
-                  }
-                  if (!verificationResponse.ok) {
-                    throw new Error(
-                      verification?.error || "Unable to verify the subscription. Your plan was not changed.",
-                    );
-                  }
-                  if (verification?.status === "inactive") {
-                    throw new Error(
-                      "The subscription did not activate. Your account remains on its current plan.",
-                    );
+                    throw new Error("The payment provider returned incomplete verification details.");
                   }
 
-                  setSuccessMsg(
-                    "Subscription authorization is confirmed. Waiting for the verified billing event...",
+                  setSuccessMsg("Authorization received. Waiting for server-confirmed subscription activation...");
+                  for (let attempt = 0; attempt < 15; attempt += 1) {
+                    const verificationResponse = await fetchWithAuth("/api/payments/subscriptions/verify", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify(response),
+                    });
+                    const verification = await verificationResponse.json().catch(() => null);
+                    if (
+                      verificationResponse.ok &&
+                      verification?.status === "active"
+                    ) {
+                      setSuccessMsg("✓ Subscription payment verified and access is active. Redirecting...");
+                      router.replace("/dashboard");
+                      resolve();
+                      return;
+                    }
+                    if (!verificationResponse.ok) {
+                      throw new Error(
+                        verification?.error || "Unable to verify the subscription. Your plan was not changed.",
+                      );
+                    }
+                    if (verification?.status === "inactive") {
+                      throw new Error(
+                        "The subscription did not activate. Your account remains on its current plan.",
+                      );
+                    }
+
+                    setSuccessMsg(
+                      "Subscription authorization is confirmed. Waiting for the verified billing event...",
+                    );
+                    await new Promise((wait) => window.setTimeout(wait, 2000));
+                  }
+
+                  setSuccessMsg("");
+                  throw new Error(
+                    "Subscription activation is still pending. Your plan has not been changed yet; please check back shortly.",
                   );
-                  await new Promise((wait) => window.setTimeout(wait, 2000));
+                } catch (error) {
+                  reject(error);
                 }
-
-                setSuccessMsg("");
-                throw new Error(
-                  "Subscription activation is still pending. Your plan has not been changed yet; please check back shortly.",
-                );
-              } catch (error) {
-                reject(error);
-              }
-            },
-            modal: {
-              ondismiss: () => {
-                setSuccessMsg("");
-                reject(
-                  new Error("Checkout was closed before subscription confirmation. Your account remains on its current plan."),
-                );
               },
-            },
-          });
-          checkout.on("payment.failed", () => {
-            setSuccessMsg("");
-            reject(new Error("Subscription authorization could not be completed. Your account has not been upgraded."));
-            checkout.close();
-          });
-          checkout.open();
-        } catch (error) {
-          reject(error);
+              modal: {
+                ondismiss: () => {
+                  setSuccessMsg("");
+                  reject(
+                    new Error("Checkout was closed before subscription confirmation. Your account remains on its current plan."),
+                  );
+                },
+              },
+            });
+            checkout.on("payment.failed", () => {
+              setSuccessMsg("");
+              reject(new Error("Subscription authorization could not be completed. Your account has not been upgraded."));
+              checkout.close();
+            });
+            checkout.open();
+          } catch (error) {
+            reject(error);
+          }
+        };
+
+        if ((window as any).Razorpay) {
+          openCheckout();
+          return;
         }
-      };
-      script.onerror = () => reject(new Error("Failed to load the secure payment checkout."));
-      document.body.appendChild(script);
-    });
+        const existing = document.getElementById("razorpay-checkout-js") as HTMLScriptElement | null;
+        const script = existing ?? document.createElement("script");
+        script.id = "razorpay-checkout-js";
+        script.src = "https://checkout.razorpay.com/v1/checkout.js";
+        script.onload = openCheckout;
+        script.onerror = () => {
+          script.remove();
+          reject(new Error("Failed to load the secure payment checkout."));
+        };
+        if (!existing) document.body.appendChild(script);
+      });
+    } finally {
+      checkoutInFlight.current = false;
+    }
   };
 
   return (

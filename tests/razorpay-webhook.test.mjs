@@ -758,3 +758,67 @@ test("subscription management requests authenticate ownership and preserve paid 
   assert.match(component, /manage\("pause"\)/);
   assert.match(component, /manage\("resume"\)/);
 });
+
+test("paid subscription prices never silently revert to legacy one-time prices", () => {
+  const page = readFileSync(resolve(root, "app/page.tsx"), "utf8");
+  const pricingCoin = readFileSync(resolve(root, "components/pricing-coin.tsx"), "utf8");
+  assert.match(page, /₹2,500/);
+  assert.match(page, /₹7,500/);
+  assert.doesNotMatch(page, /₹499/);
+  assert.doesNotMatch(page, /₹1,499/);
+  assert.match(pricingCoin, /₹2,500\/mo/);
+  assert.match(pricingCoin, /₹7,500\/mo/);
+  assert.doesNotMatch(pricingCoin, /₹499/);
+  assert.doesNotMatch(pricingCoin, /₹1,499/);
+  assert.deepEqual(SUBSCRIPTION_PRODUCTS.starter_node.amount, 250000);
+  assert.deepEqual(SUBSCRIPTION_PRODUCTS.ai_copilot.amount, 750000);
+});
+
+test("subscription route surfaces actionable provider configuration errors", () => {
+  const route = readFileSync(resolve(root, "app/api/payments/route.ts"), "utf8");
+  assert.match(route, /function paymentsUnavailable/);
+  assert.match(route, /PAYMENTS_NOT_CONFIGURED/);
+  assert.match(route, /PAYMENTS_PLAN_NOT_CONFIGURED/);
+  assert.match(route, /PAYMENTS_AUTH_FAILED/);
+  assert.match(route, /authentication failed/i);
+  assert.match(route, /details\.statusCode === 401/);
+  assert.match(route, /rzp_\(test\|live\)_/);
+});
+
+test("missing or malformed plan ids are rejected before any provider call", () => {
+  assert.equal(getSubscriptionPlanId("starter_node", {}), null);
+  assert.equal(getSubscriptionPlanId("ai_copilot", {}), null);
+  assert.equal(getSubscriptionPlanId("starter_node", { RAZORPAY_STARTER_PLAN_ID: "bad" }), null);
+  assert.equal(
+    getSubscriptionPlanId("starter_node", { RAZORPAY_STARTER_PLAN_ID: "plan_starter123" }),
+    "plan_starter123",
+  );
+  const route = readFileSync(resolve(root, "app/api/payments/route.ts"), "utf8");
+  assert.match(route, /if \(!planId\)/);
+  assert.match(route, /PAYMENTS_PLAN_NOT_CONFIGURED/);
+});
+
+test("checkout surfaces the server error and guards duplicate initialization", () => {
+  const signup = readFileSync(resolve(root, "app/signup/page.tsx"), "utf8");
+  assert.match(signup, /checkoutInFlight/);
+  assert.match(signup, /if \(checkoutInFlight\.current\) return/);
+  assert.match(signup, /subscription\?\.error/);
+  assert.match(signup, /getElementById\("razorpay-checkout-js"\)/);
+  assert.match(signup, /if \(\(window as any\)\.Razorpay\)/);
+});
+
+test("subscription webhook validates signatures and is idempotent per event", () => {
+  const validBody = JSON.stringify({ id: "evt_sub123", event: "subscription.activated" });
+  const signature = createHmac("sha256", "secret").update(validBody).digest("hex");
+  assert.equal(verifyRazorpaySignature(validBody, signature, "secret"), true);
+  assert.equal(verifyRazorpaySignature(validBody, "deadbeef", "secret"), false);
+  assert.equal(verifyRazorpaySignature(validBody, null, "secret"), false);
+  const migration = readFileSync(
+    resolve(root, "supabase/migrations/20261115_razorpay_recurring_subscriptions.sql"),
+    "utf8",
+  );
+  assert.match(migration, /ON CONFLICT DO NOTHING/);
+  assert.match(migration, /RETURN 'duplicate'/);
+  assert.match(migration, /subscription_id TEXT NOT NULL/);
+  assert.match(migration, /payment_id TEXT UNIQUE/);
+});

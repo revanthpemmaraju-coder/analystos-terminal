@@ -14,6 +14,12 @@ import { isPaidPlan, RAZORPAY_PLANS } from "@/lib/razorpay-payments";
 
 const rateLimiter = createRateLimiter({ windowMs: 60 * 1000, maxRequests: 10 });
 
+// Configuration/provider failures are curated, secret-free messages shown to the
+// user so a misconfigured deployment never masquerades as a generic outage.
+function paymentsUnavailable(error: string, code: string): NextResponse {
+  return NextResponse.json({ error, code }, { status: 503 });
+}
+
 export async function POST(req: NextRequest) {
   const ip = req.headers.get("x-forwarded-for") || "127.0.0.1";
   if (!rateLimiter.check(ip).allowed) {
@@ -29,7 +35,16 @@ export async function POST(req: NextRequest) {
   const keySecret = process.env.RAZORPAY_KEY_SECRET;
   const webhookSecret = process.env.RAZORPAY_WEBHOOK_SECRET;
   if (!supabaseUrl || !serviceKey || !keyId || !keySecret) {
-    return errorResponse("Payment processing is not configured.", 503);
+    return paymentsUnavailable(
+      "Payment processing is not configured. Please contact support.",
+      "PAYMENTS_NOT_CONFIGURED",
+    );
+  }
+  if (!/^rzp_(test|live)_[A-Za-z0-9]+$/.test(keyId)) {
+    return paymentsUnavailable(
+      "Payment processing is not configured. Please contact support.",
+      "PAYMENTS_NOT_CONFIGURED",
+    );
   }
 
   let body: unknown;
@@ -99,14 +114,20 @@ export async function POST(req: NextRequest) {
     return errorResponse("Invalid payment option.", 400);
   }
   if (!webhookSecret) {
-    return errorResponse("Subscription processing is not configured.", 503);
+    return paymentsUnavailable(
+      "Subscription processing is not configured. Please contact support.",
+      "PAYMENTS_NOT_CONFIGURED",
+    );
   }
 
   const product = requestedProduct;
   const productConfig = SUBSCRIPTION_PRODUCTS[product];
   const planId = getSubscriptionPlanId(product);
   if (!planId) {
-    return errorResponse("The selected Razorpay subscription plan is not configured.", 503);
+    return paymentsUnavailable(
+      "The selected subscription plan is not configured. Please contact support.",
+      "PAYMENTS_PLAN_NOT_CONFIGURED",
+    );
   }
 
   let stage: "plan_fetch" | "subscription_create" = "plan_fetch";
@@ -137,7 +158,10 @@ export async function POST(req: NextRequest) {
           currency: providerPlan.item.currency,
         },
       });
-      return errorResponse("The selected subscription plan is not configured correctly.", 503);
+      return paymentsUnavailable(
+        "The selected subscription plan is not configured correctly for this billing cycle. Please contact support.",
+        "PAYMENTS_PLAN_MISMATCH",
+      );
     }
 
     stage = "subscription_create";
@@ -200,15 +224,36 @@ export async function POST(req: NextRequest) {
       product,
     });
   } catch (error: unknown) {
+    const details = getRazorpayErrorDetails(error);
     console.error(
       "[RAZORPAY_SUBSCRIPTION_ERROR]",
       JSON.stringify({
         stage,
         product,
         planId,
-        ...getRazorpayErrorDetails(error),
+        ...details,
       }),
     );
-    return errorResponse("Unable to create a subscription.", 503);
+    const description = details.description || "";
+    if (
+      details.statusCode === 401 ||
+      details.code === "AUTHENTICATION_ERROR" ||
+      /authentication failed|invalid api key|unauthorized/i.test(description)
+    ) {
+      return paymentsUnavailable(
+        "Payments are temporarily misconfigured (payment provider authentication failed). Please contact support.",
+        "PAYMENTS_AUTH_FAILED",
+      );
+    }
+    if (stage === "plan_fetch") {
+      return paymentsUnavailable(
+        "This subscription plan is unavailable in the current payment mode. Please contact support.",
+        "PAYMENTS_PLAN_UNAVAILABLE",
+      );
+    }
+    return paymentsUnavailable(
+      "Unable to start the subscription right now. Please try again shortly.",
+      "PAYMENTS_PROVIDER_ERROR",
+    );
   }
 }
