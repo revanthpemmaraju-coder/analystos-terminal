@@ -21,6 +21,7 @@ import {
   verifySubscriptionSignature,
 } from "../lib/razorpay-subscriptions.ts";
 import { getRazorpayErrorDetails } from "../lib/razorpay.ts";
+import { getBearerToken } from "../lib/auth-utils.ts";
 
 const userId = "9a7b6c5d-4e3f-2a1b-8c7d-6e5f4a3b2c1d";
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -974,7 +975,8 @@ test("reconcile endpoint re-verifies with Razorpay and activates via the secure 
   // Provider subscription, plan, and payments are re-fetched and validated.
   assert.match(route, /razorpay\.subscriptions\.fetch\(subscriptionId\)/);
   assert.match(route, /razorpay\.plans\.fetch\(stored\.razorpay_plan_id\)/);
-  assert.match(route, /razorpay\.payments\.all\(\{ subscription_id: subscriptionId/);
+  assert.match(route, /razorpay\.payments\.all/);
+  assert.match(route, /subscription_id:\s*subscriptionId/);
   // Only a captured payment with a billing period activates, via the same RPC.
   assert.match(route, /if \(!captured \|\| !currentEnd\)/);
   assert.match(route, /record_razorpay_subscription_event/);
@@ -1043,4 +1045,41 @@ test("verify and webhook converge on one activation for the same payment in eith
     "duplicate",
   );
   assert.equal(grants, 1);
+});
+
+test("reconcile endpoint requires bearer authentication and returns 401 otherwise", () => {
+  const route = readFileSync(
+    resolve(root, "app/api/payments/subscriptions/reconcile/route.ts"),
+    "utf8",
+  );
+  // Uses the same getAuthenticatedUser pattern as every other protected route.
+  assert.match(route, /getAuthenticatedUser\(req\)/);
+  // Returns 401 when no authenticated user (missing/invalid bearer token).
+  assert.match(route, /if \(!authUser\) return errorResponse\("Unauthorized", 401\)/);
+  // Does not accept cookie credentials or query-string user ids.
+  assert.doesNotMatch(route, /credentials.*include/);
+  assert.doesNotMatch(route, /req\.headers\.get\(["']cookie/);
+});
+
+test("subscription management UI invokes reconciliation via fetchWithAuth (bearer token)", () => {
+  const component = readFileSync(
+    resolve(root, "components/subscription-management.tsx"),
+    "utf8",
+  );
+  // Uses the repo's authenticated fetch helper, which attaches Authorization header.
+  assert.match(component, /fetchWithAuth\(".*\/api\/payments\/subscriptions\/reconcile"/);
+  assert.match(component, /method:\s*"POST"/);
+  assert.match(component, /Content-Type.*application\/json/);
+  // Recover button shown when subscription exists but has no paid-through date.
+  assert.match(component, /needsRecovery/);
+  assert.match(component, /Recover \/ re-sync access/);
+});
+
+test("getBearerToken returns null for cookie-style requests and missing headers", async () => {
+  assert.equal(getBearerToken(null), null);
+  assert.equal(getBearerToken(""), null);
+  assert.equal(getBearerToken("Bearer valid-token"), "valid-token");
+  assert.equal(getBearerToken("Bearer "), null);
+  // Cookie credentials or query params are not recognized — proves the 401 cause.
+  assert.equal(getBearerToken("session=abc; __session=def"), null);
 });

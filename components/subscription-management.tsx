@@ -40,6 +40,38 @@ export default function SubscriptionManagement() {
     setSubscription(data?.subscription || null);
   }, []);
 
+  const recover = async () => {
+    if (busy) return;
+    setBusy(true);
+    setError("");
+    setMessage("");
+    try {
+      const response = await fetchWithAuth("/api/payments/subscriptions/reconcile", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+      const data = (await response.json().catch(() => null)) as
+        | { activated?: boolean; results?: Array<{ outcome: string; reason?: string }>; error?: string }
+        | null;
+      if (!response.ok) {
+        throw new Error(data?.error || "Unable to re-sync subscription.");
+      }
+      if (data?.activated) {
+        setMessage("Access re-synced. Subscription is now active.");
+      } else {
+        const details = data?.results
+          ?.map((r) => `${r.outcome}${r.reason ? `: ${r.reason}` : ""}`)
+          .join("; ");
+        setMessage(`Re-sync completed. ${details || "No subscription activated."}`);
+      }
+      await refresh();
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Unable to re-sync subscription.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
   useEffect(() => {
     let active = true;
     const timer = window.setTimeout(() => {
@@ -115,6 +147,7 @@ export default function SubscriptionManagement() {
     ? new Date(subscription.paidThrough).toLocaleDateString()
     : null;
   const cancelLabel = "Cancel subscription";
+  const needsRecovery = !terminal && !paidThrough;
 
   return (
     <section
@@ -129,42 +162,55 @@ export default function SubscriptionManagement() {
             {paidThrough ? ` · paid through ${paidThrough}` : ""}
           </p>
         </div>
-        {!terminal && (
-          <div className="flex flex-wrap gap-2">
-            {paused ? (
+        <div className="flex flex-wrap gap-2">
+          {!terminal && (
+            <>
+              {paused ? (
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => void manage("resume")}
+                  className="rounded border border-[#00f0ff]/30 px-3 py-2 text-xs text-[#00f0ff] disabled:opacity-50"
+                >
+                  {busy ? "Working..." : "Resume"}
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => void manage("pause")}
+                  className="rounded border border-slate-700 px-3 py-2 text-xs text-slate-300 disabled:opacity-50"
+                >
+                  {busy ? "Working..." : "Pause"}
+                </button>
+              )}
               <button
                 type="button"
                 disabled={busy}
-                onClick={() => void manage("resume")}
-                className="rounded border border-[#00f0ff]/30 px-3 py-2 text-xs text-[#00f0ff] disabled:opacity-50"
+                onClick={() => void manage("cancel")}
+                className="rounded border border-rose-900 px-3 py-2 text-xs text-rose-300 disabled:opacity-50"
               >
-                {busy ? "Working..." : "Resume"}
+                {busy ? "Working..." : cancelLabel}
               </button>
-            ) : (
-              <button
-                type="button"
-                disabled={busy}
-                onClick={() => void manage("pause")}
-                className="rounded border border-slate-700 px-3 py-2 text-xs text-slate-300 disabled:opacity-50"
-              >
-                {busy ? "Working..." : "Pause"}
-              </button>
-            )}
+            </>
+          )}
+          {needsRecovery && (
             <button
               type="button"
               disabled={busy}
-              onClick={() => void manage("cancel")}
-              className="rounded border border-rose-900 px-3 py-2 text-xs text-rose-300 disabled:opacity-50"
+              onClick={() => void recover()}
+              className="rounded border border-emerald-900 px-3 py-2 text-xs text-emerald-300 disabled:opacity-50"
             >
-              {busy ? "Working..." : cancelLabel}
+              {busy ? "Re-syncing..." : "Recover / re-sync access"}
             </button>
-          </div>
-        )}
+          )}
+        </div>
       </div>
       {message && <p role="status" className="mt-3 text-xs text-emerald-300">{message}</p>}
       {error && <p role="alert" className="mt-3 text-xs text-rose-300">{error}</p>}
       <p className="mt-3 text-[11px] text-slate-500">
-        Requests are confirmed by Razorpay webhooks. Cancellation and pause do not erase already-paid access.
+        Requests are confirmed by Razorpay webhooks. Cancellation and pause do not erase already-paid access. The
+        re-sync re-verifies your subscription directly with Razorpay and activates any confirmed captured payment.
       </p>
     </section>
   );
