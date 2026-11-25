@@ -88,9 +88,13 @@ function isProviderId(value: unknown, prefix: string): value is string {
 
 function unixSecondsToIso(value: unknown): string | null {
   if (value === null || value === undefined) return null;
-  if (typeof value !== "number" || !Number.isSafeInteger(value) || value <= 0) {
+  if (typeof value !== "number" || !Number.isSafeInteger(value)) {
     throw new SubscriptionValidationError("Subscription returned an invalid period timestamp.");
   }
+  // 0 (and other non-positive values) are the provider's "unset" sentinel for
+  // timestamps such as ended_at on an active subscription. Treat them as absent
+  // instead of aborting verification of an otherwise valid subscription.
+  if (value <= 0) return null;
   return new Date(value * 1000).toISOString();
 }
 

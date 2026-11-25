@@ -128,6 +128,10 @@ export async function POST(req: NextRequest) {
     });
   } catch (error) {
     if (error instanceof SubscriptionValidationError) {
+      console.error(
+        "[SUBSCRIPTION_VERIFY_REJECTED]",
+        JSON.stringify({ subscriptionId, reason: error.message }),
+      );
       return errorResponse(error.message, 400);
     }
     console.error(

@@ -17,6 +17,7 @@ import {
   SUBSCRIPTION_CYCLE_COUNT,
   SUBSCRIPTION_PRODUCTS,
   SubscriptionValidationError,
+  validateProviderSubscription,
   verifySubscriptionSignature,
 } from "../lib/razorpay-subscriptions.ts";
 import { getRazorpayErrorDetails } from "../lib/razorpay.ts";
@@ -821,4 +822,73 @@ test("subscription webhook validates signatures and is idempotent per event", ()
   assert.match(migration, /RETURN 'duplicate'/);
   assert.match(migration, /subscription_id TEXT NOT NULL/);
   assert.match(migration, /payment_id TEXT UNIQUE/);
+});
+
+test("active subscription verification tolerates the provider's unset (0) ended_at", () => {
+  const stored = {
+    razorpay_subscription_id: "sub_test123",
+    razorpay_plan_id: "plan_test123",
+    user_id: userId,
+    product: "starter_node",
+    entitlement: "pro",
+    amount: 250000,
+    currency: "INR",
+    status: "created",
+    paid_through: null,
+  };
+  const providerActive = {
+    id: "sub_test123",
+    plan_id: "plan_test123",
+    status: "active",
+    notes: { userId, product: "starter_node", entitlement: "pro" },
+    current_start: 1794700000,
+    current_end: 1797292000,
+    ended_at: 0,
+  };
+  const result = validateProviderSubscription(providerActive, stored, userId);
+  assert.equal(result.status, "active");
+  assert.equal(result.endedAt, null);
+  assert.equal(result.currentStart, new Date(1794700000 * 1000).toISOString());
+});
+
+test("provider subscription validation still rejects malformed timestamps and mismatches", () => {
+  const stored = {
+    razorpay_subscription_id: "sub_test123",
+    razorpay_plan_id: "plan_test123",
+    user_id: userId,
+    product: "starter_node",
+    entitlement: "pro",
+    amount: 250000,
+    currency: "INR",
+    status: "created",
+    paid_through: null,
+  };
+  const base = {
+    id: "sub_test123",
+    plan_id: "plan_test123",
+    status: "active",
+    notes: { userId, product: "starter_node", entitlement: "pro" },
+    current_start: 1794700000,
+    current_end: 1797292000,
+    ended_at: null,
+  };
+  assert.throws(
+    () => validateProviderSubscription({ ...base, current_end: "not-a-number" }, stored, userId),
+    SubscriptionValidationError,
+  );
+  assert.throws(
+    () => validateProviderSubscription({ ...base, notes: { userId: "other" } }, stored, userId),
+    SubscriptionValidationError,
+  );
+});
+
+test("subscription verify route logs a safe rejection reason and returns 400", () => {
+  const verify = readFileSync(
+    resolve(root, "app/api/payments/subscriptions/verify/route.ts"),
+    "utf8",
+  );
+  assert.match(verify, /\[SUBSCRIPTION_VERIFY_REJECTED\]/);
+  assert.match(verify, /error instanceof SubscriptionValidationError/);
+  assert.match(verify, /errorResponse\(error\.message, 400\)/);
+  assert.doesNotMatch(verify, /razorpay_signature[^\n]*console\.error/);
 });
