@@ -70,8 +70,14 @@ export default function Navbar() {
       }
     );
 
+    const handlePlanChanged = () => {
+      void fetchSession();
+    };
+    window.addEventListener("aos_plan_changed", handlePlanChanged);
+
     return () => {
       subscription.unsubscribe();
+      window.removeEventListener("aos_plan_changed", handlePlanChanged);
     };
   }, []);
 

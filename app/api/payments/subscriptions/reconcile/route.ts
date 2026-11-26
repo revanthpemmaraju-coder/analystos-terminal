@@ -129,22 +129,53 @@ export async function POST(req: NextRequest) {
       const endedAt = unixSecondsToIso(subscription.ended_at);
       const providerStatus = String(subscription.status);
 
-      // The SDK types payments.all() as a callback-or-promise overload without a
-      // subscription_id filter; the runtime returns a promise of { items }.
-      const paymentList = (await (
-        razorpay.payments.all as unknown as (params: Record<string, unknown>) => Promise<{ items: unknown[] }>
-      )({ subscription_id: subscriptionId, count: 100 }));
-      const captured = paymentList.items.find(
-        (payment) =>
-          isRecord(payment) &&
-          payment.subscription_id === subscriptionId &&
-          payment.status === "captured" &&
-          (payment.captured === true || payment.captured === 1 || payment.captured === "1") &&
-          payment.amount === product.amount &&
-          payment.currency === product.currency &&
-          typeof payment.id === "string" &&
-          /^pay_[A-Za-z0-9]+$/.test(payment.id),
-      );
+      // Razorpay's payments.all() ignores subscription_id in the Node SDK and only
+      // returns recent account-wide payments. Query subscription invoices first
+      // (which filters by subscription_id) and fetch each invoice's payment, then
+      // fall back to payments.all() if no invoice payment matched.
+      const isMatchingCapturedPayment = (payment: unknown): payment is { id: string } =>
+        isRecord(payment) &&
+        payment.subscription_id === subscriptionId &&
+        payment.status === "captured" &&
+        (payment.captured === true || payment.captured === 1 || payment.captured === "1") &&
+        payment.amount === product.amount &&
+        payment.currency === product.currency &&
+        typeof payment.id === "string" &&
+        /^pay_[A-Za-z0-9]+$/.test(payment.id);
+
+      let captured: { id: string } | undefined;
+      try {
+        const invoiceList = (await (
+          razorpay.invoices.all as unknown as (params: Record<string, unknown>) => Promise<{ items?: unknown[] }>
+        )({ subscription_id: subscriptionId, count: 100 }));
+        const invoiceItems = Array.isArray(invoiceList?.items) ? invoiceList.items : [];
+        for (const invoice of invoiceItems) {
+          if (!isRecord(invoice) || typeof invoice.payment_id !== "string" || !/^pay_[A-Za-z0-9]+$/.test(invoice.payment_id)) {
+            continue;
+          }
+          const payment = await razorpay.payments.fetch(invoice.payment_id);
+          if (isMatchingCapturedPayment(payment)) {
+            captured = payment;
+            break;
+          }
+        }
+      } catch (invoiceError) {
+        console.warn(
+          "[SUBSCRIPTION_RECONCILE_INVOICE_LOOKUP_FAILED]",
+          JSON.stringify({
+            subscriptionId,
+            reason: invoiceError instanceof Error ? invoiceError.message : "unknown",
+          }),
+        );
+      }
+
+      if (!captured) {
+        const paymentList = (await (
+          razorpay.payments.all as unknown as (params: Record<string, unknown>) => Promise<{ items?: unknown[] }>
+        )({ count: 100 }));
+        const items = Array.isArray(paymentList?.items) ? paymentList.items : [];
+        captured = items.find(isMatchingCapturedPayment);
+      }
 
       if (!captured || !currentEnd) {
         results.push({

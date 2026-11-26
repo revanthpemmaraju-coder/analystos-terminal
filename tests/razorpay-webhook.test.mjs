@@ -1083,3 +1083,99 @@ test("getBearerToken returns null for cookie-style requests and missing headers"
   // Cookie credentials or query params are not recognized — proves the 401 cause.
   assert.equal(getBearerToken("session=abc; __session=def"), null);
 });
+
+test("reconcile endpoint queries subscription invoices and verifies captured payments", () => {
+  const route = readFileSync(
+    resolve(root, "app/api/payments/subscriptions/reconcile/route.ts"),
+    "utf8",
+  );
+  // Queries invoices filtered by subscription_id and fetches each invoice's payment.
+  assert.match(route, /razorpay\.invoices\.all/);
+  assert.match(route, /subscription_id:\s*subscriptionId/);
+  assert.match(route, /razorpay\.payments\.fetch\(invoice\.payment_id\)/);
+  // Rejects wrong ownership, wrong plan id, and uncaptured payments.
+  assert.match(route, /notes\.userId !== authUser\.id/);
+  assert.match(route, /subscription\.plan_id !== stored\.razorpay_plan_id/);
+  assert.match(route, /payment\.status === "captured"/);
+});
+
+test("subscription verification rejects wrong ownership, wrong plan id, and uncaptured payments", () => {
+  const stored = {
+    razorpay_subscription_id: "sub_TestSub12345678",
+    razorpay_plan_id: "plan_StarterNode123",
+    user_id: userId,
+    product: "starter_node",
+    entitlement: "pro",
+    amount: 250000,
+    currency: "INR",
+    status: "created",
+    paid_through: null,
+  };
+
+  assert.throws(
+    () =>
+      validateProviderSubscription(
+        {
+          id: "sub_TestSub12345678",
+          plan_id: "plan_StarterNode123",
+          status: "active",
+          current_start: 1763164800,
+          current_end: 1765756800,
+          ended_at: 0,
+          notes: {
+            userId: "00000000-0000-0000-0000-000000000000",
+            product: "starter_node",
+            entitlement: "pro",
+          },
+        },
+        stored,
+        userId,
+      ),
+    SubscriptionValidationError,
+  );
+
+  assert.throws(
+    () =>
+      validateProviderSubscription(
+        {
+          id: "sub_TestSub12345678",
+          plan_id: "plan_WrongPlan999",
+          status: "active",
+          current_start: 1763164800,
+          current_end: 1765756800,
+          ended_at: 0,
+          notes: {
+            userId,
+            product: "starter_node",
+            entitlement: "pro",
+          },
+        },
+        stored,
+        userId,
+      ),
+    SubscriptionValidationError,
+  );
+
+  const verifyRoute = readFileSync(
+    resolve(root, "app/api/payments/subscriptions/verify/route.ts"),
+    "utf8",
+  );
+  assert.match(verifyRoute, /if \(providerPayment\.status === "captured" && providerState\.currentEnd\)/);
+});
+
+test("frontend refreshes effective plan across navbar and upgrade views after recovery", () => {
+  const management = readFileSync(
+    resolve(root, "components/subscription-management.tsx"),
+    "utf8",
+  );
+  const navbar = readFileSync(resolve(root, "components/navbar.tsx"), "utf8");
+  const signup = readFileSync(resolve(root, "app/signup/page.tsx"), "utf8");
+
+  assert.match(management, /response\.status === 401/);
+  assert.match(management, /Your session has expired\. Please sign in again/);
+  assert.match(management, /dispatchEvent\(new Event\("aos_plan_changed"\)\)/);
+  assert.match(management, /router\.refresh\(\)/);
+  assert.match(navbar, /addEventListener\("aos_plan_changed"/);
+  assert.match(signup, /dispatchEvent\(new Event\("aos_plan_changed"\)\)/);
+  assert.match(signup, /<SubscriptionManagement \/>/);
+});

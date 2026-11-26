@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { fetchWithAuth } from "@/lib/supabase";
 
 type CustomerSubscription = {
@@ -21,6 +22,7 @@ const productNames = {
 } as const;
 
 export default function SubscriptionManagement() {
+  const router = useRouter();
   const [subscription, setSubscription] = useState<CustomerSubscription | null>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -53,9 +55,15 @@ export default function SubscriptionManagement() {
       const data = (await response.json().catch(() => null)) as
         | { activated?: boolean; results?: Array<{ outcome: string; reason?: string }>; error?: string }
         | null;
+      if (response.status === 401) {
+        throw new Error("Your session has expired. Please sign in again to re-sync your subscription.");
+      }
       if (!response.ok) {
         throw new Error(data?.error || "Unable to re-sync subscription.");
       }
+      const hasPaidAccess =
+        Boolean(data?.activated) ||
+        Boolean(data?.results?.some((r) => r.outcome === "activated" || r.outcome === "already_paid"));
       if (data?.activated) {
         setMessage("Access re-synced. Subscription is now active.");
       } else {
@@ -65,6 +73,10 @@ export default function SubscriptionManagement() {
         setMessage(`Re-sync completed. ${details || "No subscription activated."}`);
       }
       await refresh();
+      if (hasPaidAccess) {
+        window.dispatchEvent(new Event("aos_plan_changed"));
+        router.refresh();
+      }
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Unable to re-sync subscription.");
     } finally {

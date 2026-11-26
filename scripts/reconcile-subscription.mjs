@@ -176,17 +176,30 @@ async function main() {
     }),
   );
 
-  const captured = (await razorpay.payments.all({ subscription_id: subscriptionId, count: 100 }))
-    .items.find(
-      (payment) =>
-        isRecord(payment) &&
-        payment.subscription_id === subscriptionId &&
-        payment.status === "captured" &&
-        (payment.captured === true || payment.captured === 1 || payment.captured === "1") &&
-        payment.amount === product.amount &&
-        payment.currency === product.currency &&
-        /^pay_[A-Za-z0-9]+$/.test(String(payment.id)),
-    );
+  const isMatchingCapturedPayment = (payment) =>
+    isRecord(payment) &&
+    payment.subscription_id === subscriptionId &&
+    payment.status === "captured" &&
+    (payment.captured === true || payment.captured === 1 || payment.captured === "1") &&
+    payment.amount === product.amount &&
+    payment.currency === product.currency &&
+    /^pay_[A-Za-z0-9]+$/.test(String(payment.id));
+
+  let captured;
+  const invoiceList = await razorpay.invoices.all({ subscription_id: subscriptionId, count: 100 });
+  for (const invoice of invoiceList.items || []) {
+    if (!isRecord(invoice) || typeof invoice.payment_id !== "string" || !/^pay_[A-Za-z0-9]+$/.test(invoice.payment_id)) {
+      continue;
+    }
+    const payment = await razorpay.payments.fetch(invoice.payment_id);
+    if (isMatchingCapturedPayment(payment)) {
+      captured = payment;
+      break;
+    }
+  }
+  if (!captured) {
+    captured = (await razorpay.payments.all({ count: 100 })).items.find(isMatchingCapturedPayment);
+  }
 
   if (!captured || !currentEnd) {
     console.log(

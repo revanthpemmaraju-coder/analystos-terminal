@@ -10,6 +10,7 @@ import { fetchWithAuth, supabase } from "@/lib/supabase";
 import { getAuthErrorMessage, validateSignupInput } from "@/lib/auth-errors";
 import { Shield, Mail, Lock, User, RefreshCw, Sparkles, CheckCircle } from "lucide-react";
 import TickerBar from "@/components/ticker-bar";
+import SubscriptionManagement from "@/components/subscription-management";
 
 function SignupForm() {
   const router = useRouter();
@@ -221,6 +222,7 @@ function SignupForm() {
                       verification?.status === "active"
                     ) {
                       setSuccessMsg("✓ Subscription payment verified and access is active. Redirecting...");
+                      window.dispatchEvent(new Event("aos_plan_changed"));
                       router.replace("/dashboard");
                       resolve();
                       return;
@@ -321,6 +323,8 @@ function SignupForm() {
               {successMsg}
             </div>
           )}
+
+          {upgradeUser && <SubscriptionManagement />}
 
           <form onSubmit={handleSignup} className="space-y-4 text-xs">
             
